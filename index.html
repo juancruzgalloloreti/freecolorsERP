@@ -1,0 +1,273 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.tabs { display: flex; gap: 4px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0; padding: 0 0 0 0; }
+.tab { padding: 8px 14px; font-size: 13px; cursor: pointer; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -0.5px; }
+.tab.active { color: var(--color-text-primary); border-bottom: 2px solid var(--color-text-primary); font-weight: 500; }
+.panel { display: none; padding: 16px 0; }
+.panel.active { display: block; }
+.file-tree { font-size: 12px; font-family: var(--font-mono); line-height: 1.8; color: var(--color-text-secondary); }
+.file-tree .dir { color: var(--color-text-primary); font-weight: 500; }
+.file-tree .file { cursor: pointer; color: var(--color-text-info); }
+.file-tree .file:hover { text-decoration: underline; }
+pre { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 14px; overflow-x: auto; color: var(--color-text-primary); white-space: pre; }
+.copy-btn { font-size: 11px; padding: 3px 10px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-secondary); float: right; margin-top: -2px; }
+.copy-btn:hover { background: var(--color-background-secondary); }
+.step { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; color: var(--color-text-secondary); margin-top: 2px; }
+.step-body { flex: 1; }
+.step-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-primary); }
+.step-desc { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; line-height: 1.5; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+.badge-free { background: var(--color-background-success); color: var(--color-text-success); }
+.badge-key { background: var(--color-background-warning); color: var(--color-text-warning); }
+.svc-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; }
+.svc-row:last-child { border: none; }
+.svc-name { font-weight: 500; color: var(--color-text-primary); }
+.svc-role { font-size: 12px; color: var(--color-text-secondary); }
+a { color: var(--color-text-info); font-size: 12px; text-decoration: none; }
+a:hover { text-decoration: underline; }
+h3 { font-size: 13px; font-weight: 500; margin: 16px 0 8px; color: var(--color-text-primary); }
+</style>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('stack')">Stack</button>
+  <button class="tab" onclick="showTab('structure')">Estructura</button>
+  <button class="tab" onclick="showTab('schema')">Schema SQL</button>
+  <button class="tab" onclick="showTab('bootstrap')">Bootstrap</button>
+  <button class="tab" onclick="showTab('deploy')">Deploy</button>
+</div>
+
+<div id="tab-stack" class="panel active">
+  <div class="svc-row">
+    <div><div class="svc-name">Vercel</div><div class="svc-role">Next.js 14 (App Router) — frontend + auth pages</div></div>
+    <div style="text-align:right"><span class="badge badge-free">gratis</span><br><a href="https://vercel.com" target="_blank">vercel.com ↗</a></div>
+  </div>
+  <div class="svc-row">
+    <div><div class="svc-name">Neon</div><div class="svc-role">PostgreSQL serverless — 0.5 GB, branching, RLS</div></div>
+    <div style="text-align:right"><span class="badge badge-free">gratis</span><br><a href="https://neon.tech" target="_blank">neon.tech ↗</a></div>
+  </div>
+  <div class="svc-row">
+    <div><div class="svc-name">Fly.io</div><div class="svc-role">NestJS API — 3 VMs 256 MB, stable free tier</div></div>
+    <div style="text-align:right"><span class="badge badge-free">gratis</span><br><a href="https://fly.io" target="_blank">fly.io ↗</a></div>
+  </div>
+  <div class="svc-row">
+    <div><div class="svc-name">Namecheap</div><div class="svc-role">Dominio → apunta a Vercel via CNAME</div></div>
+    <div style="text-align:right"><span class="badge badge-key">ya tenés</span></div>
+  </div>
+  <div class="svc-row">
+    <div><div class="svc-name">pnpm workspaces + Turborepo</div><div class="svc-role">Monorepo: apps/api · apps/web · packages/db</div></div>
+    <div style="text-align:right"><span class="badge badge-free">gratis</span></div>
+  </div>
+  <h3>Stack fijo (ya decidido)</h3>
+  <div style="font-size:12px;color:var(--color-text-secondary);line-height:2">
+    Prisma ORM · JWT + Refresh Tokens · pg-boss jobs · Row-Level Security · Costo promedio ponderado incremental · Multi-depósito · Multi-PV AFIP · CC como vista derivada
+  </div>
+</div>
+
+<div id="tab-structure" class="panel">
+<div class="file-tree">
+<span class="dir">pintureria-erp/</span>
+├── <span class="dir">apps/</span>
+│   ├── <span class="dir">api/</span>                  ← NestJS (Fly.io)
+│   │   ├── <span class="dir">src/</span>
+│   │   │   ├── <span class="dir">auth/</span>           JWT + refresh tokens
+│   │   │   ├── <span class="dir">products/</span>       catálogo + marcas + rubros
+│   │   │   ├── <span class="dir">stock/</span>          movimientos inmutables
+│   │   │   ├── <span class="dir">documents/</span>      facturas + remitos
+│   │   │   ├── <span class="dir">customers/</span>      clientes + CUIT
+│   │   │   ├── <span class="dir">suppliers/</span>      proveedores
+│   │   │   ├── <span class="dir">current-account/</span> CC derivada
+│   │   │   ├── <span class="dir">price-lists/</span>    listas de precio
+│   │   │   ├── <span class="dir">reports/</span>        queries directas
+│   │   │   └── <span class="file" onclick="sendPrompt('mostrame el archivo main.ts de NestJS')">main.ts</span>
+│   │   ├── <span class="file" onclick="sendPrompt('mostrame el Dockerfile para Fly.io')">Dockerfile</span>
+│   │   └── <span class="file" onclick="sendPrompt('mostrame fly.toml')">fly.toml</span>
+│   └── <span class="dir">web/</span>                  ← Next.js 14 (Vercel)
+│       ├── <span class="dir">app/</span>
+│       │   ├── <span class="dir">(auth)/</span>         login / refresh
+│       │   ├── <span class="dir">(dashboard)/</span>    layout + sidebar
+│       │   │   ├── <span class="dir">productos/</span>
+│       │   │   ├── <span class="dir">ventas/</span>
+│       │   │   ├── <span class="dir">stock/</span>
+│       │   │   ├── <span class="dir">clientes/</span>
+│       │   │   └── <span class="dir">reportes/</span>
+│       │   └── <span class="file" onclick="sendPrompt('mostrame el layout raíz de Next.js')">layout.tsx</span>
+│       └── <span class="file" onclick="sendPrompt('mostrame next.config.js')">next.config.js</span>
+└── <span class="dir">packages/</span>
+    └── <span class="dir">db/</span>                   ← Prisma compartido
+        ├── <span class="file" onclick="sendPrompt('mostrame el schema.prisma completo')">schema.prisma</span>   ← el núcleo del sistema
+        └── <span class="dir">migrations/</span>
+</div>
+<br>
+<button class="copy-btn" onclick="sendPrompt('dame el pnpm-workspace.yaml y turbo.json')">Pedí workspace config ↗</button>
+</div>
+
+<div id="tab-schema" class="panel">
+<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.6">
+  Módulos del schema — hacé clic para ver el código de cada uno
+</div>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <div class="step-title">Tenant + User + Role</div>
+    <div class="step-desc">Multi-tenant base. Refresh token en User. UNIQUE(tenantId, email).</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma del modelo Tenant, User y Role')">Ver código ↗</button>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <div class="step-title">Product + Category + Brand</div>
+    <div class="step-desc">Catálogo. Categorías con árbol recursivo (parentId). UNIQUE(tenantId, code).</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma de Product, Category y Brand')">Ver código ↗</button>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <div class="step-title">StockMovement + Deposit</div>
+    <div class="step-desc">Tabla inmutable. Stock = SUM de movimientos. Costo promedio ponderado incremental.</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma de StockMovement, Deposit y la query de stock actual con costo promedio ponderado')">Ver código ↗</button>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <div class="step-title">Document + DocumentItem</div>
+    <div class="step-desc">Factura o Remito directo, no ambos. PuntoDeVenta AFIP múltiple. Estado: DRAFT → CONFIRMED → CANCELLED.</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma de Document, DocumentItem y PuntoDeVenta')">Ver código ↗</button>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <div class="step-title">Customer + CUIT + CurrentAccount</div>
+    <div class="step-desc">UNIQUE parcial WHERE cuit IS NOT NULL (raw migration). CC como entries, saldo = SUM derivado.</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma de Customer, CurrentAccount y CurrentAccountEntry con el unique parcial en CUIT')">Ver código ↗</button>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <div class="step-title">PriceList + Payment + Supplier</div>
+    <div class="step-desc">Listas de precio por cliente/grupo. Pagos multi-método. Proveedores con CUIT.</div>
+    <button onclick="sendPrompt('mostrame el schema Prisma completo de PriceList, PriceListItem, Payment y Supplier')">Ver código ↗</button>
+  </div>
+</div>
+</div>
+
+<div id="tab-bootstrap" class="panel">
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <div class="step-title">Crear el monorepo</div>
+    <pre>mkdir pintureria-erp && cd pintureria-erp
+pnpm init
+pnpm add -D turbo
+mkdir -p apps/api apps/web packages/db</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <div class="step-title">Inicializar cada app</div>
+    <pre># NestJS
+cd apps/api && npx @nestjs/cli new . --skip-git
+
+# Next.js
+cd ../web && npx create-next-app@latest . \
+  --typescript --tailwind --app --skip-git
+
+# Prisma package
+cd ../../packages/db
+pnpm init && pnpm add prisma @prisma/client
+npx prisma init</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <div class="step-title">Crear base de datos en Neon</div>
+    <div class="step-desc">Entrás a neon.tech → New Project → copiás la connection string. La ponés en <code>.env</code></div>
+    <pre>DATABASE_URL="postgresql://user:pass@ep-xxx.neon.tech/erp?sslmode=require"</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <div class="step-title">Primera migración</div>
+    <pre>cd packages/db
+npx prisma migrate dev --name init
+npx prisma generate</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <div class="step-title">Habilitar Row-Level Security</div>
+    <pre>-- En Neon SQL Editor:
+ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Product" ENABLE ROW LEVEL SECURITY;
+-- (repetir para cada tabla del tenant)
+
+CREATE POLICY tenant_isolation ON "Product"
+  USING (tenant_id = current_setting('app.tenant_id'));</pre>
+  </div>
+</div>
+</div>
+
+<div id="tab-deploy" class="panel">
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <div class="step-title">Deploy NestJS → Fly.io</div>
+    <pre>npm install -g flyctl
+cd apps/api
+fly auth login
+fly launch          # detecta Dockerfile, elige región sa (São Paulo)
+fly secrets set DATABASE_URL="..." JWT_SECRET="..."
+fly deploy</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <div class="step-title">Deploy Next.js → Vercel</div>
+    <pre>cd apps/web
+npx vercel          # login + link repo
+# En Vercel dashboard: Settings → Environment Variables
+# NEXT_PUBLIC_API_URL = https://tu-app.fly.dev</pre>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <div class="step-title">Dominio Namecheap → Vercel</div>
+    <div class="step-desc">En Namecheap → Advanced DNS → agregar CNAME: <code>www</code> → <code>cname.vercel-dns.com</code>. En Vercel → Settings → Domains → agregar tu dominio.</div>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <div class="step-title">Seeder: primer tenant + usuario</div>
+    <button onclick="sendPrompt('dame el seed.ts de Prisma para crear el primer tenant de pinturería con un usuario owner')">Ver seed.ts ↗</button>
+  </div>
+</div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+function copyCode(id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).catch(() => {});
+  event.target.textContent = 'copiado';
+  setTimeout(() => event.target.textContent = 'copiar', 1500);
+}
+</script>

@@ -1,0 +1,490 @@
+// ============================================================
+// SCHEMA PRISMA — ERP Pinturería
+// Principios:
+//   · Stock basado en movimientos (inmutable, auditable)
+//   · CC como vista derivada: saldo = SUM(amount)
+//   · CUIT: UNIQUE parcial (raw migration, ver abajo)
+//   · Remito ó Factura directa, nunca ambos
+//   · Multi-tenant con RLS en PostgreSQL
+//   · Costos: promedio ponderado incremental en la API
+// ============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  // Output explícito — evita conflictos en monorepos con pnpm
+  output          = "../src/generated/client"
+  // BUG FIX: se committeó sólo el binario de Windows (.dll.node).
+  // "native" resuelve el binario correcto para la plataforma actual.
+  // Los targets extra permiten deployar en Debian/Ubuntu y Alpine (Docker).
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TENANT
+// ─────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  isActive  Boolean  @default(true)
+  settings  Json     @default("{}") // configuraciones por tenant
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  products       Product[]
+  categories     Category[]
+  brands         Brand[]
+  deposits       Deposit[]
+  documents      Document[]
+  customers      Customer[]
+  suppliers      Supplier[]
+  priceLists     PriceList[]
+  puntoDeVentas  PuntoDeVenta[]
+  stockMovements StockMovement[]
+
+  @@map("tenants")
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO
+}
+
+// ─────────────────────────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  email              String
+  passwordHash       String
+  firstName          String
+  lastName           String
+  role               UserRole  @default(EMPLOYEE)
+  isActive           Boolean   @default(true)
+  // Refresh token hasheado (nunca el token crudo en DB)
+  refreshTokenHash   String?
+  refreshTokenExpiry DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER // dueño, acceso total
+  ADMIN // administrador
+  EMPLOYEE // vendedor / cajero
+  READONLY // solo lectura / contador
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATÁLOGO
+// ─────────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  parentId  String? // árbol recursivo
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@unique([tenantId, name, parentId])
+  @@index([tenantId, parentId])
+  @@map("categories")
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([tenantId, name])
+  @@map("brands")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  tenantId    String
+  code        String // UNIQUE por tenant
+  name        String
+  description String?
+  categoryId  String?
+  brandId     String?
+  // Unidad: un, lt, kg, m2, m, caja, etc.
+  unit        String   @default("un")
+  isActive    Boolean  @default(true)
+  // Notas internas
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category       Category?       @relation(fields: [categoryId], references: [id])
+  brand          Brand?          @relation(fields: [brandId], references: [id])
+  stockMovements StockMovement[]
+  documentItems  DocumentItem[]
+  priceListItems PriceListItem[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, brandId])
+  @@map("products")
+}
+
+// ─────────────────────────────────────────────────────────────
+// STOCK (tabla inmutable — nunca UPDATE/DELETE)
+// ─────────────────────────────────────────────────────────────
+
+model Deposit {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  address   String?
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@unique([tenantId, name])
+  @@map("deposits")
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  tenantId    String
+  productId   String
+  depositId   String
+  type        StockMovementType
+  // quantity: + entrada, - salida
+  quantity    Decimal           @db.Decimal(18, 4)
+  // unitCost: costo unitario al momento del movimiento (CPP incremental calculado en la API)
+  unitCost    Decimal           @db.Decimal(18, 4)
+  documentId  String? // referencia al documento que originó el movimiento
+  notes       String?
+  createdAt   DateTime          @default(now())
+  createdById String?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product  Product   @relation(fields: [productId], references: [id])
+  deposit  Deposit   @relation(fields: [depositId], references: [id])
+  document Document? @relation(fields: [documentId], references: [id])
+  // Stock actual = SUM(quantity) WHERE tenantId AND productId AND depositId
+  // CPP incremental: se calcula en StockService.recordMovement()
+
+  @@index([tenantId, productId, depositId])
+  @@index([tenantId, productId, createdAt])
+  @@index([tenantId, documentId])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  PURCHASE // entrada por compra
+  SALE // salida por venta
+  ADJUSTMENT_IN // ajuste positivo
+  ADJUSTMENT_OUT // ajuste negativo
+  TRANSFER_IN // entrada por transferencia entre depósitos
+  TRANSFER_OUT // salida por transferencia entre depósitos
+  RETURN_IN // devolución recibida de cliente
+  RETURN_OUT // devolución enviada a proveedor
+}
+
+// ─────────────────────────────────────────────────────────────
+// DOCUMENTOS (Facturas, Remitos, etc.)
+// ─────────────────────────────────────────────────────────────
+
+model PuntoDeVenta {
+  id        String   @id @default(cuid())
+  tenantId  String
+  number    Int // número AFIP (1, 2, 3...)
+  name      String // ej: "Local Principal", "Depósito"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@unique([tenantId, number])
+  @@map("puntos_de_venta")
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  tenantId       String
+  type           DocumentType
+  status         DocumentStatus @default(DRAFT)
+  puntoDeVentaId String? // null para REMITO / BUDGET
+  number         Int? // correlativo por tipo + PV
+  customerId     String? // para ventas
+  supplierId     String? // para compras
+  createdById    String
+  date           DateTime       @default(now())
+  dueDate        DateTime?
+  notes          String?
+  // Totales desnormalizados (calculados al confirmar, inmutables)
+  subtotal       Decimal        @db.Decimal(18, 2)
+  taxAmount      Decimal        @default(0) @db.Decimal(18, 2)
+  total          Decimal        @db.Decimal(18, 2)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  puntoDeVenta   PuntoDeVenta?         @relation(fields: [puntoDeVentaId], references: [id])
+  customer       Customer?             @relation(fields: [customerId], references: [id])
+  supplier       Supplier?             @relation(fields: [supplierId], references: [id])
+  createdBy      User                  @relation(fields: [createdById], references: [id])
+  items          DocumentItem[]
+  stockMovements StockMovement[]
+  payments       Payment[]
+  ccEntries      CurrentAccountEntry[]
+
+  @@unique([tenantId, puntoDeVentaId, type, number])
+  @@index([tenantId, customerId, status])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, date])
+  @@map("documents")
+}
+
+enum DocumentType {
+  INVOICE_A // Factura A
+  INVOICE_B // Factura B
+  INVOICE_C // Factura C
+  CREDIT_NOTE_A // Nota de Crédito A
+  CREDIT_NOTE_B // Nota de Crédito B
+  DEBIT_NOTE_A // Nota de Débito A
+  DEBIT_NOTE_B // Nota de Débito B
+  REMITO // Remito interno (sin número AFIP)
+  PURCHASE_ORDER // Orden de Compra
+  BUDGET // Presupuesto
+}
+
+enum DocumentStatus {
+  DRAFT // borrador, editable
+  CONFIRMED // confirmado, genera stock y CC — inmutable
+  CANCELLED // anulado, genera movimientos inversos
+}
+
+model DocumentItem {
+  id          String  @id @default(cuid())
+  documentId  String
+  productId   String
+  description String // copia del nombre al momento de facturar
+  quantity    Decimal @db.Decimal(18, 4)
+  unitPrice   Decimal @db.Decimal(18, 4)
+  discount    Decimal @default(0) @db.Decimal(5, 2) // porcentaje 0-100
+  taxRate     Decimal @default(0) @db.Decimal(5, 2) // porcentaje IVA
+  subtotal    Decimal @db.Decimal(18, 2) // qty * unitPrice * (1 - discount/100)
+  taxAmount   Decimal @default(0) @db.Decimal(18, 2)
+  total       Decimal @db.Decimal(18, 2)
+  sortOrder   Int     @default(0)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([documentId])
+  @@map("document_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLIENTES & CUENTA CORRIENTE
+// ─────────────────────────────────────────────────────────────
+
+model Customer {
+  id           String       @id @default(cuid())
+  tenantId     String
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  province     String?
+  // CUIT: UNIQUE parcial aplicado via raw migration (ver abajo)
+  cuit         String?
+  ivaCondition IvaCondition @default(CONSUMIDOR_FINAL)
+  priceListId  String?
+  creditLimit  Decimal?     @db.Decimal(18, 2) // límite de CC, null = sin límite
+  isActive     Boolean      @default(true)
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tenant    Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  priceList PriceList?            @relation(fields: [priceListId], references: [id])
+  documents Document[]
+  ccEntries CurrentAccountEntry[]
+  // UNIQUE parcial aplicado en migration:
+  // CREATE UNIQUE INDEX uq_customers_tenant_cuit
+  //   ON customers(tenant_id, cuit)
+  //   WHERE cuit IS NOT NULL;
+
+  @@index([tenantId, isActive])
+  @@index([tenantId, priceListId])
+  @@map("customers")
+}
+
+enum IvaCondition {
+  RESPONSABLE_INSCRIPTO
+  MONOTRIBUTISTA
+  CONSUMIDOR_FINAL
+  EXENTO
+  NO_CATEGORIZADO
+}
+
+// Cuenta Corriente: nunca columna editable.
+// Saldo = SELECT SUM(amount) FROM current_account_entries WHERE customer_id = ?
+model CurrentAccountEntry {
+  id          String      @id @default(cuid())
+  tenantId    String
+  customerId  String
+  documentId  String? // documento que originó la entrada
+  type        CcEntryType
+  // amount: positivo = cargo (deuda), negativo = abono (pago)
+  amount      Decimal     @db.Decimal(18, 2)
+  description String
+  date        DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  createdById String?
+
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([customerId, date])
+  @@index([tenantId, date])
+  @@map("current_account_entries")
+}
+
+enum CcEntryType {
+  INVOICE // cargo por factura emitida
+  PAYMENT // abono de pago recibido
+  CREDIT_NOTE // abono por nota de crédito
+  DEBIT_NOTE // cargo por nota de débito
+  ADJUSTMENT // ajuste manual con aprobación
+}
+
+// ─────────────────────────────────────────────────────────────
+// PAGOS
+// ─────────────────────────────────────────────────────────────
+
+model Payment {
+  id          String        @id @default(cuid())
+  tenantId    String
+  documentId  String
+  method      PaymentMethod
+  amount      Decimal       @db.Decimal(18, 2)
+  reference   String? // nro cheque, CBU, últimos 4 dígitos tarjeta, etc.
+  date        DateTime      @default(now())
+  notes       String?
+  createdAt   DateTime      @default(now())
+  createdById String?
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHECK
+  CREDIT_CARD
+  DEBIT_CARD
+  MERCADO_PAGO
+  CURRENT_ACCOUNT // pago a cuenta corriente
+  OTHER
+}
+
+// ─────────────────────────────────────────────────────────────
+// LISTAS DE PRECIO
+// ─────────────────────────────────────────────────────────────
+
+model PriceList {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items     PriceListItem[]
+  customers Customer[]
+
+  @@unique([tenantId, name])
+  @@map("price_lists")
+}
+
+model PriceListItem {
+  id          String   @id @default(cuid())
+  priceListId String
+  productId   String
+  price       Decimal  @db.Decimal(18, 4)
+  updatedAt   DateTime @updatedAt
+
+  priceList PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([priceListId, productId])
+  @@map("price_list_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROVEEDORES
+// ─────────────────────────────────────────────────────────────
+
+model Supplier {
+  id           String       @id @default(cuid())
+  tenantId     String
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  cuit         String?
+  ivaCondition IvaCondition @default(RESPONSABLE_INSCRIPTO)
+  isActive     Boolean      @default(true)
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+  @@map("suppliers")
+}

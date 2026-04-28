@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# BUG FIX: se eliminó allowBuilds con '@prisma/client': false y 'prisma': false
+# que bloqueaba el postinstall de @erp/db (prisma generate).
+# Si querés bloquear postinstalls por seguridad en producción, descomentá
+# sólo los paquetes que no sean de Prisma.
+#
+# allowBuilds:
+#   '@nestjs/core': false
+#   bcrypt: false
