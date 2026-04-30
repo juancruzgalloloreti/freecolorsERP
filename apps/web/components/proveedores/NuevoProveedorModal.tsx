@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import type { Proveedor } from "@/app/proveedores/page";
+import type { Proveedor } from "@/types/proveedores";
 
 const CONDICIONES_IVA = [
   "Responsable Inscripto",
