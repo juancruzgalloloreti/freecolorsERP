@@ -13,8 +13,26 @@ import {
 import NuevoProveedorModal from "@/components/proveedores/NuevoProveedorModal";
 import ImportCSVModal from "@/components/proveedores/ImportCSVModal";
 import type { Proveedor } from "@/types/proveedores";
+import { suppliersApi } from "@/lib/api";
 
 export type { Proveedor };
+
+function toProveedor(raw: Record<string, unknown>): Proveedor {
+  return {
+    id: String(raw.id),
+    razonSocial: String(raw.name ?? raw.razonSocial ?? ""),
+    cuit: (raw.cuit as string | null) ?? null,
+    email: (raw.email as string | null) ?? null,
+    telefono: (raw.phone ?? raw.telefono ?? null) as string | null,
+    direccion: (raw.address ?? raw.direccion ?? null) as string | null,
+    ciudad: (raw.city ?? raw.ciudad ?? null) as string | null,
+    provincia: (raw.province ?? raw.provincia ?? null) as string | null,
+    condicionIva: (raw.ivaCondition ?? raw.condicionIva ?? null) as string | null,
+    condicionPago: (raw.condicionPago as string | null) ?? null,
+    notas: (raw.notes ?? raw.notas ?? null) as string | null,
+    createdAt: raw.createdAt as string | undefined,
+  };
+}
 
 export default function ProveedoresPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -24,17 +42,18 @@ export default function ProveedoresPage() {
   const [showImport, setShowImport] = useState(false);
   const [editando, setEditando] = useState<Proveedor | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const cargar = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/proveedores");
-      if (res.ok) {
-        const data = await res.json();
-        setProveedores(data);
-      }
+      setError("");
+      const response = await suppliersApi.list();
+      const rows = Array.isArray(response) ? response : response?.data ?? [];
+      setProveedores(rows.map((row: Record<string, unknown>) => toProveedor(row)));
     } catch (e) {
       console.error(e);
+      setError("No se pudieron cargar los proveedores.");
     } finally {
       setLoading(false);
     }
@@ -52,11 +71,16 @@ export default function ProveedoresPage() {
   );
 
   const handleEliminar = async (id: string) => {
-    const res = await fetch(`/api/proveedores/${id}`, { method: "DELETE" });
-    if (res.ok) {
+    try {
+      setError("");
+      await suppliersApi.remove(id);
       setProveedores((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      console.error(e);
+      setError("No se pudo eliminar o archivar el proveedor.");
+    } finally {
+      setConfirmDelete(null);
     }
-    setConfirmDelete(null);
   };
 
   const exportarCSV = () => {
@@ -136,6 +160,12 @@ export default function ProveedoresPage() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative mb-4">

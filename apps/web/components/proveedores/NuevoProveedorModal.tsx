@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import type { Proveedor } from "@/types/proveedores";
+import { suppliersApi } from "@/lib/api";
 
 const CONDICIONES_IVA = [
   "Responsable Inscripto",
@@ -42,6 +43,12 @@ const empty = {
   notas: "",
 };
 
+function apiErrorMessage(error: unknown) {
+  const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string };
+  const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || "Error al guardar";
+  return Array.isArray(message) ? message.join(", ") : message;
+}
+
 export default function NuevoProveedorModal({ proveedor, onClose, onSuccess }: Props) {
   const isEdit = !!proveedor;
   const [saving, setSaving] = useState(false);
@@ -78,22 +85,21 @@ export default function NuevoProveedorModal({ proveedor, onClose, onSuccess }: P
     try {
       setSaving(true);
       setError("");
-      const url = isEdit
-        ? `/api/proveedores/${proveedor!.id}`
-        : "/api/proveedores";
-      const method = isEdit ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message ?? "Error al guardar");
-      }
+      const payload = {
+        name: form.razonSocial.trim(),
+        cuit: form.cuit.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.telefono.trim() || null,
+        address: [form.direccion, form.ciudad, form.provincia].map((part) => part.trim()).filter(Boolean).join(", ") || null,
+        ivaCondition: form.condicionIva,
+        notes: form.notas.trim() || null,
+        isActive: true,
+      };
+      if (isEdit) await suppliersApi.update(proveedor!.id, payload);
+      else await suppliersApi.create(payload);
       onSuccess();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error inesperado");
+      setError(apiErrorMessage(e));
     } finally {
       setSaving(false);
     }

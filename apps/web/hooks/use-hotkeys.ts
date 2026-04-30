@@ -5,7 +5,8 @@ import { useEffect } from 'react'
 type HotkeyHandler = (event: KeyboardEvent) => void
 
 function normalize(event: KeyboardEvent) {
-  const keys = []
+  if (typeof event.key !== 'string' || event.key.length === 0) return null
+  const keys: string[] = []
   if (event.ctrlKey) keys.push('ctrl')
   if (event.altKey) keys.push('alt')
   if (event.shiftKey) keys.push('shift')
@@ -18,6 +19,7 @@ export function useHotkeys(bindings: Record<string, HotkeyHandler>, enabled = tr
     if (!enabled) return
     const handler = (event: KeyboardEvent) => {
       const key = normalize(event)
+      if (!key) return
       const callback = bindings[key] ?? bindings[event.key.toLowerCase()]
       if (!callback) return
       callback(event)

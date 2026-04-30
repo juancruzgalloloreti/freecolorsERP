@@ -10,6 +10,7 @@ export class DocumentsController {
   @Get('puntos-de-venta') puntos(@Req() req: any) { return this.service.puntos(req.user.tenantId); }
   @Get(':id') get(@Req() req: any, @Param('id') id: string) { return this.service.get(req.user.tenantId, id); }
   @Post() create(@Req() req: any, @Body() body: any) { return this.service.create(req.user.tenantId, req.user.sub, req.user.role, body); }
+  @Post('confirm-sale') confirmSale(@Req() req: any, @Body() body: any) { return this.service.confirmSale(req.user.tenantId, req.user.sub, req.user.role, body); }
   @Patch(':id') update(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.update(req.user.tenantId, req.user.role, id, body); }
   @Post(':id/confirm') confirm(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.confirm(req.user.tenantId, req.user.sub, req.user.role, id, body); }
   @Patch(':id/confirm') confirmAlias(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.confirm(req.user.tenantId, req.user.sub, req.user.role, id, body); }

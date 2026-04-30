@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
@@ -21,16 +21,18 @@ export class SuppliersService {
     ]);
     return shouldPage ? paged(rows, total, page, limit) : rows;
   }
-  create(tenantId: string, role: string, data: any): any {
+  async create(tenantId: string, role: string, data: any): Promise<any> {
     this.assertManager(role);
-    return this.prisma.supplier.create({ data: { ...data, tenantId } });
+    const normalized = await this.normalizeSupplierData(tenantId, data, true);
+    return this.prisma.supplier.create({ data: { ...normalized, tenantId } });
   }
 
   async update(tenantId: string, role: string, id: string, data: any): Promise<any> {
     this.assertManager(role);
     const supplier = await this.prisma.supplier.findFirst({ where: { id, tenantId }, select: { id: true } });
     if (!supplier) throw new NotFoundException('Proveedor inexistente');
-    return this.prisma.supplier.update({ where: { id }, data });
+    const normalized = await this.normalizeSupplierData(tenantId, data, false, id);
+    return this.prisma.supplier.update({ where: { id }, data: normalized });
   }
 
   async remove(tenantId: string, role: string, id: string): Promise<any> {
@@ -112,6 +114,57 @@ export class SuppliersService {
     if (role !== 'OWNER') {
       throw new ForbiddenException('Solo la cuenta owner puede modificar proveedores');
     }
+  }
+
+  private async normalizeSupplierData(tenantId: string, data: any, requireName: boolean, currentId?: string): Promise<any> {
+    const name = this.nullableString(data.name ?? data.razonSocial);
+    if (requireName && !name) {
+      throw new BadRequestException('La razón social del proveedor es obligatoria.');
+    }
+
+    if (name) {
+      const existing = await this.prisma.supplier.findFirst({
+        where: { tenantId, name, ...(currentId ? { id: { not: currentId } } : {}) },
+        select: { id: true },
+      });
+      if (existing) throw new BadRequestException('Ya existe un proveedor con esa razón social.');
+    }
+
+    const ivaCondition = data.ivaCondition ?? data.condicionIva;
+    const normalized: Record<string, unknown> = {
+      name,
+      email: this.nullableString(data.email),
+      phone: this.nullableString(data.phone ?? data.telefono),
+      address: this.nullableString(data.address ?? data.direccion),
+      cuit: this.nullableString(data.cuit),
+      ivaCondition: ivaCondition === undefined ? undefined : this.parseIva(String(ivaCondition)),
+      isActive: data.isActive === undefined ? undefined : Boolean(data.isActive),
+      notes: this.nullableString(data.notes ?? data.notas),
+    };
+    Object.keys(normalized).forEach((key) => normalized[key] === undefined && delete normalized[key]);
+    return normalized;
+  }
+
+  private nullableString(value: unknown): string | null | undefined {
+    if (value === undefined) return undefined;
+    const text = String(value ?? '').trim();
+    return text || null;
+  }
+
+  private normalizeText(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private parseIva(value: string): any {
+    if (['RESPONSABLE_INSCRIPTO', 'MONOTRIBUTISTA', 'CONSUMIDOR_FINAL', 'EXENTO', 'NO_CATEGORIZADO'].includes(value)) {
+      return value;
+    }
+    const text = this.normalizeText(value);
+    if (text.includes('responsable') || text === 'ri') return 'RESPONSABLE_INSCRIPTO';
+    if (text.includes('mono')) return 'MONOTRIBUTISTA';
+    if (text.includes('exento')) return 'EXENTO';
+    if (text.includes('no responsable') || text.includes('no categ')) return 'NO_CATEGORIZADO';
+    return 'RESPONSABLE_INSCRIPTO';
   }
 }
 

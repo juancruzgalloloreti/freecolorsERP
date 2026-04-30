@@ -434,8 +434,8 @@ export default function VentasPage() {
       if (!canUseCounter) throw new Error('Tu usuario es de solo lectura.')
       if (lines.length === 0) throw new Error('Agregá al menos un producto.')
       if (type.startsWith('INVOICE_') && !puntoDeVentaId && puntos.length === 0) throw new Error('Falta punto de venta.')
-      const created = await documentsApi.create(buildDocumentPayload(type))
-      if (action !== 'confirm') return created
+      const documentPayload = buildDocumentPayload(type)
+      if (action !== 'confirm') return documentsApi.create(documentPayload)
       if (paymentMode === 'CURRENT_ACCOUNT' && !customerId) throw new Error('La cuenta corriente requiere seleccionar un cliente.')
       const entryAmount = numberInput(paymentEntry)
       if (paymentKind === 'ENTRY' && entryAmount <= 0) throw new Error('Ingresá el importe de la entrada.')
@@ -450,7 +450,8 @@ export default function VentasPage() {
             amount: paymentKind === 'ENTRY' ? entryAmount : totals.total,
             notes: paymentMode === 'CURRENT_ACCOUNT' ? 'Cuenta corriente desde mostrador' : paymentLabel,
           }]
-      return documentsApi.confirm(created.id, {
+      return documentsApi.confirmSale({
+        ...documentPayload,
         depositId: effectiveDepositId,
         paymentMode,
         payments,

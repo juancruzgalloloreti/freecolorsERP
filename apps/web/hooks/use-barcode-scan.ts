@@ -16,6 +16,7 @@ export function useBarcodeScan(onScan: (code: string) => void, enabled = true) {
   useEffect(() => {
     if (!enabled) return
     const handler = (event: KeyboardEvent) => {
+      if (typeof event.key !== 'string' || event.key.length === 0) return
       const target = event.target as HTMLElement | null
       if (target?.closest('[data-ignore-barcode="true"]')) return
       const now = Date.now()

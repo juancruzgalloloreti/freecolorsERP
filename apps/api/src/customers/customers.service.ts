@@ -27,16 +27,18 @@ export class CustomersService {
     return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 
-  create(tenantId: string, role: string, data: any): any {
+  async create(tenantId: string, role: string, data: any): Promise<any> {
     this.assertManager(role);
-    return this.prisma.customer.create({ data: { ...data, tenantId } });
+    const normalized = await this.normalizeCustomerData(tenantId, data, true);
+    return this.prisma.customer.create({ data: { ...normalized, tenantId } });
   }
 
   async update(tenantId: string, role: string, id: string, data: any): Promise<any> {
     this.assertManager(role);
     const customer = await this.prisma.customer.findFirst({ where: { id, tenantId }, select: { id: true } });
     if (!customer) throw new NotFoundException('Cliente inexistente');
-    return this.prisma.customer.update({ where: { id }, data });
+    const normalized = await this.normalizeCustomerData(tenantId, data, false, id);
+    return this.prisma.customer.update({ where: { id }, data: normalized });
   }
 
   async remove(tenantId: string, role: string, id: string): Promise<any> {
@@ -165,6 +167,60 @@ export class CustomersService {
     }
   }
 
+  private async normalizeCustomerData(tenantId: string, data: any, requireName: boolean, currentId?: string): Promise<any> {
+    const name = data.name === undefined ? undefined : this.nullableString(data.name);
+    if (requireName && !name) {
+      throw new BadRequestException('El nombre del cliente es obligatorio.');
+    }
+
+    const cuit = this.nullableString(data.cuit);
+    if (cuit) {
+      const existing = await this.prisma.customer.findFirst({
+        where: { tenantId, cuit, ...(currentId ? { id: { not: currentId } } : {}) },
+        select: { id: true },
+      });
+      if (existing) throw new BadRequestException('Ya existe un cliente con ese CUIT.');
+    }
+
+    const priceListId = this.nullableString(data.priceListId);
+    if (priceListId) {
+      const priceList = await this.prisma.priceList.findFirst({
+        where: { id: priceListId, tenantId, isActive: true },
+        select: { id: true },
+      });
+      if (!priceList) throw new BadRequestException('La lista de precio seleccionada no existe o está inactiva.');
+    }
+
+    const ivaCondition = data.ivaCondition === undefined ? undefined : this.parseIva(String(data.ivaCondition));
+    const creditLimit = this.parseMoney(data.creditLimit);
+    if (creditLimit !== null && creditLimit < 0) {
+      throw new BadRequestException('El límite de cuenta corriente no puede ser negativo.');
+    }
+
+    const normalized: Record<string, unknown> = {
+      name,
+      email: this.nullableString(data.email),
+      phone: this.nullableString(data.phone),
+      address: this.nullableString(data.address),
+      city: this.nullableString(data.city),
+      province: this.nullableString(data.province),
+      cuit,
+      ivaCondition,
+      creditLimit,
+      priceListId,
+      notes: this.nullableString(data.notes),
+      isActive: data.isActive === undefined ? undefined : Boolean(data.isActive),
+    };
+    Object.keys(normalized).forEach((key) => normalized[key] === undefined && delete normalized[key]);
+    return normalized;
+  }
+
+  private nullableString(value: unknown): string | null | undefined {
+    if (value === undefined) return undefined;
+    const text = String(value ?? '').trim();
+    return text || null;
+  }
+
   private validateImportRows(rows: any[]): void {
     const headers = new Set(rows.flatMap((row) => Object.keys(row || {}).map((header) => this.normalizeHeader(header))));
     const hasName = ['name', 'nombre', 'razonsocial', 'cliente'].some((header) => headers.has(header));
@@ -220,6 +276,9 @@ export class CustomersService {
   }
 
   private parseIva(value?: string): any {
+    if (['RESPONSABLE_INSCRIPTO', 'MONOTRIBUTISTA', 'CONSUMIDOR_FINAL', 'EXENTO', 'NO_CATEGORIZADO'].includes(value || '')) {
+      return value;
+    }
     const text = this.normalizeText(value || '');
     if (text.includes('responsable') || text === 'ri') return 'RESPONSABLE_INSCRIPTO';
     if (text.includes('mono')) return 'MONOTRIBUTISTA';

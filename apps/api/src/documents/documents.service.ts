@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentStatus, DocumentType, IvaCondition, PaymentMethod, Prisma, StockMovementType } from '@erp/db';
+import { CashMovementType, CashSessionStatus, DocumentStatus, DocumentType, IvaCondition, PaymentMethod, Prisma, StockMovementType } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CashService } from '../cash/cash.service';
@@ -50,6 +50,8 @@ type ConfirmPayload = {
     };
   }>;
 };
+
+type ConfirmSalePayload = DocumentWriteData & ConfirmPayload;
 
 const STOCK_DOCUMENT_TYPES = new Set<DocumentType>([
   DocumentType.INVOICE_A,
@@ -192,47 +194,49 @@ export class DocumentsService {
   async confirm(tenantId: string, userId: string, role: string, id: string, payload: ConfirmPayload = {}): Promise<any> {
     assertPermission(role, 'documents.confirm');
     await this.prisma.$transaction(async (tx) => {
-      const document = await tx.document.findFirst({
-        where: { id, tenantId },
-        include: { items: true, customer: true, puntoDeVenta: true, payments: true },
-      });
-      if (!document) throw new NotFoundException('Documento inexistente');
-      if (document.status !== DocumentStatus.DRAFT) {
-        throw new BadRequestException('Solo se pueden confirmar documentos en borrador');
-      }
-      if (document.items.length === 0) {
-        throw new BadRequestException('No se puede confirmar un documento sin items');
-      }
-      this.assertDiscountAllowed(role, document.items);
-      this.assertDocumentTypeAllowed(document.type, document.customer?.ivaCondition);
-
-      const depositId = await this.resolveDepositId(tx, tenantId, payload.depositId);
-      if (STOCK_DOCUMENT_TYPES.has(document.type)) {
-        await this.createSaleStockMovements(tx, tenantId, userId, document, depositId, role, Boolean(payload.allowNegativeStock));
-      }
-      if (PURCHASE_STOCK_DOCUMENT_TYPES.has(document.type)) {
-        await this.createPurchaseStockMovements(tx, tenantId, userId, document, depositId);
-      }
-
-      await this.createPaymentsAndCc(tx, tenantId, userId, document, payload);
-      await this.createSupplierAccountEntries(tx, tenantId, document);
-
-      const number = document.number ?? await this.nextNumber(tx, tenantId, document.type, document.puntoDeVentaId);
-      await tx.document.update({
-        where: { id },
-        data: { status: DocumentStatus.CONFIRMED, number },
+      const confirmed = await this.confirmDraftInTransaction(tx, tenantId, userId, role, id, payload);
+      await this.auditInTransaction(tx, {
+        tenantId,
+        userId,
+        action: 'documents.confirm',
+        entityType: 'Document',
+        entityId: id,
+        summary: 'Documento confirmado',
+        metadata: {
+          paymentMode: payload.paymentMode,
+          total: Number(confirmed.total),
+          number: confirmed.number,
+          type: confirmed.type,
+        },
       });
     }, { timeout: 30_000 });
-    await this.audit.record({
-      tenantId,
-      userId,
-      action: 'documents.confirm',
-      entityType: 'Document',
-      entityId: id,
-      summary: 'Documento confirmado',
-      metadata: { paymentMode: payload.paymentMode },
-    });
     return this.get(tenantId, id);
+  }
+
+  async confirmSale(tenantId: string, userId: string, role: string, data: ConfirmSalePayload): Promise<any> {
+    assertPermission(role, 'documents.create');
+    assertPermission(role, 'documents.confirm');
+    const documentId = await this.prisma.$transaction(async (tx) => {
+      const draft = await this.writeDraft(tx, tenantId, userId, role, data);
+      const confirmed = await this.confirmDraftInTransaction(tx, tenantId, userId, role, draft.id, data);
+      await this.auditInTransaction(tx, {
+        tenantId,
+        userId,
+        action: 'sales.confirm',
+        entityType: 'Document',
+        entityId: draft.id,
+        summary: `Venta confirmada ${confirmed.type}${confirmed.number ? ` #${confirmed.number}` : ''}`,
+        metadata: {
+          type: confirmed.type,
+          number: confirmed.number,
+          total: Number(confirmed.total),
+          paymentMode: data.paymentMode,
+          depositId: data.depositId,
+        },
+      });
+      return draft.id;
+    }, { timeout: 30_000 });
+    return this.get(tenantId, documentId);
   }
 
   async cancel(tenantId: string, userId: string, role: string, id: string, payload: { reason?: string } = {}): Promise<any> {
@@ -241,7 +245,7 @@ export class DocumentsService {
     await this.prisma.$transaction(async (tx) => {
       const document = await tx.document.findFirst({
         where: { id, tenantId },
-        include: { stockMovements: true, ccEntries: true },
+        include: { stockMovements: true, ccEntries: true, cashMovements: true },
       });
       if (!document) throw new NotFoundException('Documento inexistente');
       if (document.status === DocumentStatus.CANCELLED) {
@@ -279,22 +283,24 @@ export class DocumentsService {
             },
           });
         }
+
+        await this.reverseCashMovements(tx, tenantId, userId, document.cashMovements, id, payload.reason);
       }
 
       await tx.document.update({
         where: { id },
         data: { status: DocumentStatus.CANCELLED, notes: payload.reason ? this.appendNote(document.notes, `Anulado: ${payload.reason}`) : document.notes },
       });
+      await this.auditInTransaction(tx, {
+        tenantId,
+        userId,
+        action: 'documents.cancel',
+        entityType: 'Document',
+        entityId: id,
+        summary: `Documento anulado: ${payload.reason}`,
+        metadata: { reason: payload.reason },
+      });
     }, { timeout: 30_000 });
-    await this.audit.record({
-      tenantId,
-      userId,
-      action: 'documents.cancel',
-      entityType: 'Document',
-      entityId: id,
-      summary: `Documento anulado: ${payload.reason}`,
-      metadata: { reason: payload.reason },
-    });
     return this.get(tenantId, id);
   }
 
@@ -470,6 +476,39 @@ export class DocumentsService {
     }
   }
 
+  private async confirmDraftInTransaction(tx: any, tenantId: string, userId: string, role: string, id: string, payload: ConfirmPayload): Promise<any> {
+    const document = await tx.document.findFirst({
+      where: { id, tenantId },
+      include: { items: true, customer: true, puntoDeVenta: true, payments: true },
+    });
+    if (!document) throw new NotFoundException('Documento inexistente');
+    if (document.status !== DocumentStatus.DRAFT) {
+      throw new BadRequestException('Solo se pueden confirmar documentos en borrador');
+    }
+    if (document.items.length === 0) {
+      throw new BadRequestException('No se puede confirmar un documento sin items');
+    }
+    this.assertDiscountAllowed(role, document.items);
+    this.assertDocumentTypeAllowed(document.type, document.customer?.ivaCondition);
+
+    const depositId = await this.resolveDepositId(tx, tenantId, payload.depositId);
+    if (STOCK_DOCUMENT_TYPES.has(document.type)) {
+      await this.createSaleStockMovements(tx, tenantId, userId, document, depositId, role, Boolean(payload.allowNegativeStock));
+    }
+    if (PURCHASE_STOCK_DOCUMENT_TYPES.has(document.type)) {
+      await this.createPurchaseStockMovements(tx, tenantId, userId, document, depositId);
+    }
+
+    await this.createPaymentsAndCc(tx, tenantId, userId, document, payload);
+    await this.createSupplierAccountEntries(tx, tenantId, document);
+
+    const number = document.number ?? await this.nextNumber(tx, tenantId, document.type, document.puntoDeVentaId);
+    return tx.document.update({
+      where: { id },
+      data: { status: DocumentStatus.CONFIRMED, number },
+    });
+  }
+
   private async createPurchaseStockMovements(tx: any, tenantId: string, userId: string, document: any, depositId: string): Promise<void> {
     for (const item of document.items) {
       if (!item.productId) continue;
@@ -609,6 +648,92 @@ export class DocumentsService {
     });
   }
 
+  private async reverseCashMovements(
+    tx: any,
+    tenantId: string,
+    userId: string,
+    movements: Array<{
+      sessionId: string;
+      type: CashMovementType;
+      method: PaymentMethod;
+      amount: unknown;
+      reference?: string | null;
+    }>,
+    documentId: string,
+    reason?: string,
+  ): Promise<void> {
+    for (const movement of movements) {
+      const amount = Number(movement.amount || 0);
+      if (!amount || movement.type === CashMovementType.CLOSING_DIFFERENCE || movement.type === CashMovementType.OPENING) continue;
+
+      const session = await tx.cashSession.findFirst({
+        where: { id: movement.sessionId, tenantId },
+        select: { id: true, status: true },
+      });
+      let targetSessionId = session?.status === CashSessionStatus.OPEN ? session.id : null;
+      if (!targetSessionId) {
+        const current = await tx.cashSession.findFirst({
+          where: { tenantId, status: CashSessionStatus.OPEN },
+          orderBy: { openedAt: 'desc' },
+          select: { id: true },
+        });
+        if (!current) throw new BadRequestException('Abrí una caja antes de anular documentos con movimientos de caja');
+        targetSessionId = current.id;
+      }
+
+      await tx.cashMovement.create({
+        data: {
+          tenantId,
+          sessionId: targetSessionId,
+          documentId,
+          type: amount > 0 ? CashMovementType.CASH_OUT : CashMovementType.CASH_IN,
+          method: movement.method,
+          amount: this.roundMoney(amount * -1),
+          description: `Reversa de caja por anulacion${reason ? `: ${reason}` : ''}`,
+          reference: movement.reference || null,
+          createdById: userId,
+        },
+      });
+      await this.recalculateCashExpectedInTransaction(tx, targetSessionId);
+    }
+  }
+
+  private async recalculateCashExpectedInTransaction(tx: any, sessionId: string): Promise<void> {
+    const total = await tx.cashMovement.aggregate({
+      where: { sessionId },
+      _sum: { amount: true },
+    });
+    await tx.cashSession.update({
+      where: { id: sessionId },
+      data: { expectedAmount: this.roundMoney(Number(total._sum.amount ?? 0)) },
+    });
+  }
+
+  private async auditInTransaction(
+    tx: any,
+    data: {
+      tenantId: string;
+      userId?: string | null;
+      action: string;
+      entityType: string;
+      entityId?: string | null;
+      summary: string;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await tx.auditLog.create({
+      data: {
+        tenantId: data.tenantId,
+        userId: data.userId ?? null,
+        action: data.action,
+        entityType: data.entityType,
+        entityId: data.entityId ?? null,
+        summary: data.summary,
+        metadata: data.metadata ?? {},
+      },
+    });
+  }
+
   private async nextNumber(tx: any, tenantId: string, type: DocumentType, puntoDeVentaId: string | null): Promise<number | null> {
     if (this.needsPuntoDeVenta(type) && !puntoDeVentaId) {
       throw new BadRequestException('El documento fiscal necesita punto de venta');
@@ -626,7 +751,7 @@ export class DocumentsService {
       SET "lastNumber" = "lastNumber" + 1
       WHERE "tenantId" = ${tenantId}
         AND "scopeKey" = ${scopeKey}
-        AND "documentType" = ${type}
+        AND "documentType" = ${type}::"DocumentType"
       RETURNING "lastNumber"
     `) as Array<{ lastNumber: number }>;
     return Number(rows[0]?.lastNumber ?? 0);

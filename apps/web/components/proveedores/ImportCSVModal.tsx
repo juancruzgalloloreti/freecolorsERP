@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   FileText,
 } from "lucide-react";
+import { suppliersApi } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -214,28 +215,26 @@ export default function ImportCSVModal({ onClose, onSuccess }: Props) {
   const handleImport = async () => {
     const payload = buildPayload();
     setStep("importing");
-    const BATCH = 50;
     let ok = 0, skipped = 0;
 
-    for (let i = 0; i < payload.length; i += BATCH) {
-      const batch = payload.slice(i, i + BATCH);
+    for (let i = 0; i < payload.length; i += 1) {
+      const row = payload[i];
       try {
-        const res = await fetch("/api/proveedores/importar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ proveedores: batch }),
+        await suppliersApi.create({
+          name: row.razonSocial,
+          cuit: row.cuit || null,
+          email: row.email || null,
+          phone: row.telefono || null,
+          address: [row.direccion, row.ciudad, row.provincia].filter(Boolean).join(", ") || null,
+          ivaCondition: row.condicionIva || "Responsable Inscripto",
+          notes: [row.condicionPago ? `Condición de pago: ${row.condicionPago}` : "", row.notas || ""].filter(Boolean).join("\n") || null,
+          isActive: true,
         });
-        if (res.ok) {
-          const data = await res.json();
-          ok      += data.creados     ?? batch.length;
-          skipped += data.duplicados  ?? 0;
-        } else {
-          skipped += batch.length;
-        }
+        ok += 1;
       } catch {
-        skipped += batch.length;
+        skipped += 1;
       }
-      setProgress(Math.round(((i + BATCH) / payload.length) * 100));
+      setProgress(Math.round(((i + 1) / payload.length) * 100));
     }
 
     setResult({ ok, skipped });

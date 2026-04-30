@@ -21,6 +21,12 @@ interface Customer {
   creditLimit?: number; priceListId?: string; notes?: string
 }
 
+function apiErrorMessage(error: unknown, fallback: string) {
+  const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
+  const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || fallback
+  return Array.isArray(message) ? message.join(', ') : message
+}
+
 function parseCsv(text: string) {
   const rows: string[][] = []
   let cell = ''
@@ -67,11 +73,13 @@ function decodeCsv(buffer: ArrayBuffer) {
   return utf8.includes('\uFFFD') ? new TextDecoder('windows-1252').decode(buffer) : utf8
 }
 
-function CustomerModal({ customer, priceLists, onClose, onSave }: {
+function CustomerModal({ customer, priceLists, onClose, onSave, error, saving }: {
   customer: Customer | null
   priceLists: { id: string; name: string }[]
   onClose: () => void
   onSave: (d: Record<string, unknown>) => void
+  error?: string | null
+  saving?: boolean
 }) {
   const [form, setForm] = useState({
     name: customer?.name || '', email: customer?.email || '',
@@ -92,6 +100,11 @@ function CustomerModal({ customer, priceLists, onClose, onSave }: {
           <button className="btn btn-icon btn-secondary" onClick={onClose}><X size={14} /></button>
         </div>
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '65vh', overflowY: 'auto' }}>
+          {error && (
+            <div style={{ padding: '10px 12px', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', fontSize: '13px', color: '#fca5a5' }}>
+              {error}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
             <div>
               <label className="fc-label">Razón social / Nombre *</label>
@@ -137,12 +150,17 @@ function CustomerModal({ customer, priceLists, onClose, onSave }: {
           </label>
         </div>
         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" disabled={!form.name} onClick={() => {
-            const payload = { ...form, creditLimit: form.creditLimit ? parseFloat(form.creditLimit) : null }
+          <button className="btn btn-secondary" disabled={saving} onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" disabled={!form.name.trim() || saving} onClick={() => {
+            const payload = {
+              ...form,
+              name: form.name.trim(),
+              priceListId: form.priceListId || null,
+              creditLimit: form.creditLimit ? parseFloat(form.creditLimit) : null,
+            }
             onSave(payload)
           }}>
-            {customer ? 'Guardar' : 'Crear cliente'}
+            {saving ? 'Guardando...' : customer ? 'Guardar' : 'Crear cliente'}
           </button>
         </div>
       </div>
@@ -214,12 +232,22 @@ export default function ClientesPage() {
   const [importFileName, setImportFileName] = useState('')
   const [importError, setImportError] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<string | null>(null)
+  const [modalError, setModalError] = useState<string | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
 
   const { data, isLoading } = useQuery({ queryKey: ['customers', search], queryFn: () => customersApi.list({ search: search || undefined }) })
   const { data: priceLists = [] } = useQuery({ queryKey: ['priceLists'], queryFn: priceListsApi.list })
 
-  const createMutation = useMutation({ mutationFn: customersApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['customers'] }); setModal(null) } })
+  const createMutation = useMutation({
+    mutationFn: customersApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      setModal(null)
+      setModalError(null)
+      setImportResult('Cliente creado correctamente.')
+    },
+    onError: (error: unknown) => setModalError(apiErrorMessage(error, 'No se pudo crear el cliente')),
+  })
   const importMutation = useMutation({
     mutationFn: customersApi.importCustomers,
     onSuccess: (r: { created?: number; updated?: number; skipped?: number }) => {
@@ -256,7 +284,13 @@ export default function ClientesPage() {
   })
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => customersApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['customers'] }); setModal(null) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] })
+      setModal(null)
+      setModalError(null)
+      setImportResult('Cliente actualizado correctamente.')
+    },
+    onError: (error: unknown) => setModalError(apiErrorMessage(error, 'No se pudo guardar el cliente')),
   })
   const deleteMutation = useMutation({
     mutationFn: (id: string) => customersApi.remove(id).then((r) => r.data),
@@ -311,7 +345,7 @@ export default function ClientesPage() {
             <button className="btn btn-secondary" onClick={() => { setImporting(true); setImportRows([]); setImportFileName(''); setImportError(null) }}>
               <Upload size={14} /> Importar CSV
             </button>
-            <button className="btn btn-primary" onClick={() => setModal('new')}>
+            <button className="btn btn-primary" onClick={() => { setModalError(null); setImportResult(null); setModal('new') }}>
               <Plus size={14} /> Nuevo cliente
             </button>
           </div>
@@ -358,7 +392,7 @@ export default function ClientesPage() {
                     <td>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setCCModal(c)} title="Cuenta corriente"><CreditCard size={12} /></button>
-                        {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setModal(c)} title="Editar"><Edit2 size={12} /></button>}
+                        {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={() => { setModalError(null); setImportResult(null); setModal(c) }} title="Editar"><Edit2 size={12} /></button>}
                         {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingCustomer(c)} title="Archivar"><Trash2 size={12} /></button>}
                       </div>
                     </td>
@@ -374,7 +408,9 @@ export default function ClientesPage() {
         <CustomerModal
           customer={modal === 'new' ? null : modal}
           priceLists={pls as { id: string; name: string }[]}
-          onClose={() => setModal(null)}
+          error={modalError}
+          saving={createMutation.isPending || updateMutation.isPending}
+          onClose={() => { setModal(null); setModalError(null) }}
           onSave={d => modal === 'new' ? createMutation.mutate(d) : updateMutation.mutate({ id: (modal as Customer).id, data: d })}
         />
       )}

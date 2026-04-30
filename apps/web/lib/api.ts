@@ -148,6 +148,8 @@ export const documentsApi = {
   get: (id: string) => api.get(`/documents/${id}`).then((r) => r.data),
   create: (data: Record<string, unknown>) =>
     api.post('/documents', data).then((r) => r.data),
+  confirmSale: (data: Record<string, unknown>) =>
+    api.post('/documents/confirm-sale', data).then((r) => r.data),
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/documents/${id}`, data).then((r) => r.data),
   confirm: (id: string, data?: Record<string, unknown>) =>
