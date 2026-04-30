@@ -1,236 +1,325 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { suppliersApi } from '@/lib/api'
-import { Plus, Edit2, X, Search, Trash2 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useState, useEffect, useCallback } from "react";
+import {
+  Plus,
+  Download,
+  Upload,
+  Search,
+  Edit2,
+  Trash2,
+  Building2,
+} from "lucide-react";
+import NuevoProveedorModal from "@/components/proveedores/NuevoProveedorModal";
+import ImportCSVModal from "@/components/proveedores/ImportCSVModal";
 
-const IVA_CONDITIONS = [
-  { value: 'RESPONSABLE_INSCRIPTO', label: 'Resp. Inscripto' },
-  { value: 'MONOTRIBUTISTA', label: 'Monotributista' },
-  { value: 'CONSUMIDOR_FINAL', label: 'Consumidor Final' },
-  { value: 'EXENTO', label: 'Exento' },
-  { value: 'NO_CATEGORIZADO', label: 'No categorizado' },
-]
-
-interface Supplier {
-  id: string
-  name: string
-  email?: string
-  phone?: string
-  address?: string
-  cuit?: string
-  ivaCondition: string
-  isActive: boolean
-  notes?: string
-}
-
-function SupplierModal({ supplier, onClose, onSave }: {
-  supplier: Supplier | null
-  onClose: () => void
-  onSave: (d: Record<string, unknown>) => void
-}) {
-  const [form, setForm] = useState({
-    name: supplier?.name || '',
-    email: supplier?.email || '',
-    phone: supplier?.phone || '',
-    address: supplier?.address || '',
-    cuit: supplier?.cuit || '',
-    ivaCondition: supplier?.ivaCondition || 'RESPONSABLE_INSCRIPTO',
-    notes: supplier?.notes || '',
-    isActive: supplier?.isActive ?? true,
-  })
-  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
-
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '600' }}>{supplier ? 'Editar proveedor' : 'Nuevo proveedor'}</h3>
-          <button className="btn btn-icon btn-secondary" onClick={onClose}><X size={14} /></button>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
-            <div>
-              <label className="fc-label">Razón social *</label>
-              <input className="fc-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Nombre del proveedor" />
-            </div>
-            <div>
-              <label className="fc-label">CUIT</label>
-              <input className="fc-input" value={form.cuit} onChange={e => set('cuit', e.target.value)} />
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label className="fc-label">Email</label>
-              <input className="fc-input" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-            </div>
-            <div>
-              <label className="fc-label">Teléfono</label>
-              <input className="fc-input" value={form.phone} onChange={e => set('phone', e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <label className="fc-label">Dirección</label>
-            <input className="fc-input" value={form.address} onChange={e => set('address', e.target.value)} />
-          </div>
-          <div>
-            <label className="fc-label">Condición IVA</label>
-            <select className="fc-input" value={form.ivaCondition} onChange={e => set('ivaCondition', e.target.value)}>
-              {IVA_CONDITIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="fc-label">Notas</label>
-            <textarea className="fc-input" rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="suppActive" checked={form.isActive} onChange={e => set('isActive', e.target.checked)}
-              style={{ width: '15px', height: '15px', accentColor: 'var(--accent-purple)' }} />
-            <label htmlFor="suppActive" style={{ fontSize: '13px', cursor: 'pointer' }}>Proveedor activo</label>
-          </div>
-        </div>
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" disabled={!form.name} onClick={() => onSave(form)}>
-            {supplier ? 'Guardar' : 'Crear proveedor'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+export type Proveedor = {
+  id: string;
+  razonSocial: string;
+  cuit?: string | null;
+  email?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  ciudad?: string | null;
+  provincia?: string | null;
+  condicionIva?: string | null;
+  condicionPago?: string | null;
+  notas?: string | null;
+  createdAt?: string;
+};
 
 export default function ProveedoresPage() {
-  const qc = useQueryClient()
-  const { user } = useAuth()
-  const canManageSuppliers = user?.role === 'OWNER'
-  const [search, setSearch] = useState('')
-  const [modal, setModal] = useState<Supplier | null | 'new'>(null)
-  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [editando, setEditando] = useState<Proveedor | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['suppliers', search],
-    queryFn: () => suppliersApi.list({ search: search || undefined }),
-  })
+  const cargar = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/proveedores");
+      if (res.ok) {
+        const data = await res.json();
+        setProveedores(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const createMutation = useMutation({ mutationFn: suppliersApi.create, onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppliers'] }); setModal(null) } })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => suppliersApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['suppliers'] }); setModal(null) },
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => suppliersApi.remove(id).then((r) => r.data),
-    onSuccess: (result: { archived?: boolean }) => {
-      qc.invalidateQueries({ queryKey: ['suppliers'] })
-      setMessage(result?.archived ? 'Proveedor archivado: tenía documentos asociados.' : 'Proveedor eliminado.')
-      setDeletingSupplier(null)
-    },
-    onError: (error: unknown) => {
-      const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
-      const msg = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || 'No se pudo archivar el proveedor'
-      setMessage(Array.isArray(msg) ? msg.join(', ') : msg)
-      setDeletingSupplier(null)
-    },
-  })
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
 
-  const suppliers: Supplier[] = Array.isArray(data) ? data : (data as { data?: Supplier[] })?.data || []
+  const filtrados = proveedores.filter(
+    (p) =>
+      p.razonSocial.toLowerCase().includes(busqueda.toLowerCase()) ||
+      p.cuit?.replace(/-/g, "").includes(busqueda.replace(/-/g, "")) ||
+      p.email?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const handleEliminar = async (id: string) => {
+    const res = await fetch(`/api/proveedores/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setProveedores((prev) => prev.filter((p) => p.id !== id));
+    }
+    setConfirmDelete(null);
+  };
+
+  const exportarCSV = () => {
+    const headers = [
+      "CUIT",
+      "Razón Social",
+      "Email",
+      "Teléfono",
+      "Dirección",
+      "Ciudad",
+      "Provincia",
+      "Condición IVA",
+      "Condición Pago",
+      "Notas",
+    ];
+    const rows = proveedores.map((p) => [
+      p.cuit ?? "",
+      p.razonSocial,
+      p.email ?? "",
+      p.telefono ?? "",
+      p.direccion ?? "",
+      p.ciudad ?? "",
+      p.provincia ?? "",
+      p.condicionIva ?? "",
+      p.condicionPago ?? "",
+      p.notas ?? "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `proveedores_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div>
-      <div className="page-header">
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="page-title">Proveedores</h1>
-          <p className="page-subtitle">{suppliers.length} proveedor{suppliers.length !== 1 ? 'es' : ''}</p>
+          <h1 className="text-2xl font-semibold text-white">Proveedores</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {loading
+              ? "Cargando..."
+              : `${proveedores.length} proveedor${proveedores.length !== 1 ? "es" : ""} registrado${proveedores.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
-        {canManageSuppliers && (
-          <button className="btn btn-primary" onClick={() => setModal('new')}>
-            <Plus size={15} /> Nuevo proveedor
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={exportarCSV}
+            disabled={proveedores.length === 0}
+            className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={15} />
+            Exportar CSV
           </button>
-        )}
-      </div>
-
-      {message && (
-        <div style={{ marginBottom: 12, padding: '10px 12px', border: '1px solid rgba(59,130,246,0.24)', borderRadius: 8, color: '#bfdbfe', background: 'rgba(59,130,246,0.08)', fontSize: 13 }}>
-          {message}
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            <Upload size={15} />
+            Importar CSV
+          </button>
+          <button
+            onClick={() => {
+              setEditando(null);
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+          >
+            <Plus size={15} />
+            Nuevo proveedor
+          </button>
         </div>
-      )}
-
-      <div style={{ position: 'relative', marginBottom: '16px', maxWidth: '360px' }}>
-        <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        <input className="fc-input" placeholder="Buscar proveedor..." value={search}
-          onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '34px' }} />
       </div>
 
-      <div className="fc-card" style={{ overflow: 'hidden' }}>
-        {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><span className="spinner" /></div>
-        ) : suppliers.length === 0 ? (
-          <div className="empty-state"><p>No hay proveedores registrados</p></div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="fc-table">
-              <thead><tr>
-                <th>Nombre</th><th>CUIT</th><th>Tel / Email</th><th>IVA</th><th>Estado</th>{canManageSuppliers && <th style={{ width: '92px' }}></th>}
-              </tr></thead>
-              <tbody>
-                {suppliers.map(s => (
-                  <tr key={s.id}>
-                    <td style={{ fontWeight: '500' }}>{s.name}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>{s.cuit || '—'}</td>
-                    <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {s.phone && <div>{s.phone}</div>}
-                      {s.email && <div>{s.email}</div>}
-                      {!s.phone && !s.email && '—'}
-                    </td>
-                    <td><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{IVA_CONDITIONS.find(i => i.value === s.ivaCondition)?.label}</span></td>
-                    <td><span className={`badge ${s.isActive ? 'badge-green' : 'badge-red'}`}>{s.isActive ? 'Activo' : 'Inactivo'}</span></td>
-                    {canManageSuppliers && (
-                      <td>
-                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setModal(s)} title="Editar">
-                          <Edit2 size={13} />
-                        </button>
-                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingSupplier(s)} title="Archivar">
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {modal && (
-        <SupplierModal
-          supplier={modal === 'new' ? null : modal}
-          onClose={() => setModal(null)}
-          onSave={d => modal === 'new' ? createMutation.mutate(d) : updateMutation.mutate({ id: (modal as Supplier).id, data: d })}
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
         />
-      )}
-      {deletingSupplier && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !deleteMutation.isPending && setDeletingSupplier(null)}>
-          <div className="modal-box" style={{ maxWidth: 380 }}>
-            <div style={{ padding: '26px 24px' }}>
-              <Trash2 size={22} color="#f87171" style={{ marginBottom: 12 }} />
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Archivar proveedor</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5 }}>
-                {deletingSupplier.name} quedará inactivo si tiene documentos. Si no tiene movimientos, se eliminará.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-                <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingSupplier(null)}>Cancelar</button>
-                <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingSupplier.id)}>
-                  {deleteMutation.isPending ? 'Procesando...' : 'Archivar'}
+        <input
+          type="text"
+          placeholder="Buscar proveedor..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full max-w-sm pl-9 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="border border-gray-700 rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
+            Cargando...
+          </div>
+        ) : filtrados.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Building2 size={36} className="text-gray-600" />
+            <p className="text-gray-400 text-sm">
+              {busqueda
+                ? `Sin resultados para "${busqueda}"`
+                : "No hay proveedores registrados"}
+            </p>
+            {!busqueda && (
+              <div className="flex gap-3 mt-1">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="text-sm text-violet-400 hover:text-violet-300"
+                >
+                  + Agregar manualmente
+                </button>
+                <span className="text-gray-600">o</span>
+                <button
+                  onClick={() => setShowImport(true)}
+                  className="text-sm text-violet-400 hover:text-violet-300"
+                >
+                  Importar desde CSV
                 </button>
               </div>
+            )}
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-700 bg-gray-800/50">
+                {["Razón Social", "CUIT", "Teléfono", "Email", "Localidad", "Cond. IVA", "Cond. Pago", ""].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  )
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.map((p, i) => (
+                <tr
+                  key={p.id}
+                  className={`border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors ${
+                    i % 2 !== 0 ? "bg-gray-800/20" : ""
+                  }`}
+                >
+                  <td className="py-3 px-4 text-sm font-medium text-white">
+                    {p.razonSocial}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300 font-mono">
+                    {p.cuit ?? "—"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300">
+                    {p.telefono ?? "—"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300">
+                    {p.email ?? "—"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300">
+                    {[p.ciudad, p.provincia].filter(Boolean).join(", ") || "—"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300">
+                    {p.condicionIva ?? "—"}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-300">
+                    {p.condicionPago ?? "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => {
+                          setEditando(p);
+                          setShowModal(true);
+                        }}
+                        title="Editar"
+                        className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(p.id)}
+                        title="Eliminar"
+                        className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showModal && (
+        <NuevoProveedorModal
+          proveedor={editando}
+          onClose={() => {
+            setShowModal(false);
+            setEditando(null);
+          }}
+          onSuccess={() => {
+            setShowModal(false);
+            setEditando(null);
+            cargar();
+          }}
+        />
+      )}
+
+      {showImport && (
+        <ImportCSVModal
+          onClose={() => setShowImport(false)}
+          onSuccess={() => {
+            setShowImport(false);
+            cargar();
+          }}
+        />
+      )}
+
+      {/* Confirm delete dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-white font-medium mb-2">Eliminar proveedor</h3>
+            <p className="text-gray-400 text-sm mb-5">
+              ¿Estás seguro? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 text-sm text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleEliminar(confirmDelete)}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
