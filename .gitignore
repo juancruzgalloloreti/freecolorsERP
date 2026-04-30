@@ -12,3 +12,5 @@ package-lock.json
 
 packages/db/src/generated/client/*.node
 packages/db/src/generated/client/runtime/*.node
+
+.vercel
