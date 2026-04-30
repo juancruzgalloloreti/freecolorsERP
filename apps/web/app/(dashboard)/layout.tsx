@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import { BottomNav } from '@/components/erp/layout'
 import { GlobalShortcuts } from '@/components/erp/global-shortcuts'
 import { useAuth } from '@/contexts/AuthContext'
-import { LogOut, Menu } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, loading, logout } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const isCounterPage = pathname === '/ventas'
@@ -59,9 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu size={17} />
           </button>
           <Image className="mobile-logo-image" src="/freecolors-logo.png" alt="Freecolors Pinturerias" width={168} height={50} priority style={{ width: 148, height: 'auto' }} />
-          <button className="btn btn-icon btn-secondary mobile-logout-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" onClick={logout}>
-            <LogOut size={16} />
-          </button>
+          <span className="mobile-header-spacer" aria-hidden="true" />
         </div>
 
         <main className={isCounterPage ? 'counter-main' : undefined} style={{
@@ -75,12 +72,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
-      <BottomNav />
-
       <style>{`
         @media (max-width: 768px) {
           .main-content { margin-left: 0 !important; }
-          main { padding: 14px 12px 86px !important; }
+          main { padding: 14px 12px 24px !important; }
         }
       `}</style>
     </div>

@@ -14,7 +14,9 @@ export function GlobalShortcuts() {
     },
     f4: (event: KeyboardEvent) => {
       event.preventDefault()
-      router.push('/caja')
+      const customerAction = document.querySelector<HTMLElement>('[data-customer-action="true"]')
+      if (customerAction) customerAction.click()
+      else router.push('/clientes')
     },
     'ctrl+f': (event: KeyboardEvent) => {
       event.preventDefault()
@@ -34,7 +36,22 @@ export function GlobalShortcuts() {
     },
     f9: (event: KeyboardEvent) => {
       event.preventDefault()
+      document.querySelector<HTMLElement>('[data-payment-action="true"]')?.click()
+    },
+    f12: (event: KeyboardEvent) => {
+      event.preventDefault()
       document.querySelector<HTMLElement>('[data-confirm-action="true"]')?.click()
+    },
+    escape: (event: KeyboardEvent) => {
+      document.querySelector<HTMLElement>('[data-escape-action="true"]')?.click()
+      const active = document.activeElement as HTMLElement | null
+      active?.blur?.()
+    },
+    'ctrl+z': (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input, textarea, select')) return
+      event.preventDefault()
+      document.querySelector<HTMLElement>('[data-undo-line-action="true"]')?.click()
     },
     f3: (event: KeyboardEvent) => {
       event.preventDefault()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -35,9 +35,19 @@ type PaymentMode = 'CASH' | 'CURRENT_ACCOUNT'
 type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'CHECK' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'MERCADO_PAGO' | 'CURRENT_ACCOUNT' | 'OTHER'
 type PaymentKind = 'FULL' | 'ENTRY'
 
+type CounterPayment = {
+  id: string
+  method: PaymentMethod
+  amount: number
+  reference?: string
+  notes: string
+}
+
 type ProductHit = {
   id: string
   code: string
+  barcode?: string | null
+  barcodeAlt?: string | null
   name: string
   unit: string
   brandName?: string | null
@@ -119,6 +129,17 @@ const ARS = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 })
 
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: 'Efectivo',
+  BANK_TRANSFER: 'Transferencia',
+  CHECK: 'Cheque',
+  CREDIT_CARD: 'Crédito',
+  DEBIT_CARD: 'Débito',
+  MERCADO_PAGO: 'Mercado Pago',
+  CURRENT_ACCOUNT: 'Cuenta corriente',
+  OTHER: 'Otro',
+}
+
 const DATE = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
   month: '2-digit',
@@ -177,6 +198,19 @@ function applyVatToLines(lines: CounterLine[], enabled: boolean) {
   return lines.map((line) => ({ ...line, taxRate: enabled ? line.productTaxRate : 0 }))
 }
 
+function normalizePaymentsForDocument<T extends { method: string; amount: number; reference?: string; notes?: string }>(payments: T[], total: number) {
+  let excess = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) - total
+  if (excess <= 0.01) return payments
+  return payments.map((payment, index) => {
+    if (excess <= 0) return payment
+    const canReduce = payment.method === 'CASH' || index === payments.length - 1
+    if (!canReduce) return payment
+    const reduction = Math.min(excess, payment.amount)
+    excess -= reduction
+    return { ...payment, amount: Math.max(payment.amount - reduction, 0) }
+  }).filter((payment) => payment.amount > 0)
+}
+
 export default function VentasPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
@@ -194,6 +228,8 @@ export default function VentasPage() {
   const [paymentLabel, setPaymentLabel] = useState('Caja Mostrador-Efectivo')
   const [paymentKind, setPaymentKind] = useState<PaymentKind>('FULL')
   const [paymentEntry, setPaymentEntry] = useState('')
+  const [paymentReference, setPaymentReference] = useState('')
+  const [payments, setPayments] = useState<CounterPayment[]>([])
   const [roundTotal, setRoundTotal] = useState(true)
   const [includeVat, setIncludeVat] = useState(false)
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -270,6 +306,25 @@ export default function VentasPage() {
     }
   }, [globalDiscount, lines, roundTotal])
 
+  const paymentSummary = useMemo(() => {
+    const paid = payments.reduce((sum, payment) => sum + payment.amount, 0)
+    const nonAccountPaid = payments
+      .filter((payment) => payment.method !== 'CURRENT_ACCOUNT')
+      .reduce((sum, payment) => sum + payment.amount, 0)
+    const cashPaid = payments
+      .filter((payment) => payment.method === 'CASH')
+      .reduce((sum, payment) => sum + payment.amount, 0)
+    const remaining = Math.max(totals.total - paid, 0)
+    const change = Math.max(paid - totals.total, 0)
+    return { paid, nonAccountPaid, cashPaid, remaining, change }
+  }, [payments, totals.total])
+
+  useEffect(() => {
+    setPayments([])
+    setPaymentEntry('')
+    setPaymentReference('')
+  }, [totals.total])
+
   const addLine = useCallback((product: ProductHit) => {
     if (!canUseCounter) return
     setError(null)
@@ -311,10 +366,16 @@ export default function VentasPage() {
       q: code,
       priceListId: effectivePriceListId,
       depositId: effectiveDepositId,
-      limit: 1,
+      limit: 8,
     }))
-    if (results[0]) addLine(results[0])
-    else setError(`No encontré producto para el código ${code}`)
+    const exactMatches = results.filter((product) => [product.code, product.barcode, product.barcodeAlt].some((value) => String(value || '').trim() === code))
+    if (exactMatches.length === 1) addLine(exactMatches[0])
+    else if (results.length === 1) addLine(results[0])
+    else if (results.length > 1) {
+      setSearch(code)
+      setMessage(`Encontré ${results.length} coincidencias para ${code}. Elegí el producto correcto.`)
+      window.setTimeout(() => searchRef.current?.focus(), 0)
+    } else setError(`No encontré producto para el código ${code}`)
   }, canUseCounter)
 
   const updateLine = (index: number, patch: Partial<CounterLine>) => {
@@ -337,6 +398,8 @@ export default function VentasPage() {
     setPaymentLabel('Caja Mostrador-Efectivo')
     setPaymentKind('FULL')
     setPaymentEntry('')
+    setPaymentReference('')
+    setPayments([])
     setGlobalDiscount('')
     setIncludeVat(false)
   }
@@ -372,8 +435,7 @@ export default function VentasPage() {
     setPaymentLabel(label)
     setPaymentMode(mode)
     setPaymentKind('FULL')
-    setPaymentEntry('')
-    setPaymentSheet(false)
+    setPaymentEntry(String(paymentSummary.remaining || totals.total || 0))
   }
 
   const chooseEntry = () => {
@@ -381,11 +443,52 @@ export default function VentasPage() {
     setPaymentLabel('Caja Mostrador-Entrada')
     setPaymentMode('CASH')
     setPaymentKind('ENTRY')
+    setPaymentEntry('')
   }
 
   const closePaymentSheet = () => {
-    if (paymentKind === 'ENTRY' && numberInput(paymentEntry) <= 0) return
+    if (payments.length === 0 && paymentKind === 'ENTRY' && numberInput(paymentEntry) <= 0) return
     setPaymentSheet(false)
+  }
+
+  const addPayment = () => {
+    const amount = numberInput(paymentEntry)
+    if (amount <= 0) {
+      setError('Ingresá un importe de pago mayor a cero.')
+      return
+    }
+    if (paymentMethod === 'CURRENT_ACCOUNT' && !customerId) {
+      setError('La cuenta corriente requiere seleccionar un cliente.')
+      return
+    }
+    const next: CounterPayment = {
+      id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      method: paymentMethod,
+      amount,
+      reference: paymentReference.trim() || undefined,
+      notes: paymentLabel,
+    }
+    setPayments((current) => [...current, next])
+    setPaymentEntry('')
+    setPaymentReference('')
+    setError(null)
+  }
+
+  const removePayment = (id: string) => {
+    setPayments((current) => current.filter((payment) => payment.id !== id))
+  }
+
+  const undoLastLine = () => {
+    if (!canUseCounter) return
+    setLines((current) => current.slice(0, -1))
+  }
+
+  const closeTopSheet = () => {
+    if (paymentSheet) setPaymentSheet(false)
+    else if (discountSheet) setDiscountSheet(false)
+    else if (cashSheet) setCashSheet(false)
+    else if (productSheet) setProductSheet(false)
+    else if (customerSheet) setCustomerSheet(false)
   }
 
   const linesForPayload = () => {
@@ -438,9 +541,11 @@ export default function VentasPage() {
       if (action !== 'confirm') return documentsApi.create(documentPayload)
       if (paymentMode === 'CURRENT_ACCOUNT' && !customerId) throw new Error('La cuenta corriente requiere seleccionar un cliente.')
       const entryAmount = numberInput(paymentEntry)
-      if (paymentKind === 'ENTRY' && entryAmount <= 0) throw new Error('Ingresá el importe de la entrada.')
-      if (paymentKind === 'ENTRY' && entryAmount < totals.total && !customerId) throw new Error('Una entrada parcial requiere cliente para dejar el saldo en cuenta corriente.')
-      const payments = paymentKind === 'ENTRY' && entryAmount < totals.total
+      if (payments.length === 0 && paymentKind === 'ENTRY' && entryAmount <= 0) throw new Error('Ingresá el importe de la entrada.')
+      if (payments.length === 0 && paymentKind === 'ENTRY' && entryAmount < totals.total && !customerId) throw new Error('Una entrada parcial requiere cliente para dejar el saldo en cuenta corriente.')
+      const draftPayments = payments.length > 0
+        ? payments.map((payment) => ({ method: payment.method, amount: payment.amount, reference: payment.reference, notes: payment.notes }))
+        : paymentKind === 'ENTRY' && entryAmount < totals.total
         ? [
             { method: paymentMethod, amount: entryAmount, notes: paymentLabel },
             { method: 'CURRENT_ACCOUNT', amount: totals.total - entryAmount, notes: 'Saldo por entrada parcial' },
@@ -448,13 +553,23 @@ export default function VentasPage() {
         : [{
             method: paymentMode === 'CURRENT_ACCOUNT' ? 'CURRENT_ACCOUNT' : paymentMethod,
             amount: paymentKind === 'ENTRY' ? entryAmount : totals.total,
+            reference: paymentReference.trim() || undefined,
             notes: paymentMode === 'CURRENT_ACCOUNT' ? 'Cuenta corriente desde mostrador' : paymentLabel,
           }]
+      const paid = draftPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+      if (paid < totals.total - 0.01) {
+        if (!customerId) throw new Error('El pago no cubre el total. Agregá otro medio o seleccioná cliente para dejar saldo en cuenta corriente.')
+        draftPayments.push({ method: 'CURRENT_ACCOUNT', amount: totals.total - paid, reference: undefined, notes: 'Saldo pendiente en cuenta corriente' })
+      }
+      const normalizedPayments = normalizePaymentsForDocument(draftPayments, totals.total)
+      if (type.startsWith('INVOICE_') && normalizedPayments.some((payment) => payment.method !== 'CURRENT_ACCOUNT') && !currentCash) {
+        throw new Error('Abrí una caja antes de confirmar ventas de contado.')
+      }
       return documentsApi.confirmSale({
         ...documentPayload,
         depositId: effectiveDepositId,
-        paymentMode,
-        payments,
+        paymentMode: normalizedPayments.some((payment) => payment.method === 'CURRENT_ACCOUNT') && normalizedPayments.some((payment) => payment.method !== 'CURRENT_ACCOUNT') ? 'MIXED' : paymentMode,
+        payments: normalizedPayments,
       })
     },
     onSuccess: (document: { type: string; status: string; number?: number | null }) => {
@@ -463,6 +578,7 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['documents-history'] })
       qc.invalidateQueries({ queryKey: ['stock-current'] })
       qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['cash-current'] })
       setLastDocument(document as unknown as Record<string, unknown>)
       setMessage(`${document.type === 'BUDGET' ? 'Presupuesto' : 'Documento'} ${document.status === 'CONFIRMED' ? 'confirmado' : 'guardado'} correctamente.`)
       setError(null)
@@ -565,7 +681,7 @@ export default function VentasPage() {
         actions={(
           <>
             <RoleGate role={user?.role} allow={['OWNER']}>
-              <button className="btn btn-secondary" type="button" onClick={openCustomerSheet}>
+              <button className="btn btn-secondary" type="button" data-customer-action="true" onClick={openCustomerSheet}>
                 <UserPlus size={14} /> Datos cliente
               </button>
               <button className="btn btn-secondary" type="button" onClick={() => { setQuickProduct(emptyQuickProduct(effectivePriceListId)); setProductSheet(true) }}>
@@ -578,6 +694,28 @@ export default function VentasPage() {
 
       {message && <div className="counter-alert success"><Check size={15} /> {message}</div>}
       {error && <div className="counter-alert danger"><AlertTriangle size={15} /> {error}</div>}
+      <button type="button" data-escape-action="true" onClick={closeTopSheet} hidden />
+      <button type="button" data-undo-line-action="true" onClick={undoLastLine} hidden />
+
+      <div className={`shift-strip ${currentCash ? 'open' : 'closed'}`}>
+        <div>
+          <span>Turno</span>
+          <strong>{currentCash ? 'Caja abierta' : 'Caja cerrada'}</strong>
+        </div>
+        <div>
+          <span>Usuario</span>
+          <strong>{user?.firstName} {user?.lastName}</strong>
+        </div>
+        <div>
+          <span>Saldo esperado</span>
+          <strong>{cashLoading ? '...' : ARS.format(Number((currentCash as { expectedAmount?: number } | null)?.expectedAmount || 0))}</strong>
+        </div>
+        {!currentCash && canUseCounter && (
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => setCashSheet(true)}>
+            Abrir caja
+          </button>
+        )}
+      </div>
 
       <div className="counter-layout">
         <section className="counter-workspace">
@@ -621,7 +759,7 @@ export default function VentasPage() {
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
                 </select>
               </label>
-              <button className="btn btn-secondary" type="button" onClick={openCustomerSheet} disabled={!canUseCounter}>
+              <button className="btn btn-secondary" type="button" data-customer-action="true" onClick={openCustomerSheet} disabled={!canUseCounter}>
                 Datos fiscales / entrega
               </button>
               <label>
@@ -641,6 +779,8 @@ export default function VentasPage() {
                     setPaymentMode(mode)
                     setPaymentKind('FULL')
                     setPaymentEntry('')
+                    setPaymentReference('')
+                    setPayments([])
                     setPaymentLabel(mode === 'CURRENT_ACCOUNT' ? 'Cuenta corriente' : 'Caja Mostrador-Efectivo')
                   }}
                 >
@@ -673,8 +813,8 @@ export default function VentasPage() {
                 <input type="checkbox" checked={includeVat} onChange={(event) => toggleVat(event.target.checked)} disabled={!canUseCounter} />
                 IVA
               </label>
-              <button className="toolbar-btn" type="button" onClick={() => setPaymentSheet(true)} disabled={!canUseCounter}>
-                <DollarSign size={15} /> Contado
+              <button className="toolbar-btn" type="button" data-payment-action="true" onClick={() => setPaymentSheet(true)} disabled={!canUseCounter}>
+                <DollarSign size={15} /> Cobrar
               </button>
               <button
                 className="toolbar-btn"
@@ -685,7 +825,10 @@ export default function VentasPage() {
               >
                 <Printer size={15} /> Imprimir PDF
               </button>
-              <span className="payment-status">{paymentLabel}</span>
+              <span className="payment-status">
+                {payments.length > 0 ? `${payments.length} pago(s) · ${ARS.format(paymentSummary.paid)}` : paymentLabel}
+                {paymentSummary.change > 0 ? ` · Vuelto ${ARS.format(paymentSummary.change)}` : ''}
+              </span>
             </div>
           </div>
 
@@ -728,7 +871,12 @@ export default function VentasPage() {
                     </span>
                     <span className="result-numbers">
                       <b>{ARS.format(product.price || 0)}</b>
-                      {product.appliedCoefficient && product.appliedCoefficient > 1 && <small>x{Number(product.appliedCoefficient).toLocaleString('es-AR')} {product.appliedCoefficientName || ''}</small>}
+                      {product.appliedCoefficientName && product.appliedCoefficientName !== 'LP1' && (
+                        <small>
+                          {product.appliedCoefficient ? `x${Number(product.appliedCoefficient).toLocaleString('es-AR')} ` : ''}
+                          {product.appliedCoefficientName}
+                        </small>
+                      )}
                       <small>Stock {Number(product.stock || 0).toLocaleString('es-AR')}</small>
                     </span>
                   </button>
@@ -853,6 +1001,12 @@ export default function VentasPage() {
               <span>Total</span>
               <strong>{ARS.format(totals.total)}</strong>
             </div>
+            {payments.length > 0 && (
+              <div className="checkout-payment">
+                <span>{paymentSummary.remaining > 0 ? 'Resta' : paymentSummary.change > 0 ? 'Vuelto' : 'Pagado'}</span>
+                <strong>{ARS.format(paymentSummary.remaining > 0 ? paymentSummary.remaining : paymentSummary.change > 0 ? paymentSummary.change : paymentSummary.paid)}</strong>
+              </div>
+            )}
             <div className="counter-primary-actions">
               <button className="btn btn-secondary" type="button" onClick={() => documentMutation.mutate({ action: 'draft', type: 'BUDGET' })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
                 <FileText size={14} /> Guardar
@@ -979,11 +1133,30 @@ export default function VentasPage() {
 
       <EntitySheet
         open={paymentSheet}
-        title="Seleccionar Valor"
+        title="Cobrar venta"
         onClose={() => setPaymentSheet(false)}
         preventOutsideClose
         footer={<button className="btn btn-primary" type="button" onClick={closePaymentSheet}>Aceptar</button>}
       >
+        <div className="payment-summary-panel">
+          <div><span>Total</span><strong>{ARS.format(totals.total)}</strong></div>
+          <div><span>Pagado</span><strong>{ARS.format(paymentSummary.paid)}</strong></div>
+          <div><span>Resta</span><strong>{ARS.format(paymentSummary.remaining)}</strong></div>
+          {paymentSummary.change > 0 && <div className="change"><span>Vuelto</span><strong>{ARS.format(paymentSummary.change)}</strong></div>}
+        </div>
+        {payments.length > 0 && (
+          <div className="payment-list">
+            {payments.map((payment) => (
+              <div className="payment-row" key={payment.id}>
+                <span>{PAYMENT_METHOD_LABELS[payment.method]}</span>
+                <strong>{ARS.format(payment.amount)}</strong>
+                <button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removePayment(payment.id)} title="Quitar pago">
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="payment-options">
           <button type="button" className={paymentKind === 'ENTRY' ? 'active' : ''} onClick={chooseEntry}>
             <strong>Entrada</strong><span>Pago parcial · deja saldo en CC</span>
@@ -1005,11 +1178,15 @@ export default function VentasPage() {
           </button>
         </div>
         <div style={{ marginTop: 14 }}>
-          <label className="fc-label">Importe de entrada</label>
-          <MoneyInput value={paymentEntry} onChange={(event) => setPaymentEntry(event.target.value)} placeholder={paymentKind === 'ENTRY' ? 'Obligatorio para entrada' : String(totals.total || 0)} />
-          {paymentKind === 'ENTRY' && numberInput(paymentEntry) <= 0 && (
-            <div className="field-hint danger">Ingresá cuánto deja como entrada.</div>
-          )}
+          <label className="fc-label">Importe</label>
+          <MoneyInput value={paymentEntry} onChange={(event) => setPaymentEntry(event.target.value)} placeholder={paymentKind === 'ENTRY' ? 'Obligatorio para entrada' : String(paymentSummary.remaining || totals.total || 0)} autoFocus />
+          <label className="fc-label" style={{ marginTop: 10 }}>Referencia</label>
+          <input className="fc-input" value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} placeholder="Cupón, transferencia, nota opcional" />
+          {paymentKind === 'ENTRY' && numberInput(paymentEntry) <= 0 && <div className="field-hint danger">Ingresá cuánto deja como entrada.</div>}
+          {paymentSummary.remaining > 0 && customerId && <div className="field-hint">Si aceptás con saldo pendiente, se completa en cuenta corriente.</div>}
+          <button className="btn btn-secondary" type="button" style={{ marginTop: 10 }} onClick={addPayment}>
+            Agregar pago
+          </button>
         </div>
       </EntitySheet>
     </div>

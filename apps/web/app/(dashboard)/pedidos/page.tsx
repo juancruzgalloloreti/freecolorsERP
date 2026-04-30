@@ -203,10 +203,10 @@ export default function PedidosPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Pedidos</h1>
-          <p className="page-subtitle">Pendientes, preparación, facturables y facturados</p>
+          <h1 className="page-title">Pedidos / Preparación</h1>
+          <p className="page-subtitle">Pedidos diferidos para preparar y convertir después; Mostrador queda para venta inmediata</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}>
+        <button className="btn btn-secondary order-export-button" onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}>
           <Download size={14} /> Exportar CSV
         </button>
       </div>
@@ -214,7 +214,7 @@ export default function PedidosPage() {
       {message && <div className="counter-alert success"><Check size={15} /> {message}</div>}
       {error && <div className="counter-alert danger">{error}</div>}
 
-      <section className="fc-card" style={{ marginBottom: 14 }}>
+      <section className="fc-card order-entry-card" style={{ marginBottom: 14 }}>
         <div className="order-form-grid">
           <label><span>Cliente</span><select className="fc-input" value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">Consumidor final</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
           <label><span>Fecha</span><input className="fc-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
@@ -227,7 +227,7 @@ export default function PedidosPage() {
 
         <div className="counter-search" style={{ marginTop: 12 }}>
           <Search size={17} />
-          <input className="fc-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar producto para el pedido" disabled={!canEdit} />
+          <input className="fc-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar producto para preparar pedido" disabled={!canEdit} />
           {search && <button className="btn btn-icon btn-secondary" onClick={() => setSearch('')}><X size={14} /></button>}
         </div>
         {search.trim() && (
@@ -244,13 +244,13 @@ export default function PedidosPage() {
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           {lines.length > 0 && (
             <div className="budget-readonly-note order-protected-note">
-              Pedido protegido: podés sumar cantidades, buscar más productos y quitar ítems. Precio, descripción, descuento e IVA salen del catálogo/lista y quedan bloqueados.
+              Preparación protegida: podés sumar cantidades, buscar más productos y quitar ítems. Precio, descripción, descuento e IVA salen del catálogo/lista y quedan bloqueados.
             </div>
           )}
           <table className="fc-table aguila-items-table">
             <thead><tr><th>Código</th><th>Descripción</th><th style={{ textAlign: 'right' }}>Cant.</th><th style={{ textAlign: 'right' }}>Precio</th><th style={{ textAlign: 'right' }}>% Desc.</th>{includeVat && <th style={{ textAlign: 'right' }}>% IVA</th>}<th style={{ textAlign: 'right' }}>Total</th><th></th></tr></thead>
             <tbody>
-              {lines.length === 0 ? <tr><td colSpan={includeVat ? 8 : 7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Agregá productos para crear un pedido.</td></tr> : lines.map((line, index) => (
+              {lines.length === 0 ? <tr><td colSpan={includeVat ? 8 : 7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Agregá productos para preparar un pedido.</td></tr> : lines.map((line, index) => (
                 <tr key={line.productId}>
                   <td className="mono-cell">{line.code}</td>
                   <td><div className="readonly-line-description">{line.description}</div></td>
@@ -276,7 +276,7 @@ export default function PedidosPage() {
         </div>
       </section>
 
-      <section className="fc-card" style={{ overflow: 'hidden' }}>
+      <section className="fc-card order-list-card" style={{ overflow: 'hidden' }}>
         <div style={{ padding: '0 0 12px', display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
           <select className="fc-input" style={{ maxWidth: 220 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">Todos los estados</option>
@@ -327,6 +327,32 @@ export default function PedidosPage() {
           .order-form-grid { grid-template-columns: 1fr; }
           .order-total-row { justify-content: stretch; }
           .order-total-row .btn { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 768px) {
+          .order-export-button { width: 100%; justify-content: center; }
+          .order-entry-card { padding: 12px; }
+          .order-form-grid { gap: 9px; }
+          .order-vat-check { min-height: 44px; }
+          .order-entry-card .counter-search { margin-top: 10px !important; }
+          .order-entry-card .counter-search .fc-input { min-height: 52px; font-size: 16px; }
+          .order-entry-card .product-result { min-height: 62px; }
+          .order-entry-card .aguila-items-table,
+          .order-list-card .fc-table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .order-total-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
+          }
+          .order-total-row span,
+          .order-total-row strong {
+            text-align: left;
+          }
         }
       `}</style>
     </div>

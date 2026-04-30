@@ -39,15 +39,44 @@ interface PriceCoefficient {
 const FORMULAS_KEY = 'freecolors-price-formulas'
 const DEFAULT_FORMULAS: PriceFormula[] = [
   {
-    id: 'contado',
-    name: 'Contado',
+    id: 'legacy-lp2',
+    name: 'Lista 2 Coef. S/Lista 1',
     baseListId: '',
     targetListId: '',
     multiplier: '0.60',
     rounding: '10',
     onlyMissing: false,
   },
+  {
+    id: 'legacy-lp3',
+    name: 'Lista 3 Coef. S/Lista 1',
+    baseListId: '',
+    targetListId: '',
+    multiplier: '0.80',
+    rounding: '10',
+    onlyMissing: false,
+  },
+  {
+    id: 'legacy-lp4',
+    name: 'Lista 4 Coef. S/CR',
+    baseListId: '',
+    targetListId: '',
+    multiplier: '1.20',
+    rounding: '10',
+    onlyMissing: false,
+  },
+  {
+    id: 'legacy-lp5',
+    name: 'Lista 5 = CR',
+    baseListId: '',
+    targetListId: '',
+    multiplier: '1.00',
+    rounding: '10',
+    onlyMissing: false,
+  },
 ]
+
+const REQUIRED_LIST_LABELS = ['LP1', 'LP2', 'LP3', 'LP4', 'LP5', 'CR', 'CU']
 
 function parseNumber(value: string, fallback: number) {
   const parsed = Number(String(value || '').replace(',', '.'))
@@ -177,10 +206,67 @@ export default function ListasDePrecioPage() {
 
   const defaultList = lists.find((list) => list.isDefault) || lists[0]
   const activeCount = lists.filter((list) => list.isActive !== false).length
-  const pricedItems = lists.reduce((sum, list) => sum + (list.items?.filter((item) => Number(item.price || 0) > 0).length || 0), 0)
+  const formulaBackedCount = lists.filter((list) => priceListCode(list.name)).length
+
+  useEffect(() => {
+    if (lists.length === 0) return
+    const lp1 = findListByPrefix('LP1')
+    const lp2 = findListByPrefix('LP2')
+    const lp3 = findListByPrefix('LP3')
+    const lp4 = findListByPrefix('LP4')
+    const lp5 = findListByPrefix('LP5')
+    const cr = findListByPrefix('CR')
+    const targets: Record<string, { baseListId?: string; targetListId?: string }> = {
+      'legacy-lp2': { baseListId: lp1?.id, targetListId: lp2?.id },
+      'legacy-lp3': { baseListId: lp1?.id, targetListId: lp3?.id },
+      'legacy-lp4': { baseListId: cr?.id || lp1?.id, targetListId: lp4?.id },
+      'legacy-lp5': { baseListId: cr?.id || lp1?.id, targetListId: lp5?.id },
+    }
+    setFormulas((current) => {
+      const merged = [...current]
+      for (const formula of DEFAULT_FORMULAS) {
+        if (!merged.some((item) => item.id === formula.id)) merged.push(formula)
+      }
+      let changed = merged.length !== current.length
+      const next = merged.map((formula) => {
+        const target = targets[formula.id]
+        if (!target) return formula
+        const patched = {
+          ...formula,
+          baseListId: formula.baseListId || target.baseListId || '',
+          targetListId: formula.targetListId || target.targetListId || '',
+        }
+        if (patched.baseListId !== formula.baseListId || patched.targetListId !== formula.targetListId) changed = true
+        return patched
+      })
+      return changed ? next : current
+    })
+  }, [lists])
 
   function listName(id: string) {
     return lists.find((list) => list.id === id)?.name || 'Seleccionar'
+  }
+
+  function findListByPrefix(prefix: string) {
+    return lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
+      || lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
+  }
+
+  function priceListCode(name: string) {
+    const upper = name.toUpperCase()
+    return REQUIRED_LIST_LABELS.find((prefix) => upper.startsWith(`${prefix} `) || upper.startsWith(`${prefix} -`)) || null
+  }
+
+  function priceListCalculation(name: string) {
+    const code = priceListCode(name)
+    if (code === 'LP1') return 'Base manual/importada'
+    if (code === 'LP2') return 'LP1 x 0.60'
+    if (code === 'LP3') return 'LP1 x 0.80'
+    if (code === 'LP4') return 'CR x 1.20'
+    if (code === 'LP5') return 'CR'
+    if (code === 'CR') return 'Costo reposición'
+    if (code === 'CU') return 'Costo última compra'
+    return 'Precio propio opcional'
   }
 
   function defaultTargetId() {
@@ -245,7 +331,7 @@ export default function ListasDePrecioPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Listas de Precio</h1>
-          <p className="page-subtitle">Reglas comerciales para ventas y documentos</p>
+          <p className="page-subtitle">Precios globales por fórmula: cada producto calcula LP2, LP3, LP4 y LP5 desde LP1 o CR</p>
         </div>
         {isOwner && (
           <button className="btn btn-primary" onClick={() => { setCreating(true); setMessage(null) }}>
@@ -263,7 +349,20 @@ export default function ListasDePrecioPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
         <div className="stat-card"><div className="stat-value">{lists.length}</div><div className="stat-label">Listas configuradas</div></div>
         <div className="stat-card"><div className="stat-value">{activeCount}</div><div className="stat-label">Activas para vender</div></div>
-        <div className="stat-card"><div className="stat-value">{pricedItems}</div><div className="stat-label">Precios cargados</div></div>
+        <div className="stat-card"><div className="stat-value">{formulaBackedCount}</div><div className="stat-label">Listas con fórmula Aguila</div></div>
+      </div>
+
+      <div className="fc-card required-lists">
+        {REQUIRED_LIST_LABELS.map((prefix) => {
+          const list = findListByPrefix(prefix)
+          return (
+            <div className="required-list" key={prefix}>
+              <span>{prefix}</span>
+              <strong>{list?.name || 'Pendiente'}</strong>
+              <small>{list ? priceListCalculation(list.name) : 'Se crea automáticamente'}</small>
+            </div>
+          )
+        })}
       </div>
 
       <div className="fc-card" style={{ marginBottom: 14 }}>
@@ -317,7 +416,7 @@ export default function ListasDePrecioPage() {
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: 15 }}>Fórmulas</h2>
-              <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Calculan una lista destino desde una lista base sin duplicar el catálogo.</p>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Las listas obligatorias se calculan en vivo para todos los productos; aplicar solo recalcula precios guardados si lo necesitás para exportar o auditar.</p>
             </div>
           </div>
           {isOwner && <button className="btn btn-secondary btn-sm" onClick={addFormula}><Plus size={13} /> Fórmula</button>}
@@ -377,7 +476,8 @@ export default function ListasDePrecioPage() {
               <tr>
                 <th>Lista</th>
                 <th>Uso</th>
-                <th style={{ textAlign: 'right' }}>Productos con precio</th>
+                <th>Cálculo</th>
+                <th style={{ textAlign: 'right' }}>Precios base</th>
                 <th>Estado</th>
                 {isOwner && <th style={{ width: 54 }}></th>}
               </tr>
@@ -385,15 +485,17 @@ export default function ListasDePrecioPage() {
             <tbody>
               {lists.map((list) => {
                 const count = list.items?.filter((item) => Number(item.price || 0) > 0).length || 0
+                const isRequired = Boolean(priceListCode(list.name))
                 return (
                   <tr key={list.id}>
                     <td style={{ fontWeight: 700 }}>{list.name}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : 'Alternativa para cliente/documento'}</td>
+                    <td style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{priceListCalculation(list.name)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{count}</td>
                     <td><span className={`badge ${list.isActive === false ? 'badge-red' : 'badge-green'}`}>{list.isActive === false ? 'Inactiva' : 'Activa'}</span></td>
                     {isOwner && (
                       <td>
-                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingList(list)} title="Eliminar lista">
+                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingList(list)} title={isRequired ? 'Lista obligatoria' : 'Eliminar lista'} disabled={isRequired}>
                           <Trash2 size={13} />
                         </button>
                       </td>
@@ -446,7 +548,7 @@ export default function ListasDePrecioPage() {
                 <Trash2 size={18} color="#f87171" />
               </div>
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>¿Eliminar lista?</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Se elimina la lista {deletingList.name} y sus precios asociados. No se borran productos.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Se elimina la lista {deletingList.name} y sus precios asociados. No se borran productos ni se toca LP1/CR/CU.</p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
                 <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingList(null)}>Cancelar</button>
                 <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingList.id)}>
@@ -460,6 +562,37 @@ export default function ListasDePrecioPage() {
 
       <style>{`
         .formula-list { display: flex; flex-direction: column; gap: 8px; }
+        .required-lists {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+        .required-list {
+          min-height: 48px;
+          border: 1px solid var(--fc-border);
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 3px;
+          padding: 8px 10px;
+          background: rgba(255,255,255,0.03);
+        }
+        .required-list span {
+          color: #a78bfa;
+          font-size: 11px;
+          font-weight: 800;
+        }
+        .required-list strong {
+          font-size: 12px;
+          line-height: 1.2;
+        }
+        .required-list small {
+          color: var(--text-muted);
+          font-size: 11px;
+          line-height: 1.2;
+        }
         .coefficient-form {
           display: grid;
           grid-template-columns: 130px minmax(220px, 1.4fr) minmax(120px, 1fr) 90px 135px 135px auto;

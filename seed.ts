@@ -122,18 +122,34 @@ async function main() {
   }
   console.log(`✅ Marcas: ${brands.length} creadas`);
 
-  // ─── Lista de precios default ─────────────────────────────────
-  await prisma.priceList.upsert({
-    where: { tenantId_name: { tenantId: tenant.id, name: 'Lista Mostrador' } },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      name: 'Lista Mostrador',
-      isDefault: true,
-      isActive: true,
-    },
+  // ─── Listas de precios FreeColors / Aguila ────────────────────
+  const requiredPriceLists = [
+    { name: 'LP1 - Lista Precios 1', isDefault: true },
+    { name: 'LP2 - Lista Precios 2', isDefault: false },
+    { name: 'LP3 - Lista Precios 3', isDefault: false },
+    { name: 'LP4 - Lista Precios 4', isDefault: false },
+    { name: 'LP5 - Lista Precios 5', isDefault: false },
+    { name: 'CR - Costo Reposición', isDefault: false },
+    { name: 'CU - Costo Ultima Compra', isDefault: false },
+  ];
+
+  await prisma.priceList.updateMany({
+    where: { tenantId: tenant.id, isDefault: true },
+    data: { isDefault: false },
   });
-  console.log(`✅ Lista de precios: "Lista Mostrador" (default)`);
+  for (const list of requiredPriceLists) {
+    await prisma.priceList.upsert({
+      where: { tenantId_name: { tenantId: tenant.id, name: list.name } },
+      update: { isDefault: list.isDefault, isActive: true },
+      create: {
+        tenantId: tenant.id,
+        name: list.name,
+        isDefault: list.isDefault,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`✅ Listas de precios: LP1-LP5, CR y CU`);
 
   // ─── Aplicar UNIQUE parcial para CUIT ─────────────────────────
   try {

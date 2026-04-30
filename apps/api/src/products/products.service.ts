@@ -2,6 +2,25 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
+const REQUIRED_AGUILA_PRICE_LISTS = [
+  { name: 'LP1 - Lista Precios 1', isDefault: true },
+  { name: 'LP2 - Lista Precios 2', isDefault: false },
+  { name: 'LP3 - Lista Precios 3', isDefault: false },
+  { name: 'LP4 - Lista Precios 4', isDefault: false },
+  { name: 'LP5 - Lista Precios 5', isDefault: false },
+  { name: 'CR - Costo Reposición', isDefault: false },
+  { name: 'CU - Costo Ultima Compra', isDefault: false },
+];
+
+type PriceListForFormula = { id: string; name: string; isDefault?: boolean | null };
+type PriceListItemForFormula = { priceListId: string; price: unknown };
+type ProductForFormula = {
+  priceListItems: PriceListItemForFormula[];
+  replacementCost?: unknown;
+  lastPurchaseCost?: unknown;
+  averageCost?: unknown;
+};
+
 @Injectable()
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
@@ -70,7 +89,7 @@ export class ProductsService {
     const productIds = products.map((product) => product.id);
     if (productIds.length === 0) return [];
 
-    const [stockByDeposit, defaultList] = await Promise.all([
+    const [stockByDeposit, priceLists] = await Promise.all([
       this.prisma.stockMovement.groupBy({
         by: ['productId', 'depositId'],
         where: {
@@ -80,12 +99,13 @@ export class ProductsService {
         },
         _sum: { quantity: true },
       }),
-      query.priceListId ? null : this.prisma.priceList.findFirst({
+      this.prisma.priceList.findMany({
         where: { tenantId, isActive: true },
         orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
-        select: { id: true },
+        select: { id: true, name: true, isDefault: true },
       }),
     ]);
+    const defaultList = priceLists.find((list) => list.isDefault) || priceLists[0];
     const priceListId = query.priceListId || defaultList?.id;
     const coefficients = await this.activePriceCoefficients(tenantId, productIds, products.map((product) => product.categoryId).filter((id): id is string => Boolean(id)));
     const stockMap = new Map<string, number>();
@@ -97,10 +117,11 @@ export class ProductsService {
     });
 
     return products.map((product) => {
-      const priceItem = product.priceListItems.find((item) => item.priceListId === priceListId);
-      const basePrice = Number(priceItem?.price ?? 0);
+      const formula = this.formulaPriceForProduct(product, priceLists, priceListId);
+      const basePrice = formula.price;
       const coefficient = this.bestCoefficientForProduct(coefficients, product.id, product.categoryId);
       const price = this.roundMoney(basePrice * coefficient.multiplier);
+      const appliedNames = [formula.name, coefficient.name].filter(Boolean);
       const stockBySelectedDeposit = query.depositId ? stockMap.get(`${product.id}:${query.depositId}`) ?? 0 : undefined;
       const stockTotal = totalStockMap.get(product.id) ?? 0;
       return {
@@ -124,8 +145,8 @@ export class ProductsService {
         categoryName: product.category?.name ?? null,
         price,
         basePrice,
-        appliedCoefficient: coefficient.multiplier,
-        appliedCoefficientName: coefficient.name,
+        appliedCoefficient: this.roundMoney(formula.multiplier * coefficient.multiplier),
+        appliedCoefficientName: appliedNames.join(' + '),
         priceListId,
         stock: stockBySelectedDeposit ?? stockTotal,
         stockTotal,
@@ -336,6 +357,7 @@ export class ProductsService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
+        await this.ensureAguilaPriceLists(tx, tenantId);
         const priceLists = await tx.priceList.findMany({ where: { tenantId, isActive: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] });
         const allowedPriceListIds = new Set(priceLists.map((list) => list.id));
         const defaultDeposit = await tx.deposit.findFirst({
@@ -496,7 +518,7 @@ export class ProductsService {
     const requiredColumns = [
       { label: 'Codigo', aliases: ['code', 'codigo', 'Codigo', 'CODIGO', 'Código', 'Código principal', 'Codigo principal', 'A'] },
       { label: 'Nombre', aliases: ['name', 'nombre', 'Nombre', 'NOMBRE', 'Nombre del producto', 'Producto', 'E'] },
-      { label: 'Precio', aliases: ['precio', 'Precio', 'PRECIO', 'Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA', 'Precio de venta', 'G'] },
+      { label: 'Precio', aliases: ['precio', 'Precio', 'PRECIO', 'LP1', 'lp1', 'Precio LP1', 'Precio Lista 1', 'Precio lista 1', 'Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA', 'Precio de venta', 'G'] },
     ];
 
     const headers = new Set(
@@ -518,7 +540,7 @@ export class ProductsService {
       const rowNumber = index + 2;
       const code = this.value(raw, ['code', 'codigo', 'Codigo', 'CODIGO', 'Código', 'Código principal', 'Codigo principal', 'A']);
       const name = this.value(raw, ['name', 'nombre', 'Nombre', 'NOMBRE', 'Nombre del producto', 'Producto', 'E']);
-      const price = this.parseMoney(this.pick(raw, ['precio', 'Precio', 'PRECIO', 'Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA', 'Precio de venta', 'G']));
+      const price = this.parseMoney(this.pick(raw, ['precio', 'Precio', 'PRECIO', 'LP1', 'lp1', 'Precio LP1', 'Precio Lista 1', 'Precio lista 1', 'Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA', 'Precio de venta', 'G']));
       const stock = this.parseMoney(this.pick(raw, ['stock', 'Stock', 'STOCK']));
 
       if (!code) errors.push(`fila ${rowNumber}: falta Codigo`);
@@ -668,12 +690,14 @@ export class ProductsService {
     const ivaRate = this.deriveTaxRate(raw) ?? 0;
     priceLists.forEach((list, index) => {
       const listNumber = index + 1;
+      const code = this.priceListCode(list.name);
       const candidates = [
         list.id,
         list.name,
         list.name.toLowerCase(),
         `precio ${list.name}`,
         `price ${list.name}`,
+        ...(code ? this.priceListAliases(code) : []),
         `lista ${listNumber}`,
         `Lista ${listNumber}`,
         `l${listNumber}`,
@@ -681,7 +705,7 @@ export class ProductsService {
         `L${listNumber} C/IVA`,
         `l${listNumber} c/iva`,
       ];
-      if (index === 0) {
+      if (code === 'LP1' || index === 0) {
         candidates.push(
           'price',
           'precio',
@@ -699,12 +723,12 @@ export class ProductsService {
           'G',
         );
       }
-      if (index === 3) {
+      if (code === 'LP4' || index === 3) {
         candidates.push('Precio Lista 4 sin iva', 'Precio lista 4 sin iva', 'Lista 4 sin iva');
       }
       const value = this.pick(raw, candidates);
       let price = this.parseMoney(value);
-      if (index === 0 && price !== null) {
+      if ((code === 'LP1' || index === 0) && price !== null) {
         const explicitGross = this.pick(raw, ['Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA']);
         const explicitNet = this.pick(raw, ['Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'G']);
         const onlyGross = (explicitNet === undefined || explicitNet === null || String(explicitNet).trim() === '') && explicitGross !== undefined && explicitGross !== null && String(explicitGross).trim() !== '';
@@ -713,6 +737,101 @@ export class ProductsService {
       if (price !== null) prices[list.id] = price;
     });
     return prices;
+  }
+
+  private priceListCode(name: string): string | null {
+    const normalized = this.normalizeHeader(name);
+    if (normalized.startsWith('lp1')) return 'LP1';
+    if (normalized.startsWith('lp2')) return 'LP2';
+    if (normalized.startsWith('lp3')) return 'LP3';
+    if (normalized.startsWith('lp4')) return 'LP4';
+    if (normalized.startsWith('lp5')) return 'LP5';
+    if (normalized.startsWith('cr') || normalized.includes('costoreposicion')) return 'CR';
+    if (normalized.startsWith('cu') || normalized.includes('costoultimacompra') || normalized.includes('costoultcp')) return 'CU';
+    return null;
+  }
+
+  private priceListAliases(code: string): string[] {
+    const number = code.startsWith('LP') ? code.slice(2) : '';
+    if (number) {
+      return [
+        code,
+        code.toLowerCase(),
+        `Precio ${code}`,
+        `precio ${code}`,
+        `Lista ${number}`,
+        `lista ${number}`,
+        `Precio Lista ${number}`,
+        `Precio lista ${number}`,
+        `Precio lista ${number} con iva`,
+        `Precio lista ${number} c/iva`,
+        `Precio lista ${number} sin iva`,
+        `L${number}`,
+        `l${number}`,
+      ];
+    }
+    if (code === 'CR') {
+      return ['CR', 'cr', 'Costo Reposición', 'Costo Reposicion', 'Costo reposicion', 'Costo de reposición', 'Costo de reposicion', 'Costo Rep.', 'Costo Rep', 'H'];
+    }
+    return ['CU', 'cu', 'Costo Ultima Compra', 'Costo última compra', 'Costo Ult.Cp.', 'Costo Ult Cp', 'Ultima Compra', 'Última Compra', 'U', 'J'];
+  }
+
+  private formulaPriceForProduct(product: ProductForFormula, priceLists: PriceListForFormula[], priceListId?: string | null): { price: number; multiplier: number; name: string } {
+    const selected = priceLists.find((list) => list.id === priceListId) || priceLists.find((list) => list.isDefault) || priceLists[0];
+    const selectedCode = selected ? this.priceListCode(selected.name) : 'LP1';
+    const lp1 = this.directListPrice(product, this.listByCode(priceLists, 'LP1')) ?? this.directListPrice(product, selected) ?? 0;
+    const cr = this.directListPrice(product, this.listByCode(priceLists, 'CR'))
+      ?? this.moneyValue(product.replacementCost)
+      ?? this.moneyValue(product.averageCost)
+      ?? 0;
+    const cu = this.directListPrice(product, this.listByCode(priceLists, 'CU'))
+      ?? this.moneyValue(product.lastPurchaseCost)
+      ?? this.moneyValue(product.replacementCost)
+      ?? this.moneyValue(product.averageCost)
+      ?? 0;
+
+    if (selectedCode === 'LP2') return { price: this.roundMoney(lp1 * 0.6), multiplier: 0.6, name: 'LP2 = LP1 x 0.60' };
+    if (selectedCode === 'LP3') return { price: this.roundMoney(lp1 * 0.8), multiplier: 0.8, name: 'LP3 = LP1 x 0.80' };
+    if (selectedCode === 'LP4') return { price: this.roundMoney(cr * 1.2), multiplier: 1.2, name: 'LP4 = CR x 1.20' };
+    if (selectedCode === 'LP5') return { price: this.roundMoney(cr), multiplier: 1, name: 'LP5 = CR' };
+    if (selectedCode === 'CR') return { price: this.roundMoney(cr), multiplier: 1, name: 'CR' };
+    if (selectedCode === 'CU') return { price: this.roundMoney(cu), multiplier: 1, name: 'CU' };
+
+    const direct = this.directListPrice(product, selected);
+    return { price: this.roundMoney(direct ?? lp1), multiplier: 1, name: selectedCode === 'LP1' ? 'LP1' : '' };
+  }
+
+  private listByCode(priceLists: PriceListForFormula[], code: string): PriceListForFormula | undefined {
+    return priceLists.find((list) => this.priceListCode(list.name) === code);
+  }
+
+  private directListPrice(product: ProductForFormula, list?: PriceListForFormula): number | null {
+    if (!list) return null;
+    const item = product.priceListItems.find((price) => price.priceListId === list.id);
+    return item ? this.moneyValue(item.price) : null;
+  }
+
+  private moneyValue(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private async ensureAguilaPriceLists(tx: any, tenantId: string): Promise<void> {
+    const existing = await tx.priceList.findMany({ where: { tenantId }, select: { id: true, name: true, isDefault: true } });
+    const existingNames = new Set(existing.map((list: { name: string }) => list.name));
+    for (const list of REQUIRED_AGUILA_PRICE_LISTS) {
+      if (!existingNames.has(list.name)) {
+        await tx.priceList.create({ data: { tenantId, name: list.name, isDefault: false, isActive: true } });
+      }
+    }
+
+    const lp1 = existing.find((list: { name: string }) => list.name === REQUIRED_AGUILA_PRICE_LISTS[0].name)
+      || await tx.priceList.findFirst({ where: { tenantId, name: REQUIRED_AGUILA_PRICE_LISTS[0].name }, select: { id: true } });
+    if (lp1) {
+      await tx.priceList.updateMany({ where: { tenantId, isDefault: true, NOT: { id: lp1.id } }, data: { isDefault: false } });
+      await tx.priceList.update({ where: { id: lp1.id }, data: { isDefault: true, isActive: true } });
+    }
   }
 
   private buildAguilaCode(baseCode: string, raw: any, options: any): string {

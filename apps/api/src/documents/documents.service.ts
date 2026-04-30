@@ -31,6 +31,16 @@ type DocumentItemInput = {
 
 const INTERNAL_SEQUENCE_SCOPE = 'INTERNAL';
 
+type PriceListForFormula = { id: string; name: string; isDefault?: boolean | null };
+type ProductPriceForFormula = {
+  id: string;
+  categoryId: string | null;
+  replacementCost?: unknown;
+  lastPurchaseCost?: unknown;
+  averageCost?: unknown;
+  priceListItems: Array<{ priceListId: string; price: unknown }>;
+};
+
 type ConfirmPayload = {
   depositId?: string;
   allowNegativeStock?: boolean;
@@ -561,6 +571,17 @@ export class DocumentsService {
       });
     }
 
+    const paidTotal = this.roundMoney(payments.reduce((sum, payment) => sum + payment.amount, 0));
+    const currentAccountTotal = this.roundMoney(payments
+      .filter((payment) => payment.method === PaymentMethod.CURRENT_ACCOUNT)
+      .reduce((sum, payment) => sum + payment.amount, 0));
+    if (paidTotal > total + 0.01) {
+      throw new BadRequestException('El total de pagos no puede superar el total del documento');
+    }
+    if (paidTotal < total - 0.01 && currentAccountTotal <= 0) {
+      throw new BadRequestException('El pago no cubre el total. Agregá otro medio o cuenta corriente');
+    }
+
     for (const payment of payments) {
       const createdPayment = await tx.payment.create({
         data: {
@@ -867,33 +888,89 @@ export class DocumentsService {
     if (role === 'OWNER') return;
     const productItems = items.filter((item): item is typeof item & { productId: string } => Boolean(item.productId));
     if (productItems.length === 0) return;
-    const defaultList = priceListId ? null : await tx.priceList.findFirst({
+    const priceLists = await tx.priceList.findMany({
       where: { tenantId, isActive: true },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
-      select: { id: true },
+      select: { id: true, name: true, isDefault: true },
     });
+    const defaultList = priceLists.find((list: PriceListForFormula) => list.isDefault) || priceLists[0];
     const effectivePriceListId = priceListId || defaultList?.id;
     if (!effectivePriceListId) throw new BadRequestException('Falta lista de precio para validar precios');
 
-    const prices = await tx.priceListItem.findMany({
-      where: { priceListId: effectivePriceListId, productId: { in: productItems.map((item) => item.productId) } },
-      select: { productId: true, price: true },
-    });
     const products = await tx.product.findMany({
       where: { tenantId, id: { in: productItems.map((item) => item.productId) } },
-      select: { id: true, categoryId: true },
+      select: {
+        id: true,
+        categoryId: true,
+        replacementCost: true,
+        lastPurchaseCost: true,
+        averageCost: true,
+        priceListItems: { select: { priceListId: true, price: true } },
+      },
     });
-    const categoryByProduct = new Map<string, string | null>(products.map((product: any) => [product.id, product.categoryId]));
+    const productById = new Map<string, ProductPriceForFormula>(products.map((product: ProductPriceForFormula) => [product.id, product]));
     const coefficients = await this.activePriceCoefficients(tx, tenantId, productItems.map((item) => item.productId), products.map((product: any) => product.categoryId).filter(Boolean));
-    const priceByProduct = new Map<string, number>(prices.map((price: any) => [price.productId, Number(price.price)]));
     for (const item of productItems) {
-      const basePrice = priceByProduct.get(item.productId);
-      if (basePrice === undefined) throw new BadRequestException(`El producto ${item.description} no tiene precio en la lista seleccionada`);
-      const expected = this.roundMoney(basePrice * this.bestCoefficientForProduct(coefficients, item.productId, categoryByProduct.get(item.productId)).multiplier);
+      const product = productById.get(item.productId);
+      if (!product) throw new BadRequestException(`El producto ${item.description} no existe`);
+      const basePrice = this.formulaPriceForProduct(product, priceLists, effectivePriceListId);
+      if (basePrice <= 0) throw new BadRequestException(`El producto ${item.description} no tiene precio calculable en la lista seleccionada`);
+      const expected = this.roundMoney(basePrice * this.bestCoefficientForProduct(coefficients, item.productId, product.categoryId).multiplier);
       if (Math.abs(Number(item.unitPrice) - expected) > 0.01) {
         throw new BadRequestException(`Solo OWNER puede modificar precio unitario. Revisá ${item.description}`);
       }
     }
+  }
+
+  private formulaPriceForProduct(product: ProductPriceForFormula, priceLists: PriceListForFormula[], priceListId?: string | null): number {
+    const selected = priceLists.find((list) => list.id === priceListId) || priceLists.find((list) => list.isDefault) || priceLists[0];
+    const selectedCode = selected ? this.priceListCode(selected.name) : 'LP1';
+    const lp1 = this.directListPrice(product, this.listByCode(priceLists, 'LP1')) ?? this.directListPrice(product, selected) ?? 0;
+    const cr = this.directListPrice(product, this.listByCode(priceLists, 'CR'))
+      ?? this.moneyValue(product.replacementCost)
+      ?? this.moneyValue(product.averageCost)
+      ?? 0;
+    const cu = this.directListPrice(product, this.listByCode(priceLists, 'CU'))
+      ?? this.moneyValue(product.lastPurchaseCost)
+      ?? this.moneyValue(product.replacementCost)
+      ?? this.moneyValue(product.averageCost)
+      ?? 0;
+
+    if (selectedCode === 'LP2') return this.roundMoney(lp1 * 0.6);
+    if (selectedCode === 'LP3') return this.roundMoney(lp1 * 0.8);
+    if (selectedCode === 'LP4') return this.roundMoney(cr * 1.2);
+    if (selectedCode === 'LP5') return this.roundMoney(cr);
+    if (selectedCode === 'CR') return this.roundMoney(cr);
+    if (selectedCode === 'CU') return this.roundMoney(cu);
+    return this.roundMoney(this.directListPrice(product, selected) ?? lp1);
+  }
+
+  private listByCode(priceLists: PriceListForFormula[], code: string): PriceListForFormula | undefined {
+    return priceLists.find((list) => this.priceListCode(list.name) === code);
+  }
+
+  private directListPrice(product: ProductPriceForFormula, list?: PriceListForFormula): number | null {
+    if (!list) return null;
+    const item = product.priceListItems.find((price) => price.priceListId === list.id);
+    return item ? this.moneyValue(item.price) : null;
+  }
+
+  private priceListCode(name: string): string | null {
+    const normalized = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    if (normalized.startsWith('lp1')) return 'LP1';
+    if (normalized.startsWith('lp2')) return 'LP2';
+    if (normalized.startsWith('lp3')) return 'LP3';
+    if (normalized.startsWith('lp4')) return 'LP4';
+    if (normalized.startsWith('lp5')) return 'LP5';
+    if (normalized.startsWith('cr') || normalized.includes('costoreposicion')) return 'CR';
+    if (normalized.startsWith('cu') || normalized.includes('costoultimacompra') || normalized.includes('costoultcp')) return 'CU';
+    return null;
+  }
+
+  private moneyValue(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private async activePriceCoefficients(tx: any, tenantId: string, productIds: string[], categoryIds: string[]): Promise<any[]> {
