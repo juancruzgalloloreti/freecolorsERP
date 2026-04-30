@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import {
   BarChart3,
   FileText,
@@ -58,17 +59,21 @@ export function EntitySheet({
   children,
   footer,
   onClose,
+  preventOutsideClose,
 }: {
   open: boolean
   title: string
   children: React.ReactNode
   footer?: React.ReactNode
   onClose: () => void
+  preventOutsideClose?: boolean
 }) {
+  const sheetRef = useRef<HTMLElement>(null)
+  useFocusTrap(open, sheetRef, onClose)
   if (!open) return null
   return (
-    <div className="entity-sheet-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="entity-sheet">
+    <div className="entity-sheet-overlay" onClick={(event) => event.target === event.currentTarget && !preventOutsideClose && onClose()}>
+      <section className="entity-sheet" ref={sheetRef} role="dialog" aria-modal="true">
         <header className="entity-sheet-header">
           <h2>{title}</h2>
           <button className="btn btn-icon btn-secondary" type="button" onClick={onClose}>×</button>
@@ -99,10 +104,12 @@ export function ConfirmDialog({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(open, dialogRef, onCancel)
   if (!open) return null
   return (
     <div className="entity-sheet-overlay" onClick={(event) => event.target === event.currentTarget && !pending && onCancel()}>
-      <div className="confirm-dialog">
+      <div className="confirm-dialog" ref={dialogRef} role="alertdialog" aria-modal="true">
         <h2>{title}</h2>
         <p>{body}</p>
         <div className="action-bar">
@@ -170,3 +177,46 @@ export const moreLinks = [
   { href: '/documentos', label: 'Documentos', icon: FileText },
   { href: '/reportes', label: 'Reportes', icon: BarChart3 },
 ]
+
+function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement | null>, onEscape: () => void) {
+  useEffect(() => {
+    if (!open) return
+    const container = containerRef.current
+    if (!container) return
+    const previous = document.activeElement as HTMLElement | null
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    const focusFirst = () => {
+      const first = container.querySelector<HTMLElement>(focusableSelector)
+      ;(first ?? container).focus()
+    }
+    focusFirst()
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onEscape()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter((element) => !element.hasAttribute('disabled'))
+      if (focusable.length === 0) {
+        event.preventDefault()
+        container.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => {
+      document.removeEventListener('keydown', handler)
+      previous?.focus?.()
+    }
+  }, [containerRef, onEscape, open])
+}

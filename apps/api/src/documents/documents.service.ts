@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentStatus, DocumentType, PaymentMethod, StockMovementType } from '@erp/db';
+import { DocumentStatus, DocumentType, IvaCondition, PaymentMethod, Prisma, StockMovementType } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CashService } from '../cash/cash.service';
@@ -21,13 +21,15 @@ type DocumentWriteData = {
 };
 
 type DocumentItemInput = {
-  productId?: string;
+  productId?: string | null;
   description?: string;
   quantity?: string | number;
   unitPrice?: string | number;
   discount?: string | number;
   taxRate?: string | number;
 };
+
+const INTERNAL_SEQUENCE_SCOPE = 'INTERNAL';
 
 type ConfirmPayload = {
   depositId?: string;
@@ -38,6 +40,14 @@ type ConfirmPayload = {
     amount?: string | number;
     reference?: string;
     notes?: string;
+    check?: {
+      number?: string;
+      bank?: string;
+      accountOwner?: string;
+      issueDate?: string;
+      dueDate?: string;
+      isEcheq?: boolean;
+    };
   }>;
 };
 
@@ -48,10 +58,23 @@ const STOCK_DOCUMENT_TYPES = new Set<DocumentType>([
   DocumentType.REMITO,
 ]);
 
+const PURCHASE_STOCK_DOCUMENT_TYPES = new Set<DocumentType>([
+  DocumentType.PURCHASE_INVOICE,
+  DocumentType.DELIVERY_NOTE,
+]);
+
 const CUSTOMER_CHARGE_TYPES = new Set<DocumentType>([
   DocumentType.INVOICE_A,
   DocumentType.INVOICE_B,
   DocumentType.INVOICE_C,
+]);
+
+const SUPPLIER_CHARGE_TYPES = new Set<DocumentType>([
+  DocumentType.PURCHASE_INVOICE,
+]);
+
+const SUPPLIER_CREDIT_TYPES = new Set<DocumentType>([
+  DocumentType.PURCHASE_CREDIT_NOTE,
 ]);
 
 @Injectable()
@@ -181,13 +204,18 @@ export class DocumentsService {
         throw new BadRequestException('No se puede confirmar un documento sin items');
       }
       this.assertDiscountAllowed(role, document.items);
+      this.assertDocumentTypeAllowed(document.type, document.customer?.ivaCondition);
 
       const depositId = await this.resolveDepositId(tx, tenantId, payload.depositId);
       if (STOCK_DOCUMENT_TYPES.has(document.type)) {
         await this.createSaleStockMovements(tx, tenantId, userId, document, depositId, role, Boolean(payload.allowNegativeStock));
       }
+      if (PURCHASE_STOCK_DOCUMENT_TYPES.has(document.type)) {
+        await this.createPurchaseStockMovements(tx, tenantId, userId, document, depositId);
+      }
 
       await this.createPaymentsAndCc(tx, tenantId, userId, document, payload);
+      await this.createSupplierAccountEntries(tx, tenantId, document);
 
       const number = document.number ?? await this.nextNumber(tx, tenantId, document.type, document.puntoDeVentaId);
       await tx.document.update({
@@ -339,9 +367,20 @@ export class DocumentsService {
     return this.toDetailDto(document);
   }
 
-  private computeItems(items: DocumentItemInput[]): Array<Required<DocumentItemInput> & { subtotal: number; taxAmount: number; total: number; sortOrder: number }> {
+  private computeItems(items: DocumentItemInput[]): Array<{
+    productId: string | null;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    discount: number;
+    taxRate: number;
+    subtotal: number;
+    taxAmount: number;
+    total: number;
+    sortOrder: number;
+  }> {
     return items
-      .filter((item) => item.productId)
+      .filter((item) => item.productId || item.description?.trim())
       .map((item, index) => {
         const quantity = this.toPositiveNumber(item.quantity, 'Cantidad');
         const unitPrice = this.toNumber(item.unitPrice);
@@ -350,8 +389,8 @@ export class DocumentsService {
         const subtotal = quantity * unitPrice * (1 - discount / 100);
         const taxAmount = subtotal * taxRate / 100;
         return {
-          productId: String(item.productId),
-          description: item.description || 'Item',
+          productId: item.productId ? String(item.productId) : null,
+          description: item.description?.trim() || 'Item',
           quantity,
           unitPrice,
           discount,
@@ -403,6 +442,8 @@ export class DocumentsService {
 
   private async createSaleStockMovements(tx: any, tenantId: string, userId: string, document: any, depositId: string, role: string, allowNegativeStock: boolean): Promise<void> {
     for (const item of document.items) {
+      if (!item.productId) continue;
+      await this.lockProduct(tx, item.productId);
       const current = await tx.stockMovement.aggregate({
         where: { tenantId, productId: item.productId, depositId },
         _sum: { quantity: true },
@@ -429,6 +470,29 @@ export class DocumentsService {
     }
   }
 
+  private async createPurchaseStockMovements(tx: any, tenantId: string, userId: string, document: any, depositId: string): Promise<void> {
+    for (const item of document.items) {
+      if (!item.productId) continue;
+      await this.lockProduct(tx, item.productId);
+      const quantity = Number(item.quantity);
+      const unitCost = this.roundMoney(Number(item.subtotal || 0) / quantity);
+      await tx.stockMovement.create({
+        data: {
+          tenantId,
+          createdById: userId,
+          productId: item.productId,
+          depositId,
+          type: StockMovementType.PURCHASE,
+          quantity,
+          unitCost,
+          documentId: document.id,
+          notes: `Entrada por ${document.type}`,
+        },
+      });
+      await this.recalculateAverageCost(tx, tenantId, item.productId);
+    }
+  }
+
   private async createPaymentsAndCc(tx: any, tenantId: string, userId: string, document: any, payload: ConfirmPayload): Promise<void> {
     if (!CUSTOMER_CHARGE_TYPES.has(document.type)) return;
 
@@ -444,6 +508,7 @@ export class DocumentsService {
         amount: this.toNumber(payment.amount),
         reference: payment.reference || null,
         notes: payment.notes || null,
+        check: payment.check,
       }))
       .filter((payment) => payment.amount > 0);
 
@@ -453,11 +518,12 @@ export class DocumentsService {
         amount: total,
         reference: null,
         notes: payload.paymentMode === 'CURRENT_ACCOUNT' ? 'Venta a cuenta corriente' : 'Caja mostrador',
+        check: undefined,
       });
     }
 
     for (const payment of payments) {
-      await tx.payment.create({
+      const createdPayment = await tx.payment.create({
         data: {
           tenantId,
           documentId: document.id,
@@ -468,6 +534,25 @@ export class DocumentsService {
           createdById: userId,
         },
       });
+      if (payment.method === PaymentMethod.CHECK) {
+        if (!payment.check?.number || !payment.check?.bank || !payment.check?.accountOwner || !payment.check?.dueDate) {
+          throw new BadRequestException('El pago con cheque requiere numero, banco, titular y vencimiento');
+        }
+        await tx.check.create({
+          data: {
+            tenantId,
+            paymentId: createdPayment.id,
+            number: payment.check.number,
+            bank: payment.check.bank,
+            accountOwner: payment.check.accountOwner,
+            amount: this.roundMoney(payment.amount),
+            issueDate: payment.check.issueDate ? new Date(payment.check.issueDate) : new Date(),
+            dueDate: new Date(payment.check.dueDate),
+            isEcheq: Boolean(payment.check.isEcheq),
+            notes: payment.notes,
+          },
+        });
+      }
       if (payment.method !== PaymentMethod.CURRENT_ACCOUNT) {
         await this.cash.recordSalePayment(
           tx,
@@ -503,20 +588,48 @@ export class DocumentsService {
     }
   }
 
-  private async nextNumber(tx: any, tenantId: string, type: DocumentType, puntoDeVentaId: string | null): Promise<number | null> {
-    if (type === DocumentType.BUDGET || type === DocumentType.REMITO || type === DocumentType.PURCHASE_ORDER) {
-      const lastInternal = await tx.document.aggregate({
-        where: { tenantId, type, number: { not: null } },
-        _max: { number: true },
-      });
-      return Number(lastInternal._max.number ?? 0) + 1;
-    }
-    if (!puntoDeVentaId) throw new BadRequestException('El documento fiscal necesita punto de venta');
-    const last = await tx.document.aggregate({
-      where: { tenantId, type, puntoDeVentaId, number: { not: null } },
-      _max: { number: true },
+  private async createSupplierAccountEntries(tx: any, tenantId: string, document: any): Promise<void> {
+    if (!SUPPLIER_CHARGE_TYPES.has(document.type) && !SUPPLIER_CREDIT_TYPES.has(document.type)) return;
+    if (!document.supplierId) throw new BadRequestException('El comprobante de proveedor requiere proveedor');
+
+    const existing = await tx.supplierAccountEntry.count({ where: { documentId: document.id } });
+    if (existing) return;
+
+    const isCredit = SUPPLIER_CREDIT_TYPES.has(document.type);
+    await tx.supplierAccountEntry.create({
+      data: {
+        tenantId,
+        supplierId: document.supplierId,
+        documentId: document.id,
+        type: isCredit ? 'CREDIT_NOTE' : 'PURCHASE',
+        amount: this.roundMoney(Number(document.total || 0) * (isCredit ? -1 : 1)),
+        description: `${isCredit ? 'Nota de credito' : 'Compra'} ${document.type}`,
+        date: new Date(),
+      },
     });
-    return Number(last._max.number ?? 0) + 1;
+  }
+
+  private async nextNumber(tx: any, tenantId: string, type: DocumentType, puntoDeVentaId: string | null): Promise<number | null> {
+    if (this.needsPuntoDeVenta(type) && !puntoDeVentaId) {
+      throw new BadRequestException('El documento fiscal necesita punto de venta');
+    }
+
+    const scopeKey = puntoDeVentaId ?? INTERNAL_SEQUENCE_SCOPE;
+    await tx.documentSequence.upsert({
+      where: { tenantId_scopeKey_documentType: { tenantId, scopeKey, documentType: type } },
+      update: {},
+      create: { tenantId, puntoDeVentaId, scopeKey, documentType: type, lastNumber: 0 },
+    });
+
+    const rows = await tx.$queryRaw(Prisma.sql`
+      UPDATE "document_sequences"
+      SET "lastNumber" = "lastNumber" + 1
+      WHERE "tenantId" = ${tenantId}
+        AND "scopeKey" = ${scopeKey}
+        AND "documentType" = ${type}
+      RETURNING "lastNumber"
+    `) as Array<{ lastNumber: number }>;
+    return Number(rows[0]?.lastNumber ?? 0);
   }
 
   private needsPuntoDeVenta(type: DocumentType): boolean {
@@ -548,7 +661,7 @@ export class DocumentsService {
       taxAmount: Number(d.taxAmount),
       paidAmount: d.payments?.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0) ?? 0,
       itemCount: d.items.length,
-      createdByName: `${d.createdBy.firstName} ${d.createdBy.lastName}`,
+      createdByName: d.createdBy ? `${d.createdBy.firstName} ${d.createdBy.lastName}` : null,
       notes: d.notes,
     };
   }
@@ -627,6 +740,8 @@ export class DocumentsService {
 
   private async assertPricesAllowed(tx: any, tenantId: string, role: string, priceListId: string | null | undefined, items: ReturnType<DocumentsService['computeItems']>): Promise<void> {
     if (role === 'OWNER') return;
+    const productItems = items.filter((item): item is typeof item & { productId: string } => Boolean(item.productId));
+    if (productItems.length === 0) return;
     const defaultList = priceListId ? null : await tx.priceList.findFirst({
       where: { tenantId, isActive: true },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
@@ -636,17 +751,17 @@ export class DocumentsService {
     if (!effectivePriceListId) throw new BadRequestException('Falta lista de precio para validar precios');
 
     const prices = await tx.priceListItem.findMany({
-      where: { priceListId: effectivePriceListId, productId: { in: items.map((item) => item.productId) } },
+      where: { priceListId: effectivePriceListId, productId: { in: productItems.map((item) => item.productId) } },
       select: { productId: true, price: true },
     });
     const products = await tx.product.findMany({
-      where: { tenantId, id: { in: items.map((item) => item.productId) } },
+      where: { tenantId, id: { in: productItems.map((item) => item.productId) } },
       select: { id: true, categoryId: true },
     });
     const categoryByProduct = new Map<string, string | null>(products.map((product: any) => [product.id, product.categoryId]));
-    const coefficients = await this.activePriceCoefficients(tx, tenantId, items.map((item) => item.productId), products.map((product: any) => product.categoryId).filter(Boolean));
+    const coefficients = await this.activePriceCoefficients(tx, tenantId, productItems.map((item) => item.productId), products.map((product: any) => product.categoryId).filter(Boolean));
     const priceByProduct = new Map<string, number>(prices.map((price: any) => [price.productId, Number(price.price)]));
-    for (const item of items) {
+    for (const item of productItems) {
       const basePrice = priceByProduct.get(item.productId);
       if (basePrice === undefined) throw new BadRequestException(`El producto ${item.description} no tiene precio en la lista seleccionada`);
       const expected = this.roundMoney(basePrice * this.bestCoefficientForProduct(coefficients, item.productId, categoryByProduct.get(item.productId)).multiplier);
@@ -696,5 +811,41 @@ export class DocumentsService {
         throw new BadRequestException(`El descuento de ${item.description} supera el maximo permitido para tu rol (${maxDiscount}%)`);
       }
     }
+  }
+
+  private assertDocumentTypeAllowed(type: DocumentType, ivaCondition?: IvaCondition | null): void {
+    if (!CUSTOMER_CHARGE_TYPES.has(type)) return;
+    const condition = ivaCondition ?? IvaCondition.CONSUMIDOR_FINAL;
+    if (condition === IvaCondition.RESPONSABLE_INSCRIPTO && type !== DocumentType.INVOICE_A) {
+      throw new BadRequestException('Un cliente Responsable Inscripto debe recibir Factura A');
+    }
+    if (condition !== IvaCondition.RESPONSABLE_INSCRIPTO && type === DocumentType.INVOICE_A) {
+      throw new BadRequestException('Factura A solo corresponde a clientes Responsable Inscripto');
+    }
+    if (condition === IvaCondition.CONSUMIDOR_FINAL && type !== DocumentType.INVOICE_B && type !== DocumentType.INVOICE_C) {
+      throw new BadRequestException('Consumidor Final solo puede recibir Factura B o C');
+    }
+  }
+
+  private async lockProduct(tx: any, productId: string): Promise<void> {
+    await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${productId}))`);
+  }
+
+  private async recalculateAverageCost(tx: any, tenantId: string, productId: string): Promise<void> {
+    const rows = await tx.$queryRaw(Prisma.sql`
+      SELECT
+        COALESCE(SUM("quantity"), 0)::float AS "quantity",
+        COALESCE(SUM("quantity" * "unitCost"), 0)::float AS "value"
+      FROM "stock_movements"
+      WHERE "tenantId" = ${tenantId}
+        AND "productId" = ${productId}
+        AND "quantity" > 0
+    `) as Array<{ quantity: number; value: number }>;
+    const quantity = Number(rows[0]?.quantity ?? 0);
+    if (quantity <= 0) return;
+    await tx.product.update({
+      where: { id: productId },
+      data: { averageCost: this.roundMoney(Number(rows[0]?.value ?? 0) / quantity) },
+    });
   }
 }

@@ -24,6 +24,12 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = Cookies.get('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  const method = String(config.method || 'get').toUpperCase()
+  if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(method) && !config.headers['Idempotency-Key']) {
+    config.headers['Idempotency-Key'] = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
   return config
 })
 
@@ -197,6 +203,10 @@ export const suppliersApi = {
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/suppliers/${id}`, data).then((r) => r.data),
   remove: (id: string) => api.delete(`/suppliers/${id}`),
+  account: (id: string) => api.get(`/suppliers/${id}/account`).then((r) => r.data),
+  products: (id: string) => api.get(`/suppliers/${id}/products`).then((r) => r.data),
+  upsertProduct: (id: string, data: Record<string, unknown>) =>
+    api.post(`/suppliers/${id}/products`, data).then((r) => r.data),
 }
 
 // ─── Current Account ────────────────────────────────────────

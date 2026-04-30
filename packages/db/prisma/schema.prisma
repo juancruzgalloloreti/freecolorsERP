@@ -45,6 +45,8 @@ model Tenant {
   deposits       Deposit[]
   documents      Document[]
   salesOrders    SalesOrder[]
+  payments       Payment[]
+  ccEntries      CurrentAccountEntry[]
   customers      Customer[]
   suppliers      Supplier[]
   priceLists     PriceList[]
@@ -54,6 +56,13 @@ model Tenant {
   auditLogs      AuditLog[]
   cashSessions   CashSession[]
   cashMovements  CashMovement[]
+  documentSequences DocumentSequence[]
+  afipCredential AfipCredential?
+  supplierProducts SupplierProduct[]
+  supplierAccountEntries SupplierAccountEntry[]
+  checks Check[]
+  exchangeRates ExchangeRate[]
+  idempotencyKeys IdempotencyKey[]
 
   @@map("tenants")
 }
@@ -85,8 +94,12 @@ model User {
   updatedAt          DateTime  @updatedAt
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  documents Document[]
-  salesOrders SalesOrder[]
+  documents Document[] @relation("DocumentCreatedBy")
+  salesOrders SalesOrder[] @relation("SalesOrderCreatedBy")
+  stockMovements StockMovement[] @relation("StockMovementCreatedBy")
+  payments Payment[] @relation("PaymentCreatedBy")
+  ccEntries CurrentAccountEntry[] @relation("CurrentAccountEntryCreatedBy")
+  cashMovements CashMovement[] @relation("CashMovementCreatedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -143,6 +156,8 @@ model Product {
   id          String   @id @default(cuid())
   tenantId    String
   code        String   // UNIQUE por tenant
+  barcode     String?
+  barcodeAlt  String?
   name        String
   description String?
   categoryId  String?
@@ -154,6 +169,10 @@ model Product {
   replacementCost Decimal? @db.Decimal(18, 4)
   averageCost Decimal? @db.Decimal(18, 4)
   lastPurchaseCost Decimal? @db.Decimal(18, 4)
+  minStock    Decimal? @db.Decimal(18, 4)
+  maxStock    Decimal? @db.Decimal(18, 4)
+  baseCurrency String  @default("ARS")
+  basePrice    Decimal? @db.Decimal(18, 4)
   isActive    Boolean  @default(true)
   // Notas internas
   notes       String?
@@ -168,8 +187,12 @@ model Product {
   salesOrderItems SalesOrderItem[]
   priceListItems PriceListItem[]
   priceCoefficients PriceCoefficient[]
+  supplierProducts SupplierProduct[]
+  variants       ProductVariant[]
 
   @@unique([tenantId, code])
+  @@index([tenantId, barcode])
+  @@index([tenantId, barcodeAlt])
   @@index([tenantId, categoryId])
   @@index([tenantId, brandId])
   @@map("products")
@@ -207,6 +230,7 @@ model StockMovement {
   // unitCost: costo unitario al momento del movimiento (CPP incremental calculado en la API)
   unitCost    Decimal           @db.Decimal(18, 4)
   documentId  String?           // referencia al documento que originó el movimiento
+  variantId   String?
   notes       String?
   createdAt   DateTime          @default(now())
   createdById String?
@@ -215,10 +239,13 @@ model StockMovement {
   product  Product   @relation(fields: [productId], references: [id])
   deposit  Deposit   @relation(fields: [depositId], references: [id])
   document Document? @relation(fields: [documentId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+  createdBy User?   @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([tenantId, productId, depositId])
   @@index([tenantId, productId, createdAt])
   @@index([tenantId, documentId])
+  @@index([tenantId, variantId])
   @@index([tenantId, depositId, createdAt])
   @@index([tenantId, type, createdAt])
   @@map("stock_movements")
@@ -252,6 +279,7 @@ model PuntoDeVenta {
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   documents Document[]
+  documentSequences DocumentSequence[]
 
   @@unique([tenantId, number])
   @@map("puntos_de_venta")
@@ -266,7 +294,7 @@ model Document {
   number         Int?           // correlativo por tipo + PV
   customerId     String?        // para ventas
   supplierId     String?        // para compras
-  createdById    String
+  createdById    String?
   date           DateTime       @default(now())
   dueDate        DateTime?
   notes          String?
@@ -274,6 +302,10 @@ model Document {
   subtotal       Decimal        @db.Decimal(18, 2)
   taxAmount      Decimal        @default(0) @db.Decimal(18, 2)
   total          Decimal        @db.Decimal(18, 2)
+  cae            String?
+  caeFechaVto    DateTime?
+  caeStatus      CaeStatus      @default(PENDING)
+  qrData         String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -281,11 +313,14 @@ model Document {
   puntoDeVenta   PuntoDeVenta?         @relation(fields: [puntoDeVentaId], references: [id])
   customer       Customer?             @relation(fields: [customerId], references: [id])
   supplier       Supplier?             @relation(fields: [supplierId], references: [id])
-  createdBy      User                  @relation(fields: [createdById], references: [id])
+  createdBy      User?                 @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   items          DocumentItem[]
+  taxes          DocumentTax[]
   stockMovements StockMovement[]
   payments       Payment[]
   ccEntries      CurrentAccountEntry[]
+  cashMovements  CashMovement[]
+  supplierAccountEntries SupplierAccountEntry[]
   salesOrders    SalesOrder[]
 
   @@unique([tenantId, puntoDeVentaId, type, number])
@@ -308,7 +343,17 @@ enum DocumentType {
   DEBIT_NOTE_B   // Nota de Débito B
   REMITO         // Remito interno (sin número AFIP)
   PURCHASE_ORDER // Orden de Compra
+  PURCHASE_INVOICE // Factura recibida de proveedor
+  PURCHASE_CREDIT_NOTE // Nota de crédito de proveedor
+  DELIVERY_NOTE  // Remito de entrega
   BUDGET         // Presupuesto
+}
+
+enum CaeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONTINGENCY
 }
 
 enum DocumentStatus {
@@ -323,7 +368,7 @@ model SalesOrder {
   number      Int
   status      SalesOrderStatus @default(PENDING)
   customerId  String?
-  createdById String
+  createdById String?
   date        DateTime         @default(now())
   dueDate     DateTime?
   notes       String?
@@ -336,7 +381,7 @@ model SalesOrder {
 
   tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer  Customer?        @relation(fields: [customerId], references: [id])
-  createdBy User             @relation(fields: [createdById], references: [id])
+  createdBy User?            @relation("SalesOrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   document  Document?        @relation(fields: [documentId], references: [id])
   items     SalesOrderItem[]
 
@@ -379,7 +424,7 @@ model SalesOrderItem {
 model DocumentItem {
   id          String  @id @default(cuid())
   documentId  String
-  productId   String
+  productId   String?
   description String  // copia del nombre al momento de facturar
   quantity    Decimal @db.Decimal(18, 4)
   unitPrice   Decimal @db.Decimal(18, 4)
@@ -391,10 +436,49 @@ model DocumentItem {
   sortOrder   Int     @default(0)
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id])
 
   @@index([documentId])
   @@map("document_items")
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  name      String
+  code      String?
+  barcode   String?
+  colorHex  String?
+  isActive  Boolean  @default(true)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+
+  @@unique([productId, name])
+  @@index([productId, barcode])
+  @@map("product_variants")
+}
+
+model DocumentTax {
+  id           String      @id @default(cuid())
+  documentId   String
+  type         TaxLineType
+  jurisdiction String?
+  base         Decimal     @db.Decimal(18, 2)
+  rate         Decimal     @db.Decimal(8, 4)
+  amount       Decimal     @db.Decimal(18, 2)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_taxes")
+}
+
+enum TaxLineType {
+  PERCEPCION_IVA
+  PERCEPCION_IIBB
+  RETENCION_IIBB
+  RETENCION_GANANCIAS
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -459,7 +543,9 @@ model CurrentAccountEntry {
   createdById String?
 
   customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document Document? @relation(fields: [documentId], references: [id])
+  createdBy User?   @relation("CurrentAccountEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([customerId, date])
   @@index([tenantId, date])
@@ -492,7 +578,10 @@ model Payment {
   createdAt    DateTime      @default(now())
   createdById  String?
 
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  check    Check?
 
   @@index([documentId])
   @@index([tenantId, method, date])
@@ -560,6 +649,8 @@ model CashMovement {
 
   tenant  Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   session CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  document Document?  @relation(fields: [documentId], references: [id])
+  createdBy User?     @relation("CashMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([tenantId, sessionId])
   @@index([tenantId, documentId])
@@ -568,10 +659,78 @@ model CashMovement {
 
 enum CashMovementType {
   SALE_PAYMENT
+  PURCHASE_PAYMENT
   CASH_IN
   CASH_OUT
   OPENING
   CLOSING_DIFFERENCE
+}
+
+model Check {
+  id           String      @id @default(cuid())
+  tenantId     String
+  paymentId    String      @unique
+  number       String
+  bank         String
+  accountOwner String
+  amount       Decimal     @db.Decimal(18, 2)
+  issueDate    DateTime
+  dueDate      DateTime
+  isEcheq      Boolean     @default(false)
+  status       CheckStatus @default(RECEIVED)
+  notes        String?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, dueDate, status])
+  @@map("checks")
+}
+
+enum CheckStatus {
+  RECEIVED
+  DEPOSITED
+  CLEARED
+  BOUNCED
+  ENDORSED
+  CANCELLED
+}
+
+model DocumentSequence {
+  id             String       @id @default(cuid())
+  tenantId       String
+  puntoDeVentaId String?
+  scopeKey       String
+  documentType   DocumentType
+  lastNumber     Int          @default(0)
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  puntoDeVenta PuntoDeVenta?  @relation(fields: [puntoDeVentaId], references: [id])
+
+  @@unique([tenantId, scopeKey, documentType])
+  @@index([tenantId, documentType])
+  @@map("document_sequences")
+}
+
+model AfipCredential {
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  cuit        String
+  cert        String
+  privateKey  String
+  environment AfipEnv  @default(TESTING)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("afip_credentials")
+}
+
+enum AfipEnv {
+  TESTING
+  PRODUCTION
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -681,8 +840,101 @@ model Supplier {
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   documents Document[]
+  products SupplierProduct[]
+  accountEntries SupplierAccountEntry[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
   @@map("suppliers")
+}
+
+model SupplierProduct {
+  id            String   @id @default(cuid())
+  tenantId      String
+  supplierId    String
+  productId     String
+  supplierCode  String?
+  supplierName  String?
+  lastCost      Decimal? @db.Decimal(18, 4)
+  lastOrderDate DateTime?
+  leadTimeDays  Int?
+  isPreferred   Boolean  @default(false)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, productId])
+  @@index([tenantId, productId])
+  @@map("supplier_products")
+}
+
+model SupplierAccountEntry {
+  id          String              @id @default(cuid())
+  tenantId    String
+  supplierId  String
+  documentId  String?
+  type        SupplierCcEntryType
+  amount      Decimal             @db.Decimal(18, 2)
+  description String
+  date        DateTime            @default(now())
+  createdAt   DateTime            @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@index([supplierId, date])
+  @@index([tenantId, date])
+  @@map("supplier_account_entries")
+}
+
+enum SupplierCcEntryType {
+  PURCHASE
+  PAYMENT
+  CREDIT_NOTE
+  DEBIT_NOTE
+  ADJUSTMENT
+}
+
+model ExchangeRate {
+  id       String   @id @default(cuid())
+  tenantId String
+  from     String
+  to       String
+  rate     Decimal  @db.Decimal(18, 6)
+  rateType String
+  date     DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, from, to, date])
+  @@map("exchange_rates")
+}
+
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  tenantId     String
+  key          String
+  method       String
+  path         String
+  requestHash  String
+  status       IdempotencyStatus @default(PROCESSING)
+  responseCode Int?
+  responseBody Json?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId, expiresAt])
+  @@map("idempotency_keys")
+}
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
 }

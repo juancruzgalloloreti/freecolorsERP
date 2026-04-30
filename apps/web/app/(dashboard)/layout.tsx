@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { BottomNav } from '@/components/erp/layout'
+import { GlobalShortcuts } from '@/components/erp/global-shortcuts'
 import { useAuth } from '@/contexts/AuthContext'
 import { LogOut, Menu } from 'lucide-react'
 
@@ -41,6 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--fc-bg)' }}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <GlobalShortcuts />
 
       <div style={{
         flex: 1,

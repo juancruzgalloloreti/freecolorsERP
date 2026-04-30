@@ -16,6 +16,8 @@ export class ProductsService {
       where.OR = [
         { name: { contains: query.search, mode: 'insensitive' } },
         { code: { contains: query.search, mode: 'insensitive' } },
+        { barcode: { contains: query.search, mode: 'insensitive' } },
+        { barcodeAlt: { contains: query.search, mode: 'insensitive' } },
       ];
     }
     const [products, total] = await Promise.all([
@@ -48,6 +50,8 @@ export class ProductsService {
       where.AND = terms.map((term) => ({
         OR: [
           { code: { contains: term, mode: 'insensitive' } },
+          { barcode: { contains: term, mode: 'insensitive' } },
+          { barcodeAlt: { contains: term, mode: 'insensitive' } },
           { name: { contains: term, mode: 'insensitive' } },
           { description: { contains: term, mode: 'insensitive' } },
           { notes: { contains: term, mode: 'insensitive' } },
@@ -102,6 +106,8 @@ export class ProductsService {
       return {
         id: product.id,
         code: product.code,
+        barcode: product.barcode,
+        barcodeAlt: product.barcodeAlt,
         name: product.name,
         description: product.description,
         unit: product.unit,
@@ -110,6 +116,10 @@ export class ProductsService {
         replacementCost: product.replacementCost === null ? null : Number(product.replacementCost),
         averageCost: product.averageCost === null ? null : Number(product.averageCost),
         lastPurchaseCost: product.lastPurchaseCost === null ? null : Number(product.lastPurchaseCost),
+        minStock: product.minStock === null ? null : Number(product.minStock),
+        maxStock: product.maxStock === null ? null : Number(product.maxStock),
+        baseCurrency: product.baseCurrency,
+        foreignBasePrice: product.basePrice === null ? null : Number(product.basePrice),
         brandName: product.brand?.name ?? null,
         categoryName: product.category?.name ?? null,
         price,
@@ -402,6 +412,8 @@ export class ProductsService {
             name,
             description,
             notes,
+            barcode: this.optionalValue(raw, ['barcode', 'Codigo de barras', 'Código de barras', 'EAN', 'EAN13']),
+            barcodeAlt: this.optionalValue(raw, ['barcodeAlt', 'codigo alternativo', 'Codigo alternativo', 'Código alternativo']),
             brandId: brand?.id ?? undefined,
             categoryId: category?.id ?? undefined,
             unit: this.value(raw, this.aguilaAliases(raw, ['Unidad de medida', 'Unidad', 'unit'], ['L'])) || undefined,
@@ -410,6 +422,8 @@ export class ProductsService {
             replacementCost,
             averageCost,
             lastPurchaseCost,
+            minStock: this.parseMoney(this.pick(raw, ['Stock minimo', 'Stock mínimo', 'minStock'])),
+            maxStock: this.parseMoney(this.pick(raw, ['Stock maximo', 'Stock máximo', 'maxStock'])),
             isActive,
           };
           const product = existing
@@ -421,6 +435,8 @@ export class ProductsService {
                   name,
                   description: description ?? null,
                   notes: notes ?? null,
+                  barcode: this.optionalValue(raw, ['barcode', 'Codigo de barras', 'Código de barras', 'EAN', 'EAN13']) ?? null,
+                  barcodeAlt: this.optionalValue(raw, ['barcodeAlt', 'codigo alternativo', 'Codigo alternativo', 'Código alternativo']) ?? null,
                   brandId: brand?.id,
                   categoryId: category?.id,
                   unit: this.value(raw, this.aguilaAliases(raw, ['Unidad de medida', 'Unidad', 'unit'], ['L'])) || 'un',
@@ -429,6 +445,8 @@ export class ProductsService {
                   replacementCost,
                   averageCost,
                   lastPurchaseCost,
+                  minStock: this.parseMoney(this.pick(raw, ['Stock minimo', 'Stock mínimo', 'minStock'])),
+                  maxStock: this.parseMoney(this.pick(raw, ['Stock maximo', 'Stock máximo', 'maxStock'])),
                   isActive,
                 },
               });
@@ -524,6 +542,8 @@ export class ProductsService {
   private normalizeProductData(data: any): any {
     const productData: any = {
       code: data.code,
+      barcode: data.barcode === undefined ? undefined : data.barcode || null,
+      barcodeAlt: data.barcodeAlt === undefined ? undefined : data.barcodeAlt || null,
       name: data.name,
       unit: data.unit === undefined ? undefined : data.unit || 'item',
       brandId: data.brandId === undefined ? undefined : data.brandId || null,
@@ -535,6 +555,10 @@ export class ProductsService {
       replacementCost: data.replacementCost === undefined ? undefined : this.parseNullableNonNegativeMoney(data.replacementCost, 'costo reposicion'),
       averageCost: data.averageCost === undefined ? undefined : this.parseNullableNonNegativeMoney(data.averageCost, 'costo promedio'),
       lastPurchaseCost: data.lastPurchaseCost === undefined ? undefined : this.parseNullableNonNegativeMoney(data.lastPurchaseCost, 'costo ultima compra'),
+      minStock: data.minStock === undefined ? undefined : this.parseNullableNonNegativeMoney(data.minStock, 'stock minimo'),
+      maxStock: data.maxStock === undefined ? undefined : this.parseNullableNonNegativeMoney(data.maxStock, 'stock maximo'),
+      baseCurrency: data.baseCurrency === undefined ? undefined : String(data.baseCurrency || 'ARS').toUpperCase(),
+      basePrice: data.basePrice === undefined ? undefined : this.parseNullableNonNegativeMoney(data.basePrice, 'precio moneda base'),
       isActive: data.isActive,
     };
     Object.keys(productData).forEach((key) => productData[key] === undefined && delete productData[key]);

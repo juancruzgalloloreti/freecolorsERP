@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -26,6 +26,7 @@ import {
   RoleGate,
 } from '@/components/erp/layout'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBarcodeScan } from '@/hooks/use-barcode-scan'
 import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
 import { printDocumentA4 } from '@/lib/print-document'
 
@@ -211,6 +212,7 @@ export default function VentasPage() {
   const [globalDiscount, setGlobalDiscount] = useState('')
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
   const [quickProduct, setQuickProduct] = useState(() => emptyQuickProduct(''))
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const { data: customersRaw } = useQuery({ queryKey: ['customers-counter'], queryFn: () => customersApi.list({ limit: 500 }) })
   const { data: priceListsRaw } = useQuery({ queryKey: ['price-lists-counter'], queryFn: priceListsApi.list })
@@ -268,7 +270,7 @@ export default function VentasPage() {
     }
   }, [globalDiscount, lines, roundTotal])
 
-  const addLine = (product: ProductHit) => {
+  const addLine = useCallback((product: ProductHit) => {
     if (!canUseCounter) return
     setError(null)
     setMessage(null)
@@ -298,7 +300,22 @@ export default function VentasPage() {
       ]
     })
     setSearch('')
-  }
+    window.setTimeout(() => searchRef.current?.focus(), 0)
+  }, [canUseCounter, includeVat])
+
+  useBarcodeScan(async (code) => {
+    if (!canUseCounter || productSheet || customerSheet || paymentSheet || cashSheet || discountSheet) return
+    setError(null)
+    setMessage(null)
+    const results = asArray<ProductHit>(await productsApi.search({
+      q: code,
+      priceListId: effectivePriceListId,
+      depositId: effectiveDepositId,
+      limit: 1,
+    }))
+    if (results[0]) addLine(results[0])
+    else setError(`No encontré producto para el código ${code}`)
+  }, canUseCounter)
 
   const updateLine = (index: number, patch: Partial<CounterLine>) => {
     if (!canUseCounter) return
@@ -661,6 +678,7 @@ export default function VentasPage() {
               <button
                 className="toolbar-btn"
                 type="button"
+                data-print-action="true"
                 onClick={() => lastDocument && printDocumentA4(lastDocument as Parameters<typeof printDocumentA4>[0])}
                 disabled={!lastDocument}
               >
@@ -675,6 +693,9 @@ export default function VentasPage() {
               <Search size={17} />
               <input
                 className="fc-input"
+                ref={searchRef}
+                data-product-search="true"
+                data-global-search="true"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 onKeyDown={(event) => {
@@ -835,7 +856,7 @@ export default function VentasPage() {
               <button className="btn btn-secondary" type="button" onClick={() => documentMutation.mutate({ action: 'draft', type: 'BUDGET' })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
                 <FileText size={14} /> Guardar
               </button>
-              <button className="btn btn-primary" type="button" onClick={() => documentMutation.mutate({ action: 'confirm', type: docType })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
+              <button className="btn btn-primary" type="button" data-confirm-action="true" onClick={() => documentMutation.mutate({ action: 'confirm', type: docType })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
                 <Check size={14} /> {documentMutation.isPending ? 'Confirmando...' : 'Confirmar'}
               </button>
             </div>
@@ -959,6 +980,7 @@ export default function VentasPage() {
         open={paymentSheet}
         title="Seleccionar Valor"
         onClose={() => setPaymentSheet(false)}
+        preventOutsideClose
         footer={<button className="btn btn-primary" type="button" onClick={closePaymentSheet}>Aceptar</button>}
       >
         <div className="payment-options">

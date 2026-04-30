@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
@@ -119,7 +120,8 @@ export class StockService {
         productId = product.id;
       }
 
-      return tx.stockMovement.create({
+      await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${productId}))`);
+      const movement = await tx.stockMovement.create({
         data: {
           tenantId,
           createdById: userId,
@@ -131,6 +133,10 @@ export class StockService {
           notes: data.notes || null,
         },
       });
+      if (quantity > 0) {
+        await this.recalculateAverageCost(tx, tenantId, productId);
+      }
+      return movement;
     });
   }
 
@@ -138,6 +144,24 @@ export class StockService {
     if (role !== 'OWNER') {
       throw new ForbiddenException('Solo la cuenta owner puede registrar movimientos manuales de stock');
     }
+  }
+
+  private async recalculateAverageCost(tx: any, tenantId: string, productId: string): Promise<void> {
+    const rows = await tx.$queryRaw(Prisma.sql`
+      SELECT
+        COALESCE(SUM("quantity"), 0)::float AS "quantity",
+        COALESCE(SUM("quantity" * "unitCost"), 0)::float AS "value"
+      FROM "stock_movements"
+      WHERE "tenantId" = ${tenantId}
+        AND "productId" = ${productId}
+        AND "quantity" > 0
+    `) as Array<{ quantity: number; value: number }>;
+    const quantity = Number(rows[0]?.quantity ?? 0);
+    if (quantity <= 0) return;
+    await tx.product.update({
+      where: { id: productId },
+      data: { averageCost: Math.round((Number(rows[0]?.value ?? 0) / quantity) * 10_000) / 10_000 },
+    });
   }
 }
 

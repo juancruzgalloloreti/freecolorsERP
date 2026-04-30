@@ -153,6 +153,7 @@ export class ReportsService {
     const productSales = new Map<string, any>();
     for (const doc of docs) {
       for (const item of doc.items) {
+        if (!item.productId) continue;
         const current = productSales.get(item.productId) ?? {
           productId: item.productId,
           code: item.product?.code ?? '',
