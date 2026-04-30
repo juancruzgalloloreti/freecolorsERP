@@ -21,3 +21,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return payload; // disponible como req.user
   }
 }
+

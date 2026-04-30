@@ -1,0 +1,91 @@
+﻿Devengamiento de Imputaciones Contables
+
+
+El sistema cuenta con la función de devengamiento de registraciones contables
+
+
+Esto consiste en contra asentar un importe imputado a una cuenta en 1 o varias cuotas
+
+
+Para activar esta función primero se debe indicar en el plan de cuentas con un tilde en la cuenta contable que se debe devengar  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cuando se graba una imputación a dicha cuenta el sistema pedirá la apertura en cuotas para luego efectuar los asientos por devengamiento.
+  
+
+La pantalla primero pregunta si el devengamiento va a ser a una cuenta contable o a una cuenta corriente
+
+
+Si es a una cuenta contable se indica cual, la cantidad de cuotas y la fecha de la primer cuota, el sistema generará las cuotas mensuales correlativas e iguales a partir de la fecha indicada.
+
+
+Si se indica una cuenta corriente, el funcionamiento es el mismo solo que el devengamiento mensual va a generar un importe en la cuenta corriente indicada
+
+
+Como generar los asientos mensuales de devengamiento y en que consiste.
+
+
+El sistema NO genera en forma automática los asientos por devengamiento de cuotas, es decir que el proceso se debe ejecutar una vez por mes.
+
+
+Contablemente consiste en lo siguiente
+Cuando se cargó el asiento a la cuenta de devengamiento (cuenta marcada en el plan de cuentas) el sistema imputó el total del importe y pidió información para luego generar los asientos de devengamiento.
+
+
+Cuando se ejecuta el proceso de devengamiento mensual el sistema busca las cuotas que están grabadas para la o las cuentas y genera un asiento por cada cuota bajando el saldo de la cuenta original (cuenta marcada en el plan de cuentas para devengar) y grabando el importe de la cuota a la cuenta contable o cuenta corriente indicada.
+
+
+de esa forma cuando se terminan con las cuotas mensuales el saldo de la cuenta a devengar que se cargó inicialmente debería quedar en 0 (cero) y mes a mes se fuè pasando el saldo a otra cuenta contable o cuenta corriente
+
+
+por ejemplo en el caso de un seguro, se carga el valor total de la póliza a una cuenta de seguros a devengar indicando la cantidad de cuotas y la cuenta contable de seguro
+el sistema mes a mes irá bajando el saldo de seguros a devengar y cargando el importe a la cuenta de seguros
+
+
+Lo mismo en el caso de un préstamo o financiación a una cuenta corriente (cliente / proveedor / empleado) se carga el total del préstamo a la cuenta préstamos a devengar con la cantidad de cuotas y la cuenta corriente, luego mes a mes el sistema va bajando el saldo de la cuenta préstamo a devengar y lo va cargando a la cuenta corriente indicada que será cancelada con un pago o un recibo.
+
+
+Devengamiento de cuotas pendientes:  
+
+
+El sistema pide inicialmente una fecha a la cual se va a devengar, esta fecha es para mostrar las cuotas con fecha anterior o igual que aùn no han sido devengadas en el sistema
+esto es para mostrar el detalle de cuales son y solo las que tiene fecha anterior para que no aparezcan las que todavía tiene fecha por vencer.
+
+
+Se deben tildar las imputaciones que se van a devengar, en teoría serían todas
+
+
+en la Parte inferior de la pantalla el sistema pide se indique el comprobante sobre el cual se va a generar el asiento, generalmente es “Asiento Contable”, la fecha del asiento y un concepto que no es obligatorio.
+
+
+Con el botón de grabar se genera el asiento y el sistema toma las cuentas segun lo definido en los pasos anteriores.
+Para controlar se puede pedir el mayor de una de las cuentas a devengar y ampliando los comprobantes se puede ver el manejo.
+
+
+Ampliando el comprobante donde se generó inicialmente el importe a devengar y ampliando la imputación se puede ver el detalle de las cuotas generadas y cuales ya han sido devengadas

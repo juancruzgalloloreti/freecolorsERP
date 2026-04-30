@@ -1,41 +1,21 @@
 {
-  "name": "web",
+  "name": "erp",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "dev": "next dev -p 3000",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.40.0",
-    "axios": "^1.7.2",
-    "bcryptjs": "^2.4.3",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "dotenv": "^17.4.2",
-    "js-cookie": "^3.0.5",
-    "lucide-react": "^0.383.0",
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18",
-    "react-hook-form": "^7.52.0"
-  },
-  "devDependencies": {
-    "@prisma/client": "^5.22.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/js-cookie": "^3.0.6",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "autoprefixer": "^10.0.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.3",
-    "postcss": "^8",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "dev": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter @erp/db build && pnpm --filter @erp/api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm --filter @erp/db db:generate && pnpm --filter @erp/db build && pnpm --filter @erp/api build && pnpm --filter web build",
+    "build:api": "pnpm --filter @erp/db db:generate && pnpm --filter @erp/db build && pnpm --filter @erp/api build",
+    "build:web": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "lint": "pnpm --filter web lint && pnpm --filter @erp/api lint",
+    "db:generate": "pnpm --filter @erp/db db:generate",
+    "db:seed": "pnpm --filter @erp/db db:seed"
   }
 }

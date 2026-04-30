@@ -1,0 +1,63 @@
+﻿Integración GM - Órdenes de Servicio
+  
+
+A la opción que ya está en uso de integración hemos agregado la fase 3 para informar la actividad del taller
+
+
+en la pantalla de integración tener en cuenta lo siguiente:
+
+
+1 - es la fecha de proceso, debe ser la fecha de hoy y coincide con la fecha en la que se informará a gm, el sistema toma la actividad del concesionario hasta el día anterior.
+
+
+2 - la fecha marcada con el punto 2 indica a partir de que fecha se tomarán ordenes para informar, esta fecha puede quedar en el valor sugerido del 01/10/2018, ya que las ordenes luego de esa fechas se informarán según cambien los estados hasta que se factura momento en el cual se informa la factura y no se informa mas.
+
+
+3 - El botón “Órdenes de Reparación” genera 5 archivos con extensión csv que luego serán tomados en la página de gm.
+
+
+---------------------
+
+
+Archivos que se generan:
+1. ServicioOrdenes15-11-2018.csv         →        Órdenes no Homologadas
+2. ServicioTrabajos15-11-2018.csv        →        Trabajos no Homologados
+3. ServicioDetalle15-11-2018.csv        →        Detalle de Trabajos NH
+4. ServicioFacturas15-11-2018.csv        →        Órdenes Facturadas NH
+5. ServicioTT15-11-2018.csv                →        Trabajos de Terceros
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+En caso de producirse un error al, necesitamos que nos envién por mail los archivos generados por el sistema Aguila para que los revisemos
+
+
+IMPORTANTE         
+No se pueden generar 2 veces o mas los archivos con las mismas fechas y que las ordenes de reparación quedan marcadas como informadas
+en caso de producirse un error, nos mandan los archivos para que nosotros los analicemos

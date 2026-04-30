@@ -8,3 +8,4 @@ import { PriceListsService } from './price-lists.service';
   exports: [PriceListsService],
 })
 export class PriceListsModule {}
+

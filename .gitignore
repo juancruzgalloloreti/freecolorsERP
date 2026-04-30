@@ -3,18 +3,12 @@ node_modules
 dist
 .next
 build
+package-lock.json
+*.log
 *.env
 .env
 .env.local
 .env.*.local
 
-# BUG FIX: antes ignoraba 'src/generated' correctamente, pero el cliente
-# generado de Windows fue commiteado de todas formas (con git add -f o similar).
-# Ahora ignoramos específicamente los binarios del query engine para evitar
-# que se vuelva a commitear la versión de la plataforma equivocada.
 packages/db/src/generated/client/*.node
 packages/db/src/generated/client/runtime/*.node
-
-# Opcionalmente podés ignorar todo el cliente generado y que cada dev
-# corra `pnpm --filter @erp/db db:generate` después de clonar:
-# packages/db/src/generated/

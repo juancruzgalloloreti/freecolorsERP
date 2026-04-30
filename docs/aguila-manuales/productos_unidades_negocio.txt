@@ -1,0 +1,22 @@
+﻿Vincular productos a uno o varias unidades de negocios
+
+
+el sistema permite asignarle una o varias unidades de negocios a un producto en stock
+esto es útil para controlar que ciertos códigos no se facturen por determinada unidad de negocios
+
+
+Para vincular se debe ir a la ficha del producto y presionar el botón “Asignar Unidad de Negocios”
+
+
+Se muestra una pantalla que permite tildar en que unidades de negocios se puede facturar este producto
+
+
+  
+
+
+
+por el momento el sistema lo controla en la pantalla de facturación
+al momento de grabar un comprobante controla que todos los productos incluidos en la venta estén habilitados para la unidad de negocios a la cual pertenece el comprobante que se está cargando
+
+
+si el producto NO tiene ninguna unidad de negocios vinculada estará activo para todas

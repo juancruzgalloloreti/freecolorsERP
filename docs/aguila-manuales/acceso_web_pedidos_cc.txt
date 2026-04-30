@@ -1,0 +1,102 @@
+﻿Habilitar un Cliente para que acceda a la página de cuenta corriente y carga de pedidos
+
+
+1.- Creación del usuario
+el cliente debe ingresar a la página
+http://aguilasoft.com.ar/3GClientes/default.aspx
+
+
+2.- ingresa a la opción para crear el usuario
+  
+
+
+
+3.- se completan los datos y se acepta
+el sistema controla que no exista otro usuario con el mismo mail
+en caso de que ya exista, se puede ingresar a la opción “Olvidé mi Contraseña” y la página envía un mail con el usuario y clave registrado con el mail indicado
+
+
+  
+
+
+
+4.- Luego de habilitar el usuario ya se puede acceder a la página pero NO tendrá ninguna función habilitada
+para que el usuario pueda acceder a la cuenta corriente es necesario vincular el usuario de la página a la cuenta corriente del aguila
+para eso hay que seguir los siguientes pasos
+  
+
+muestra una pantalla donde se selecciona la función que se quiere habilitar
+  
+
+doble click sobre la función y muestra la lista de usuarios que ya tienen esa función habilitada
+se puede editar uno para cambiar la clave por ejemplo y también se puede eliminar para inhabilitar el acceso.
+  
+
+
+
+Para crear un usuario nuevo se presiona “Habilitar Usuario”
+el sistema pide se indique el nombre de usuario a habilitar, en el caso de este ejemplo es “PruebaInter” (es el usuario que se dió de alta en la página)
+con la opción “Validar Usuario” el sistema busca los datos del usuario 
+
+
+  
+
+En la opción “Buscar Empresa” se busca la cuenta corriente que se quiere vincular al usuario de la web
+una vez seleccionada la cuenta corriente le damos grabar
+
+
+Si ahora ingreso a la página me aparece la función habilitada
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lo mismo hay que hacer 
+con la función de cuenta corriente 
+—-----------------------
+
+
+Otra forma de acceder a configurar un usuario para la web es por la ficha de la agenda del cliente en el aguila
+Vamos al botón “Agenda”
+  
+
+
+
+Buscamos el cliente, se selecciona y vamos al botón de la cuenta corriente
+  
+
+
+
+el sistema muestra la cuenta corriente que tiene habilitada, se selecciona y vamos al botón “Habilitar Web”
+  
+
+se muestra una pantalla donde hay que volver a seleccionar la cuenta corriente y vamos al lápiz
+  
+
+
+
+Si es un cliente que no tiene la página habilitada nos pide el usuario, la contraseña, nombre y que módulos tiene habilitados
+grabando en esta opción el sistema da de alta el usuario 
+luego se le debe pasar al cliente para que pueda ingresar
+
+
+algunas empresas nos piden que demos de alta todos o una lista de clientes con el cuit como usuario , una clave aleatoria y los módulos de cuentan corriente y pedidos habilitados
+
+
+En caso de que el cliente ya tenga usuario habilitado en la web
+el sistema permite cambiar la clave

@@ -1,0 +1,20 @@
+﻿Cómo definir una base de datos por defecto
+
+
+Se puede establecer una base de datos por defecto para que cuando se ingresa al Aguila3G siempre abra esta base de datos
+
+
+para ello se deberá generar un archivo de texto con el nombre Aguila3G.ini
+en la carpeta donde se encuentra el ejecutable  del sistema
+
+
+el Archivo Aguila3G.ini debe contener la siguiente linea
+
+
+CONEXION INICIAL   = aguila3g_prueba
+
+
+“Aguila3G_prueba” es el nombre de la base de datos que el sistema abrirá al ingresar
+
+
+para que esta opción funcione correctamente primero se deberá ingresar al sistema y crear la conexión a la base de datos

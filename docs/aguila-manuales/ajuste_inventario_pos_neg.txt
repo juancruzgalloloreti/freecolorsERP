@@ -1,0 +1,74 @@
+﻿Recepción y entrega de unidades.
+1. Ingresamos a: Operaciones -> Unidades -> Carpeta de unidades.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Una vez dentro, vamos a poder dar de alta nuevas unidades (Usadas o nuevas) en el sistema y también podremos marcarlas como recibidas, en que deposito se reciben, por cuales depósitos pasaron y marcarlas como entregadas.
+  
+   2. Para marcar una unidad como recibida si o si primero tiene que estar creada en el sistema, para esto vamos a hacer click en el icono “+” y vamos a llenar la planilla con los datos que nos pida (Si es 0km y no esta patentado se pueden ingresar los últimos números del VIN del auto)
+
+
+________________
+
+
+   3. Una vez que hayamos dado de alta la unidad nueva, la podemos buscar por numero de VIN o numero de patente. Ahora que esta creada vamos a poder recibirla por sistema. Para esto seleccionamos la unidad y hacemos click en “Recibir”. Colocamos fecha en la que se recibió, la ubicación donde se encuentra y si es nueva o usada. Guardamos
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      4. En el caso de que querramos cambiar la ubicación, vamos a poder hacerlo seleccionando la unidad y haciendo click en “Ubicación”. Tambien vamos a poder ver todos los cambios de ubicación que tuvo esa unidad haciendo click en “Cambios de ubicación”.            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+5- Por ultimo, vamos a poder marcarlas como entregadas haciendo click en la opción “Entregar”. Aquí vamos a completar la ventana con los datos del auto. Guardamos.

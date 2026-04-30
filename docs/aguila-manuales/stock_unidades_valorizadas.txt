@@ -1,0 +1,44 @@
+﻿Stock de Unidades 0km General Motors Valorizado a Costo Reposición
+
+
+El sistema suma la posibilidad de valorizar el stock de unidades GM 0km al valor de lista GM vigente a una fecha
+Para actualizar la lista de precios al sistema los pasos son los siguientes:
+
+
+1. Necesitamos que un concesionario nos pase todos los meses la lista de los modelos vigentes en formato excel donde figura el código de modelo con número de variación, el nombre del modelo, costo gm al concesionario con y sin impuestos y el valor de venta sugerido al público con y sin impuestos. El sistema tomará el costo GM sin impuestos para valorizar el stock.  
+2. Dicho archivo excel nosotros lo tomamos y actualizamos un archivo disponible para todos nuestros clientes GM, de esta forma evitamos que cada uno tenga que cargar a mano los valores actualizados todos los meses o tengan que ocuparse de trabajar el archivo excel.
+3. Cada concesionario actualiza su tabla de modelos gm con la opción que se explica a continuación
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+        Menú Archivos - Unidades - Tabla de Modelos GM 
+        en la pantalla que se muestra hay un botón que dice “Actualizar Precios Vigentes”
+el sistema pide confirmación mostrando la fecha que encuentra como última vigente disponible
+IMPORTANTE
+En caso de que la fecha de vigencia no sea la que necesitan pueden enviar un pedido a GrupoDTS para que actualicemos la lista con el botón que dice “Pedir a GrupoDTS una Nueva Lista de Precios” y está a continuación del botón para actualizar.
+
+
+
+
+Cómo Consultar El Stock de Autos Nuevos Valorizado a Costo Reposición GM
+
+
+        En la consulta de unidades en stock, el sistema ahora muestra en las 2 últimas columnas el costo de la unidad según la lista de GM y la fecha de vigencia que tiene el valor encontrado.
+        Antes de consultar, se debe indicar la fecha de vigencia del costo que se quiere tomar, el sistema buscará el último anterior a la fecha de vigencia indicada
+        Es IMPORTANTE verificar que todos los registros tenga el costo correspondiente y la fecha de vigencia correcta.
+        En caso de que no tenga el valor de costo puede ser que sea una unidad 0km pero de un modelo que ya no está vigente en General Motors y por eso no se actualiza en forma automática. En este caso tendrán que tomar nota del código de modelo y número de variación, ir a la tabla de modelos GM e indicar el valor y la fecha de vigencia en forma manual.
+        Si alguna unidad no tiene indicado el código de modelo, tendrán que editar la ficha de la unidad para indicar el código que corresponda.
+
+
+        Cuando se pide la consulta de unidades en stock en la parte inferior se muestra el total valorizado a costo contable (a la derecha) y el stock a valor de lista vigente en General Motors (a la derecha)

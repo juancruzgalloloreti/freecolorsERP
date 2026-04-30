@@ -1,0 +1,53 @@
+﻿Importar Productos desde un archivo excel
+
+
+  
+
+
+
+La pantalla permite crear productos de stock o actualizar precios a productos existentes.
+
+
+Pasos para actualizar las listas:
+
+
+1- Seleccionar archivos: tomar el excel desde la ubicacion de la pc donde se encuentra, previamente modificado.
+Es importante tener en cuenta que el código no se puede repetir por eso hemos definido los últimos 5 dígitos del código para vincular productos a un proveedor y de esta forma asegurarnos de que el código no se repita con el de otro proveedor 
+
+
+2- El proveedor asociado cumple un objetivo similar solo que no evita que se repitan los códigos. Si las listas no llevan proveedor asociado hay que tildas ¨Sin proveedor Asociado¨, si hay que asociar proveedor, el mismo se busca en ¨Seleccionar proveedor asociado¨ ( debe estar dado de alta en empresas)
+
+
+3- Configuracion: 
+  
+
+a- Codigo Alternativo: es para identificar al proveedor con el que se carga la lista, son hasta 5 dígitos que se agregaran al final del codigo principal que viene en el excel, tener en cuenta que las listas se deben incorporar al sistema siempre con el mismo criterio para no dar de alta nuevos códigos por error.
+b- Columnas para excel: es los campos se va indicarnos qué posición tienen las columnas en el excel, si alguna columna no se incluye en el mismo ponerle 0.
+c- Formulas: aca se tilda de que forma quiere ingresar el excel al sistema.
+d- Agregar Nuevos Codigos: viene tildado por defecto pero se puede sacar, si se destilda no tomara los codigos nuevos si existieran en el excel.
+e- Definicion contable: 
+  
+
+* En esta pantalla hay que asociar solo la primera vez que se usa esta opcion las cuenta contables de Activo, Costo y ventas.
+
+
+Es MUY Importante tener en cuenta que al tomar un archivo de excel el sistema tomará el código de hasta 25 caracteres + 5 del código alternativo para identificar si se trata de un nuevo producto o una actualización.
+
+
+Formato del excel para cargar las lista de precios ( tambien se puede generar el excel con todos los productos en la opcion: Configuracion/Archivos excel para migrar/Generar excel CON productos)
+
+
+Columna        Descripción
+“A”                Código principal (alfanumérico de hasta 25 caracteres)
+“B”                Código alternativo (alfanumérico de hasta 5 caracteres, el sistema lo tomará al final del código principal del producto
+“C”                Código Equivalencia, (alfanumérico de hasta 21 caracteres)
+“D”                Código en origen, (alfanumérico de hasta 21 caracteres)
+“E”                Nombre del producto, (hasta 100 caracteres)
+“F”                Descripción del producto (hasta 500 caracteres)
+“G”                Precio de venta (lista 1, sin IVA)
+“H”                Costo reposición
+“I”                Costo Promedio
+“J”                Costo última compra
+“K”                Tasa de IVA
+“L”                Unidad de medida (alfanumérico hasta 3 caracteres)
+“M”                Coeficiente de conversión para compras (cuando se compra en una unidad de medida y se controla el stock y vende en otra unidad de medida)

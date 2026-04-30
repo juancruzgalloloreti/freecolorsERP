@@ -1,0 +1,11 @@
+﻿Consulta Resumen de Ventas Mensuales Por Cliente con Objetivo
+La opción está en el menú en:  
+        Consultas - Ventas - Resumen de Ventas con Objetivo Mensual
+
+
+Esta consulta permite obtener un resumen de las ventas en un mes por cliente (agrupando por cuit, es decir, que si tiene sucursales o diferentes cuentas corrientes se suman)
+A cada cliente se le puede indicar un objetivo de compra mensual (el valor debe ser neto sin impuestos)
+Para indicar el objetivo hay un botón con un lápiz sobre la grilla.
+Se pueden seleccionar qué comprobantes de venta se incluyen en la consulta, esto permite que no se tomen notas de crédito especiales o notas de débito, por ejemplo.
+La selección de los comprobantes se guarda para la próxima vez que se procese la consulta
+Sobre el botón buscar se puede indicar que solo muestre los clientes que ya tiene cargado un objetivo de venta

@@ -11,6 +11,10 @@ import { CurrentAccountModule } from './current-account/current-account.module';
 import { PriceListsModule } from './price-lists/price-lists.module';
 import { ReportsModule } from './reports/reports.module';
 import { CommonModule } from './common/common.module';
+import { AuditModule } from './audit/audit.module';
+import { CashModule } from './cash/cash.module';
+import { SalesOrdersModule } from './sales-orders/sales-orders.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -21,6 +25,7 @@ import { CommonModule } from './common/common.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
 
     // Módulos de negocio
+    HealthModule,
     CommonModule,
     AuthModule,
     ProductsModule,
@@ -31,6 +36,10 @@ import { CommonModule } from './common/common.module';
     CurrentAccountModule,
     PriceListsModule,
     ReportsModule,
+    AuditModule,
+    CashModule,
+    SalesOrdersModule,
   ],
 })
 export class AppModule {}
+

@@ -1,0 +1,12 @@
+﻿Nota de Crédito tomando Números de Serie Entregados al Cliente
+
+
+Cuando el sistema tiene habilitado manejo por número de serie agregamos una función para poder tomar 1 o varios números de serie de los que se le entregaron al cliente
+
+
+Los pasos son los siguientes:
+1. pantalla de facturación, botón “Anula Factura”.
+2. Muestra una pantalla donde se agregó la función “Buscar Números de Serie Entregados al Cliente”
+3. El sistema muestra una pantalla donde se puede cambiar un rango de fechas sugerido, con el botón de buscar (lupa) muestra los números de serie que se le entregaron al cliente en el rango de fechas.
+4. Se deben tildar los que corresponde devolver en la nota de crédito
+5. con el botón “Tomar Registros Tildados” el sistema vuelve a la pantalla de facturación donde se puede grabar sin necesidad de indicar los números de serie manualmente.

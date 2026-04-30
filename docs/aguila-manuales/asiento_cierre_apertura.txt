@@ -1,0 +1,36 @@
+﻿Asiento de cierre y Apertura
+Cierre y apertura de Ejercicio Contable
+  
+
+La pantalla pide identificar primero el comprobante bajo el cual se grabarán los asientos, generalmente se llama “Asiento Contable”
+
+
+El Rango de fechas debe coincidir con el inicio y cierre del ejercicio que se está cerrando
+
+
+
+
+
+
+
+
+
+
+la Primer cuenta debe ser la primer cuenta de resultado del plan de cuentas, puede no coincidir exactamente con una cuenta existente
+la Segunda cuenta debe ser la última del plan de cuentas
+en rango de códigos debe incluir todas las cuentas de resultado.
+
+
+la Tercer cuenta es la cuenta de resultado del ejercicio.
+
+
+Es importante tener en cuenta que esta opción generará los 3 asientos juntos, es decir, se debe procesar solo una vez para que el sistema grabe el asiento de resultado, cierre y apertura
+
+
+El asiento de Resultado, obtiene el saldo sumando de todas las cuentas comprendidas entre el rango de cuentas, el importe obtenido lo graba en la cuenta resultado del ejercicio y revierte todas las cuentas de resultado, es decir, deja todas las cuentas de resultado en 0, solo quedando con saldo resultado del ejercicio. Se graba con fecha del último día del ejercicio.
+
+
+El Asiento de Cierre revierte el saldo de todas las cuentas con saldo al cierre del ejercicio, dejando todo el ejercicio en 0. Este asiento se graba con fecha del último día del ejercicio.
+
+
+Asiento de Apertura, el sistema graba con fecha del primer día del ejercicio siguiente el mismo asiento de cierre pero invirtiendo el signo, es decir vuelve a abrir los saldos de activo, pasivo y patrimonio neto para el inicio del ejercicio siguiente.

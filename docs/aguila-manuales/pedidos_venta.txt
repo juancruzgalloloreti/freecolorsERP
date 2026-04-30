@@ -1,0 +1,33 @@
+﻿Cargar Pedidos de Venta  
+
+
+1-  Desde la consulta de productos (Consultas/Stock/Consultar productos), tomar la cta cte del cliente
+  
+
+2- Botón Pedidos (F10) para dar de alta uno
+  
+
+3- Dentro del campo pedidos activo de un cliente, + ( añadir nuevo pedido), completar los datos que solicita la pantalla, grabar, seleccionaer el pedido cargado, tilde verde Tomar pedidos
+  
+
+  
+
+  
+
+4- Buscamos y Seleccionamos el producto, Botón Nuevo Ítem (F9), en la siguiente pantalla completar la info que se pide, así se van agregando al pedido todos los productos necesarios.
+  
+
+  
+
+5- una vez cargado todos los productos en el pedido, se imprime desde la impresora que esta 
+  
+
+Al imprimir el sistema de forma automatica te avisa que va a pasar el pedido de etapa pendiente a etapa en preparacion, hay que aceptar el cartel para que luego te permita facturarlo.
+
+
+6- Dentro del Boton (f10) PEdidos, podes ver el encabezado del pedido y el detalle de los productos que contiene, desde esa pantalla podes cambiar de estado los productos, porder modificar algo si fuera necesario,en el angulo superior detalle te el detalle de neto. iva, impuesto, total del pedido.
+Tambien se puede tomar pedido desde un excel, exportar el pedido a excel.
+Se puedo enviar por mail el pedido seleccionado.
+
+
+7- Para poder consultar los pedidos de venta cargados, botón ¨Consulta pedidos de venta¨ en la consulta de productos, tiene diferentes filtros para realizar la búsqueda.

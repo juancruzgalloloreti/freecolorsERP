@@ -1,0 +1,49 @@
+﻿Como dar de alta una cuenta en el plan de cuentas  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Para dar de alta una cuenta al plan de cuentas seguir los siguientes pasos:
+
+
+* Ingresar al menú Archivos - Administración - Plan de cuentas
+* El sistema muestra los rubros principales (Activo / Pasivo / Resultados)
+* Es Importante llegar al rubro o subrubro al que pertenece la cuenta que se quiere dar de alta, para eso se van abriendo los rubros hasta llegar por ejemplo en la imagen, Pasivo y Patrimonio Neto + Pasivo + Pasivo No Corriente 
+* Cuando marcamos con el mouse el rubro al que va a pertenecer la cuenta el sistema muestra a la derecha las cuentas que ya contiene el rubro.
+* con el botón del más que está en el cuadro de la derecha (inferior)
+* el sistema muestra una pantalla donde hay que completar el código de la nueva cuenta nueva, generalmente es el último mas 1 de las que ya existen en el rubro seleccionado
+* Se indica el nombre de la cuenta
+* Debajo de la descripción pide unos tildes y una lista de parámetros de configuración que no son necesarios para una cuenta contable que no tiene un manejo especial en el sistema
+* Grabando esta pantalla la cuenta ya debería estar lista para usar

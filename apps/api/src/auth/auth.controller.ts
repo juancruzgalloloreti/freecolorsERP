@@ -1,5 +1,9 @@
 import {
   Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
   Post,
   Body,
   Req,
@@ -58,6 +62,50 @@ export class AuthController {
     return this.authService.refresh(dto.userId, dto.refreshToken);
   }
 
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cambiar contraseña del usuario autenticado' })
+  async changePassword(@Req() req: any, @Body() dto: { currentPassword: string; newPassword: string }) {
+    return this.authService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
+  }
+
+  @Get('users')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar usuarios del tenant (owner)' })
+  async users(@Req() req: any) {
+    return this.authService.listUsers(req.user.role, req.user.tenantId);
+  }
+
+  @Post('users')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear usuario del tenant (owner)' })
+  async createUser(@Req() req: any, @Body() dto: any) {
+    return this.authService.createUser(req.user.role, req.user.tenantId, dto);
+  }
+
+  @Patch('users/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar usuario del tenant (owner)' })
+  async updateUser(@Req() req: any, @Param('id') id: string, @Body() dto: any) {
+    return this.authService.updateUser(req.user.role, req.user.tenantId, req.user.sub, id, dto);
+  }
+
+  @Delete('users/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Desactivar usuario del tenant (owner)' })
+  async deleteUser(@Req() req: any, @Param('id') id: string) {
+    return this.authService.deactivateUser(req.user.role, req.user.tenantId, req.user.sub, id);
+  }
+
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -67,3 +115,5 @@ export class AuthController {
     await this.authService.logout(req.user.sub);
   }
 }
+
+

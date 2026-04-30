@@ -1,0 +1,53 @@
+﻿Compra: Factura Proveedores.
+
+Para cargar una factura de compra proveedores, debemos ingresar a –Operaciones –Carga de operaciones. Una vez dentro vamos a ver distintas secciones, Compra, Venta, Contabilidad, etc. En Compras hacemos doble click a Factura Proveedores.  
+
+La carga de una factura se separa por: -Selección de cuenta corriente –Datos de la factura por cargar –Registro contable –Impuestos y Descuentos.  
+Primero elegimos la cuenta corriente haciendo click en la lupa que se encuentra arriba a la izquierda, elegimos el “nombre de definición” correcto (ya sea cliente, proveedor, etc) y buscamos por nombre de la empresa al proveedor. En el caso de que no este ingresado como proveedor, debemos crearlo haciendo click en “Empresas” “Ficha Completa”.   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ahora en registro contable, podremos ingresar mercadería al stock o no, en el caso de que no ingresemos mercadería al stock, seleccionamos la opción “Neto” y cargamos la cuenta contable a la que se aplicara la factura, el importe NETO y la tasa de IVA.
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+En el caso de que querramos ingresar stock con la factura, en Registro contable ingresamos en “Stock”. En la pantalla “Carga movimiento de Stock” hacemos click en el signo + (mas) y el producto. Debemos elegir el deposito, luego ingresar el código del producto, la cantidad que ingresamos, el costo, los descuentos del proveedor y Grabamos. Esto debemos hacerlo con cada producto que se encuentre en esta factura.  
+
+
+Una vez que tenemos todo grabado, chequeamos que los importes coincidan y Guardamos.

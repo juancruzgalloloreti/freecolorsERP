@@ -1,0 +1,23 @@
+﻿Coeficiente sobre precios de venta
+
+
+El sistema permite indicar un coeficiente en la ficha de un producto o en una clasificación de productos.
+
+
+Como funciona?
+
+
+cuando se toma un producto para facturar el sistema obtiene el precio de venta y luego se fija si el producto tiene un coeficiente o si una clasificación a la que pertenece el producto tiene un coeficiente y lo aplica.
+
+
+Coeficiente en el producto:
+Cuando se facture el producto el precio de lista ($1000) se multiplicará por el coeficiente de 0.80, por lo tanto el precio será de $800  
+la fecha indica que este coeficiente se tomará hasta el día 31/12/2016 inclusive, luego de esta fecha quedará sin efecto.
+--------------------------------------------------------------
+
+
+Coeficiente en clasificación de productos  
+Indicando un coeficiente en una clasificación el sistema lo aplicará sobre el precio de venta de todos los productos que tienen tildada dicha clasificación
+
+
+en caso de que un producto tenga un coeficiente indicado en el producto y otro en una clasificación a la que pertenece o en caso de que el producto pertenezca a mas de una clasificación con coeficiente, el sistema tomará el mayor.
