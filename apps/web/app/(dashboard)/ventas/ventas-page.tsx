@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -318,12 +318,6 @@ export default function VentasPage() {
     const change = Math.max(paid - totals.total, 0)
     return { paid, nonAccountPaid, cashPaid, remaining, change }
   }, [payments, totals.total])
-
-  useEffect(() => {
-    setPayments([])
-    setPaymentEntry('')
-    setPaymentReference('')
-  }, [totals.total])
 
   const addLine = useCallback((product: ProductHit) => {
     if (!canUseCounter) return

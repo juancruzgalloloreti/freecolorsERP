@@ -43,6 +43,12 @@ export function GlobalShortcuts() {
       document.querySelector<HTMLElement>('[data-confirm-action="true"]')?.click()
     },
     escape: (event: KeyboardEvent) => {
+      event.preventDefault()
+      if (document.querySelector('[role="dialog"], [role="alertdialog"], .modal-overlay, .entity-sheet-overlay')) {
+        const active = document.activeElement as HTMLElement | null
+        active?.blur?.()
+        return
+      }
       document.querySelector<HTMLElement>('[data-escape-action="true"]')?.click()
       const active = document.activeElement as HTMLElement | null
       active?.blur?.()

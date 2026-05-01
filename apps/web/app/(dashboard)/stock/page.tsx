@@ -96,7 +96,7 @@ function MovementModal({ deposits, products, onClose, onSave }: {
   )
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay">
       <div className="modal-box">
         <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '600' }}>Registrar movimiento</h3>
@@ -609,7 +609,7 @@ export default function StockPage() {
       )}
 
       {bulkConfirm && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !bulkPending && setBulkConfirm(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: '420px' }}>
             <div style={{ padding: '26px 24px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: bulkConfirm === 'delete' ? 'rgba(239,68,68,0.1)' : 'rgba(124,58,237,0.12)', border: bulkConfirm === 'delete' ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(124,58,237,0.24)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>

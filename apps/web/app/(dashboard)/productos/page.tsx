@@ -726,7 +726,7 @@ export default function ProductosPage() {
       )}
 
       {importing && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeImportModal()}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: '480px' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '15px', fontWeight: '600' }}>Importar productos</h3>
@@ -784,7 +784,7 @@ export default function ProductosPage() {
       )}
 
       {bulkDeleting && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !bulkDeleteMutation.isPending && setBulkDeleting(false)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: '420px' }}>
             <div style={{ padding: '28px 24px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>

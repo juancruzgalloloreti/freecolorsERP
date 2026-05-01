@@ -93,7 +93,7 @@ function CustomerModal({ customer, priceLists, onClose, onSave, error, saving }:
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay">
       <div className="modal-box">
         <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '600' }}>{customer ? 'Editar cliente' : 'Nuevo cliente'}</h3>
@@ -177,7 +177,7 @@ function CCModal({ customer, onClose }: { customer: Customer; onClose: () => voi
   const saldo = (entries as { amount: number }[]).reduce((a, e) => a + Number(e.amount), 0)
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay">
       <div className="modal-box" style={{ maxWidth: '620px' }}>
         <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -417,7 +417,7 @@ export default function ClientesPage() {
       {ccModal && <CCModal customer={ccModal} onClose={() => setCCModal(null)} />}
 
       {deletingCustomer && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !deleteMutation.isPending && setDeletingCustomer(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: '380px' }}>
             <div style={{ padding: '26px 24px' }}>
               <Trash2 size={22} color="#f87171" style={{ marginBottom: 12 }} />
@@ -437,7 +437,7 @@ export default function ClientesPage() {
       )}
 
       {importing && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !importMutation.isPending && setImporting(false)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: '500px' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '15px', fontWeight: '600' }}>Importar clientes</h3>

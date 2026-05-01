@@ -56,22 +56,25 @@ export default function NuevoProveedorModal({ proveedor, onClose, onSuccess }: P
   const [form, setForm] = useState(empty);
 
   useEffect(() => {
-    if (proveedor) {
-      setForm({
-        razonSocial: proveedor.razonSocial ?? "",
-        cuit: proveedor.cuit ?? "",
-        email: proveedor.email ?? "",
-        telefono: proveedor.telefono ?? "",
-        direccion: proveedor.direccion ?? "",
-        ciudad: proveedor.ciudad ?? "",
-        provincia: proveedor.provincia ?? "Buenos Aires",
-        condicionIva: proveedor.condicionIva ?? "Responsable Inscripto",
-        condicionPago: proveedor.condicionPago ?? "Contado",
-        notas: proveedor.notas ?? "",
-      });
-    } else {
-      setForm(empty);
-    }
+    const id = window.setTimeout(() => {
+      if (proveedor) {
+        setForm({
+          razonSocial: proveedor.razonSocial ?? "",
+          cuit: proveedor.cuit ?? "",
+          email: proveedor.email ?? "",
+          telefono: proveedor.telefono ?? "",
+          direccion: proveedor.direccion ?? "",
+          ciudad: proveedor.ciudad ?? "",
+          provincia: proveedor.provincia ?? "Buenos Aires",
+          condicionIva: proveedor.condicionIva ?? "Responsable Inscripto",
+          condicionPago: proveedor.condicionPago ?? "Contado",
+          notas: proveedor.notas ?? "",
+        });
+      } else {
+        setForm(empty);
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [proveedor]);
 
   const set = (field: keyof typeof form, val: string) =>
@@ -107,7 +110,7 @@ export default function NuevoProveedorModal({ proveedor, onClose, onSuccess }: P
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col" role="dialog" aria-modal="true">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <h2 className="text-white font-medium">

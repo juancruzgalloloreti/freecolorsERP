@@ -60,7 +60,10 @@ export default function ProveedoresPage() {
   }, []);
 
   useEffect(() => {
-    cargar();
+    const id = window.setTimeout(() => {
+      void cargar();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [cargar]);
 
   const filtrados = proveedores.filter(

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   BarChart3,
   FileText,
@@ -59,7 +59,6 @@ export function EntitySheet({
   children,
   footer,
   onClose,
-  preventOutsideClose,
 }: {
   open: boolean
   title: string
@@ -69,11 +68,12 @@ export function EntitySheet({
   preventOutsideClose?: boolean
 }) {
   const sheetRef = useRef<HTMLElement>(null)
-  useFocusTrap(open, sheetRef, onClose)
+  useFocusTrap(open, sheetRef)
+  useBodyScrollLock(open)
   if (!open) return null
   return (
-    <div className="entity-sheet-overlay" onClick={(event) => event.target === event.currentTarget && !preventOutsideClose && onClose()}>
-      <section className="entity-sheet" ref={sheetRef} role="dialog" aria-modal="true">
+    <div className="entity-sheet-overlay">
+      <section className="entity-sheet" ref={sheetRef} role="dialog" aria-modal="true" tabIndex={-1}>
         <header className="entity-sheet-header">
           <h2>{title}</h2>
           <button className="btn btn-icon btn-secondary" type="button" onClick={onClose}>×</button>
@@ -105,11 +105,12 @@ export function ConfirmDialog({
   onConfirm: () => void
 }) {
   const dialogRef = useRef<HTMLDivElement>(null)
-  useFocusTrap(open, dialogRef, onCancel)
+  useFocusTrap(open, dialogRef)
+  useBodyScrollLock(open)
   if (!open) return null
   return (
-    <div className="entity-sheet-overlay" onClick={(event) => event.target === event.currentTarget && !pending && onCancel()}>
-      <div className="confirm-dialog" ref={dialogRef} role="alertdialog" aria-modal="true">
+    <div className="entity-sheet-overlay">
+      <div className="confirm-dialog" ref={dialogRef} role="alertdialog" aria-modal="true" tabIndex={-1}>
         <h2>{title}</h2>
         <p>{body}</p>
         <div className="action-bar">
@@ -124,11 +125,11 @@ export function ConfirmDialog({
 }
 
 export function MoneyInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`fc-input money-input ${props.className ?? ''}`} inputMode="decimal" />
+  return <DraftDecimalInput {...props} className={`fc-input money-input ${props.className ?? ''}`} />
 }
 
 export function QuantityInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`fc-input quantity-input ${props.className ?? ''}`} inputMode="decimal" />
+  return <DraftDecimalInput {...props} className={`fc-input quantity-input ${props.className ?? ''}`} />
 }
 
 export function StickyTotals({ children }: { children: React.ReactNode }) {
@@ -178,7 +179,7 @@ export const moreLinks = [
   { href: '/reportes', label: 'Reportes', icon: BarChart3 },
 ]
 
-function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement | null>, onEscape: () => void) {
+function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!open) return
     const container = containerRef.current
@@ -186,14 +187,15 @@ function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement |
     const previous = document.activeElement as HTMLElement | null
     const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     const focusFirst = () => {
-      const first = container.querySelector<HTMLElement>(focusableSelector)
+      const first = container.querySelector<HTMLElement>('[autofocus]') ?? container.querySelector<HTMLElement>(focusableSelector)
       ;(first ?? container).focus()
     }
-    focusFirst()
+    window.requestAnimationFrame(() => {
+      if (!container.contains(document.activeElement)) focusFirst()
+    })
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onEscape()
         return
       }
       if (event.key !== 'Tab') return
@@ -218,5 +220,69 @@ function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement |
       document.removeEventListener('keydown', handler)
       previous?.focus?.()
     }
-  }, [containerRef, onEscape, open])
+  }, [containerRef, open])
+}
+
+function useBodyScrollLock(open: boolean) {
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    const previousOverscroll = document.body.style.overscrollBehavior
+    document.body.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'contain'
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.overscrollBehavior = previousOverscroll
+    }
+  }, [open])
+}
+
+function DraftDecimalInput({
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [draft, setDraft] = useState(() => value == null ? '' : String(value))
+  const focusedRef = useRef(false)
+
+  useEffect(() => {
+    if (!focusedRef.current || value === '' || value == null) {
+      setDraft(value == null ? '' : String(value))
+    }
+  }, [value])
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const next = event.target.value
+    if (!/^\d*(?:[,.]\d*)?$/.test(next)) return
+    setDraft(next)
+    onChange?.(event)
+  }
+
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    focusedRef.current = false
+    const normalized = value == null ? '' : String(value)
+    setDraft(normalized)
+    onBlur?.(event)
+  }
+
+  return (
+    <input
+      {...props}
+      type="text"
+      value={draft}
+      disabled={disabled}
+      className={className}
+      inputMode="decimal"
+      autoComplete="off"
+      onFocus={(event) => {
+        focusedRef.current = true
+        props.onFocus?.(event)
+      }}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  )
 }

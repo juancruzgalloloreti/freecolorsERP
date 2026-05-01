@@ -104,7 +104,11 @@ export default function ListasDePrecioPage() {
     if (!saved) return DEFAULT_FORMULAS
     try {
       const parsed = JSON.parse(saved)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_FORMULAS
+      if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_FORMULAS
+      return [
+        ...parsed,
+        ...DEFAULT_FORMULAS.filter((formula) => !parsed.some((item: PriceFormula) => item.id === formula.id)),
+      ]
     } catch {
       return DEFAULT_FORMULAS
     }
@@ -208,40 +212,32 @@ export default function ListasDePrecioPage() {
   const activeCount = lists.filter((list) => list.isActive !== false).length
   const formulaBackedCount = lists.filter((list) => priceListCode(list.name)).length
 
-  useEffect(() => {
-    if (lists.length === 0) return
-    const lp1 = findListByPrefix('LP1')
-    const lp2 = findListByPrefix('LP2')
-    const lp3 = findListByPrefix('LP3')
-    const lp4 = findListByPrefix('LP4')
-    const lp5 = findListByPrefix('LP5')
-    const cr = findListByPrefix('CR')
+  const hydratedFormulas = useMemo(() => {
+    if (lists.length === 0) return formulas
+    const findByPrefix = (prefix: string) => lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
+      || lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
+    const lp1 = findByPrefix('LP1')
+    const lp2 = findByPrefix('LP2')
+    const lp3 = findByPrefix('LP3')
+    const lp4 = findByPrefix('LP4')
+    const lp5 = findByPrefix('LP5')
+    const cr = findByPrefix('CR')
     const targets: Record<string, { baseListId?: string; targetListId?: string }> = {
       'legacy-lp2': { baseListId: lp1?.id, targetListId: lp2?.id },
       'legacy-lp3': { baseListId: lp1?.id, targetListId: lp3?.id },
       'legacy-lp4': { baseListId: cr?.id || lp1?.id, targetListId: lp4?.id },
       'legacy-lp5': { baseListId: cr?.id || lp1?.id, targetListId: lp5?.id },
     }
-    setFormulas((current) => {
-      const merged = [...current]
-      for (const formula of DEFAULT_FORMULAS) {
-        if (!merged.some((item) => item.id === formula.id)) merged.push(formula)
+    return formulas.map((formula) => {
+      const target = targets[formula.id]
+      if (!target) return formula
+      return {
+        ...formula,
+        baseListId: formula.baseListId || target.baseListId || '',
+        targetListId: formula.targetListId || target.targetListId || '',
       }
-      let changed = merged.length !== current.length
-      const next = merged.map((formula) => {
-        const target = targets[formula.id]
-        if (!target) return formula
-        const patched = {
-          ...formula,
-          baseListId: formula.baseListId || target.baseListId || '',
-          targetListId: formula.targetListId || target.targetListId || '',
-        }
-        if (patched.baseListId !== formula.baseListId || patched.targetListId !== formula.targetListId) changed = true
-        return patched
-      })
-      return changed ? next : current
     })
-  }, [lists])
+  }, [formulas, lists])
 
   function listName(id: string) {
     return lists.find((list) => list.id === id)?.name || 'Seleccionar'
@@ -423,7 +419,7 @@ export default function ListasDePrecioPage() {
         </div>
 
         <div className="formula-list">
-          {formulas.map((formula) => (
+          {hydratedFormulas.map((formula) => (
             <div className="formula-row" key={formula.id}>
               <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
               <div className="formula-field">
@@ -514,7 +510,7 @@ export default function ListasDePrecioPage() {
       </div>
 
       {creating && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !createMutation.isPending && setCreating(false)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: 420 }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: 15, fontWeight: 600 }}>Nueva lista de precio</h3>
@@ -541,7 +537,7 @@ export default function ListasDePrecioPage() {
       )}
 
       {deletingList && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !deleteMutation.isPending && setDeletingList(null)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: 380 }}>
             <div style={{ padding: '28px 24px' }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'grid', placeItems: 'center', marginBottom: 14 }}>

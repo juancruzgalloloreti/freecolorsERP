@@ -249,7 +249,7 @@ export default function ImportCSVModal({ onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl max-h-[92vh] flex flex-col">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl max-h-[92vh] flex flex-col" role="dialog" aria-modal="true">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-gray-700">

@@ -107,7 +107,7 @@ export default function CuentaCorrientePage() {
       </div>
 
       {adding && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !addMutation.isPending && setAdding(false)}>
+        <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: 520 }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)' }}>
               <h3 style={{ fontSize: 15, fontWeight: 700 }}>Movimiento de cuenta corriente</h3>
