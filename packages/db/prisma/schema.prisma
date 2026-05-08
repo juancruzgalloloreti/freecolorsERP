@@ -258,6 +258,7 @@ model Deposit {
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockMovements StockMovement[]
+  purchaseReceptions PurchaseReception[]
 
   @@unique([tenantId, name])
   @@map("deposits")
@@ -713,7 +714,7 @@ enum CashMovementType {
 model Check {
   id           String      @id @default(cuid())
   tenantId     String
-  paymentId    String      @unique
+  paymentId    String?     @unique
   number       String
   bank         String
   accountOwner String
@@ -733,7 +734,7 @@ model Check {
   updatedAt    DateTime    @updatedAt
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, dueDate, status])
   @@map("checks")
@@ -1059,6 +1060,7 @@ model PurchaseReception {
   id              String                  @id @default(cuid())
   tenantId        String
   purchaseOrderId String
+  depositId       String?
   receptionDate   DateTime                @default(now())
   notes           String?
   createdById     String?
@@ -1067,10 +1069,12 @@ model PurchaseReception {
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   purchaseOrder  PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  deposit        Deposit?       @relation(fields: [depositId], references: [id])
   createdBy      User?           @relation("PurchaseReceptionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   items          PurchaseReceptionItem[]
 
   @@index([tenantId, receptionDate])
+  @@index([tenantId, depositId])
   @@index([purchaseOrderId])
   @@map("purchase_receptions")
 }
