@@ -9,8 +9,8 @@ interface User {
   firstName: string
   lastName: string
   role: 'OWNER' | 'ADMIN' | 'EMPLOYEE' | 'READONLY'
-  // BUG FIX: tenantId viene del objeto tenant de la respuesta, no del user
   tenantId: string
+  permissions?: string[] // Array de códigos de permiso
 }
 
 interface AuthCtx {
@@ -18,6 +18,10 @@ interface AuthCtx {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  hasPermission: (permission: string) => boolean
+  hasAnyPermission: (permissions: string[]) => boolean
+  isOwner: () => boolean
+  isAdmin: () => boolean
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -65,11 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tenantId: data.tenant?.id ?? '',
     }
 
-    if (!Cookies.get('access_token')) {
-      Cookies.set('access_token', data.accessToken, cookieOptions)
-      Cookies.set('refresh_token', data.refreshToken, { ...cookieOptions, expires: 30 })
-      Cookies.set('user', JSON.stringify(userToStore), cookieOptions)
+    Cookies.set('access_token', data.accessToken, cookieOptions)
+    Cookies.set('refresh_token', data.refreshToken, { ...cookieOptions, expires: 30 })
+
+    try {
+      const permissions = await authApi.getMyPermissions()
+      userToStore.permissions = permissions.map((p: { code: string }) => p.code)
+    } catch (e) {
+      console.error('Failed to fetch user permissions', e)
+      userToStore.permissions = []
     }
+
+    Cookies.set('user', JSON.stringify(userToStore), cookieOptions)
     setUser(userToStore)
   }
 
@@ -80,8 +91,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/login'
   }
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false
+    if (user.role === 'OWNER') return true
+    return user.permissions?.includes(permission) ?? false
+  }
+
+  const hasAnyPermission = (permissions: string[]): boolean => {
+    if (!user) return false
+    if (user.role === 'OWNER') return true
+    return permissions.some((p) => user.permissions?.includes(p) ?? false)
+  }
+
+  const isOwner = (): boolean => user?.role === 'OWNER'
+
+  const isAdmin = (): boolean => user?.role === 'ADMIN' || user?.role === 'OWNER'
+
   return (
-    <Ctx.Provider value={{ user, loading, login, logout }}>
+    <Ctx.Provider value={{ user, loading, login, logout, hasPermission, hasAnyPermission, isOwner, isAdmin }}>
       {children}
     </Ctx.Provider>
   )

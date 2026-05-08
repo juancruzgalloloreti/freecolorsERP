@@ -15,6 +15,11 @@ import { AuditModule } from './audit/audit.module';
 import { CashModule } from './cash/cash.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { HealthModule } from './health/health.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { PurchasesModule } from './purchases/purchases.module';
+import { AfipModule } from './afip/afip.module';
+import { ApprovalsModule } from './approvals/approvals.module';
+import { ChecksModule } from './checks/checks.module';
 
 @Module({
   imports: [
@@ -28,6 +33,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     CommonModule,
     AuthModule,
+    PermissionsModule,
     ProductsModule,
     StockModule,
     DocumentsModule,
@@ -39,6 +45,10 @@ import { HealthModule } from './health/health.module';
     AuditModule,
     CashModule,
     SalesOrdersModule,
+    PurchasesModule,
+    AfipModule,
+    ApprovalsModule,
+    ChecksModule,
   ],
 })
 export class AppModule {}

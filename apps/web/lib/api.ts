@@ -102,6 +102,10 @@ export const authApi = {
     api.patch(`/auth/users/${id}`, data).then((r) => r.data),
   deleteUser: (id: string) =>
     api.delete(`/auth/users/${id}`).then((r) => r.data),
+  getUserPermissions: (userId: string) =>
+    api.get(`/permissions/user/${userId}`).then((r) => r.data),
+  getMyPermissions: () =>
+    api.get('/permissions/me').then((r) => r.data),
 }
 
 // ─── Products ───────────────────────────────────────────────
@@ -158,6 +162,8 @@ export const documentsApi = {
     api.post(`/documents/${id}/cancel`, data ?? {}).then((r) => r.data),
   convert: (id: string, data: Record<string, unknown>) =>
     api.post(`/documents/${id}/convert`, data).then((r) => r.data),
+  conversions: (params?: Record<string, unknown>) =>
+    api.get('/documents/conversions', { params }).then((r) => r.data),
   puntos: () => api.get('/documents/puntos-de-venta').then((r) => r.data),
 }
 
@@ -209,6 +215,73 @@ export const suppliersApi = {
   products: (id: string) => api.get(`/suppliers/${id}/products`).then((r) => r.data),
   upsertProduct: (id: string, data: Record<string, unknown>) =>
     api.post(`/suppliers/${id}/products`, data).then((r) => r.data),
+  export: () =>
+    api.get('/suppliers/export', { responseType: 'blob' }).then((r) => r.data as Blob),
+}
+
+// ─── Purchases ──────────────────────────────────────────────
+export const purchasesApi = {
+  list: (params?: Record<string, unknown>) =>
+    api.get('/purchases', { params }).then((r) => r.data),
+  get: (id: string) => api.get(`/purchases/${id}`).then((r) => r.data),
+  create: (data: Record<string, unknown>) =>
+    api.post('/purchases', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/purchases/${id}`, data).then((r) => r.data),
+  cancel: (id: string) => api.post(`/purchases/${id}/cancel`).then((r) => r.data),
+  // Receptions
+  getReceptions: (params?: Record<string, unknown>) =>
+    api.get('/purchases/receptions', { params }).then((r) => r.data),
+  getReception: (id: string) => api.get(`/purchases/receptions/${id}`).then((r) => r.data),
+  createReception: (data: Record<string, unknown>) =>
+    api.post('/purchases/receptions', data).then((r) => r.data),
+}
+
+// ─── Approvals ──────────────────────────────────────────────
+export const approvalsApi = {
+  listFlows: (params?: Record<string, unknown>) =>
+    api.get('/approvals/flows', { params }).then((r) => r.data),
+  createFlow: (data: Record<string, unknown>) =>
+    api.post('/approvals/flows', data).then((r) => r.data),
+  listRequests: (params?: Record<string, unknown>) =>
+    api.get('/approvals/requests', { params }).then((r) => r.data),
+  createRequest: (data: Record<string, unknown>) =>
+    api.post('/approvals/requests', data).then((r) => r.data),
+  decide: (id: string, data: Record<string, unknown>) =>
+    api.post(`/approvals/requests/${id}/decisions`, data).then((r) => r.data),
+  cancel: (id: string) =>
+    api.post(`/approvals/requests/${id}/cancel`).then((r) => r.data),
+}
+
+// ─── Checks ─────────────────────────────────────────────────
+export const checksApi = {
+  list: (params?: Record<string, unknown>) =>
+    api.get('/checks', { params }).then((r) => r.data),
+  create: (data: Record<string, unknown>) =>
+    api.post('/checks', data).then((r) => r.data),
+  summary: () => api.get('/checks/summary').then((r) => r.data),
+  deposit: (id: string, data?: Record<string, unknown>) =>
+    api.post(`/checks/${id}/deposit`, data ?? {}).then((r) => r.data),
+  clear: (id: string) => api.post(`/checks/${id}/clear`).then((r) => r.data),
+  bounce: (id: string, data: Record<string, unknown>) =>
+    api.post(`/checks/${id}/bounce`, data).then((r) => r.data),
+  endorse: (id: string, data: Record<string, unknown>) =>
+    api.post(`/checks/${id}/endorse`, data).then((r) => r.data),
+  cancel: (id: string) => api.post(`/checks/${id}/cancel`).then((r) => r.data),
+}
+
+// ─── AFIP ───────────────────────────────────────────────────
+export const afipApi = {
+  getCredential: () => api.get('/afip/credential').then((r) => r.data).catch((error) => {
+    if (error.response?.status === 404) return null
+    throw error
+  }),
+  createCredential: (data: Record<string, unknown>) =>
+    api.post('/afip/credential', data).then((r) => r.data),
+  updateCredential: (data: Record<string, unknown>) =>
+    api.put('/afip/credential', data).then((r) => r.data),
+  deleteCredential: () => api.delete('/afip/credential').then((r) => r.data),
+  testConnection: () => api.get('/afip/test-connection').then((r) => r.data),
 }
 
 // ─── Current Account ────────────────────────────────────────

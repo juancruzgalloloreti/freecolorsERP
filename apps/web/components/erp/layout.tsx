@@ -152,8 +152,8 @@ export function RoleGate({
 const bottomNav = [
   { href: '/dashboard', label: 'Inicio', icon: Home },
   { href: '/ventas', label: 'Mostrador', icon: ReceiptText },
-  { href: '/stock', label: 'Stock', icon: Layers3 },
-  { href: '/productos', label: 'Catálogo', icon: Package },
+  { href: '/stock', label: 'Existencias', icon: Layers3 },
+  { href: '/productos', label: 'Productos', icon: Package },
   { href: '/documentos', label: 'Más', icon: MoreHorizontal },
 ]
 

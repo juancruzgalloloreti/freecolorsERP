@@ -385,7 +385,7 @@ export function printDocumentA4(document: PrintableDocument) {
           </section>
 
           <footer>
-            <span>Generado desde FreeColors ERP con datos del documento, no captura de pantalla.</span>
+            <span>Generado desde Freecolors con datos del documento, no captura de pantalla.</span>
             <span>${text(documentLabel(document.type))} ${text(documentNumber(document))}</span>
           </footer>
         </section>

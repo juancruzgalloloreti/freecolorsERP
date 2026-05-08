@@ -207,7 +207,7 @@ export default function DocumentosPage() {
   return (
     <div>
       <PageHeader
-        title="Documentos"
+        title="Comprobantes"
         subtitle="Historial, detalle, confirmación, anulación e impresión"
         actions={(
           <Link className="btn btn-primary" href="/ventas">

@@ -1186,3 +1186,64 @@ export default function VentasPage() {
     </div>
   )
 }
+
+// Mobile-specific styles for improved UX on touch devices
+const mobileStyles = `
+  @media (max-width: 768px) {
+    .counter-layout {
+      flex-direction: column;
+    }
+    .counter-search {
+      padding: 12px;
+    }
+    .counter-search input {
+      font-size: 16px;
+      padding: 14px;
+    }
+    .counter-product-list {
+      max-height: 200px;
+    }
+    .counter-product-item {
+      padding: 12px;
+      min-height: 60px;
+    }
+    .counter-lines {
+      max-height: 180px;
+    }
+    .counter-line {
+      padding: 10px;
+    }
+    .counter-summary {
+      padding: 14px;
+    }
+    .counter-primary-actions {
+      flex-direction: column;
+      gap: 10px;
+    }
+    .counter-primary-actions button {
+      padding: 16px;
+      font-size: 16px;
+    }
+    .recent-card {
+      margin-top: 12px;
+    }
+    .payment-options button {
+      padding: 16px;
+      min-height: 70px;
+    }
+    .sheet-form-grid label {
+      margin-bottom: 16px;
+    }
+    .sheet-form-grid input,
+    .sheet-form-grid select {
+      padding: 14px;
+      font-size: 16px;
+    }
+  }
+`
+
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style')
+  style.textContent = mobileStyles
+  document.head.appendChild(style)
+}

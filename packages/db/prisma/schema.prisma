@@ -63,6 +63,11 @@ model Tenant {
   checks Check[]
   exchangeRates ExchangeRate[]
   idempotencyKeys IdempotencyKey[]
+  purchaseOrders PurchaseOrder[]
+  purchaseReceptions PurchaseReception[]
+  approvalFlows ApprovalFlow[]
+  approvalRequests ApprovalRequest[]
+  documentConversions DocumentConversion[]
 
   @@map("tenants")
 }
@@ -100,6 +105,12 @@ model User {
   payments Payment[] @relation("PaymentCreatedBy")
   ccEntries CurrentAccountEntry[] @relation("CurrentAccountEntryCreatedBy")
   cashMovements CashMovement[] @relation("CashMovementCreatedBy")
+  userPermissions UserPermission[]
+  purchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
+  purchaseReceptions PurchaseReception[] @relation("PurchaseReceptionCreatedBy")
+  approvalRequests ApprovalRequest[] @relation("ApprovalRequestRequestedBy")
+  approvalDecisions ApprovalDecision[] @relation("ApprovalDecisionUser")
+  documentConversions DocumentConversion[] @relation("DocumentConversionCreatedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -111,6 +122,38 @@ enum UserRole {
   ADMIN    // administrador
   EMPLOYEE // vendedor / cajero
   READONLY // solo lectura / contador
+}
+
+// ─────────────────────────────────────────────────────────────
+// PERMISSIONS
+// ─────────────────────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // ej: "sale.create", "stock.adjust"
+  description String
+  category    String   // ej: "sales", "stock", "cash", "customers"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserPermission[]
+
+  @@index([category])
+  @@map("permissions")
+}
+
+model UserPermission {
+  id           String      @id @default(cuid())
+  userId       String
+  permissionId String
+  grantedAt    DateTime    @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@map("user_permissions")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -189,6 +232,7 @@ model Product {
   priceCoefficients PriceCoefficient[]
   supplierProducts SupplierProduct[]
   variants       ProductVariant[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@unique([tenantId, code])
   @@index([tenantId, barcode])
@@ -679,6 +723,14 @@ model Check {
   isEcheq      Boolean     @default(false)
   status       CheckStatus @default(RECEIVED)
   notes        String?
+  // Endoso
+  endorsedTo   String?
+  endorsedDate DateTime?
+  // Rechazo
+  rejectionReason String?
+  rejectionDate   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
@@ -842,6 +894,7 @@ model Supplier {
   documents Document[]
   products SupplierProduct[]
   accountEntries SupplierAccountEntry[]
+  purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, name])
   @@index([tenantId, isActive])
@@ -937,4 +990,219 @@ enum IdempotencyStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMPRAS
+// ─────────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  tenantId     String
+  supplierId   String
+  number       Int                 // correlativo por tenant
+  status       PurchaseOrderStatus @default(PENDING)
+  orderDate    DateTime            @default(now())
+  expectedDate DateTime?
+  notes        String?
+  subtotal     Decimal             @db.Decimal(18, 2)
+  taxAmount    Decimal             @default(0) @db.Decimal(18, 2)
+  total        Decimal             @db.Decimal(18, 2)
+  createdById  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier   Supplier             @relation(fields: [supplierId], references: [id])
+  createdBy  User?                @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items      PurchaseOrderItem[]
+  receptions PurchaseReception[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, status])
+  @@map("purchase_orders")
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  SENT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrderItem {
+  id               String       @id @default(cuid())
+  purchaseOrderId  String
+  productId        String
+  quantity         Decimal      @db.Decimal(18, 4)
+  unitPrice        Decimal      @db.Decimal(18, 4)
+  discountPercent  Decimal      @default(0) @db.Decimal(5, 2)
+  subtotal         Decimal      @db.Decimal(18, 2)
+  taxRate          Decimal      @default(21) @db.Decimal(5, 2)
+  taxAmount        Decimal      @default(0) @db.Decimal(18, 2)
+  total            Decimal      @db.Decimal(18, 2)
+  receivedQuantity Decimal      @default(0) @db.Decimal(18, 4)
+  notes            String?
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+  receptionItems PurchaseReceptionItem[]
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseReception {
+  id              String                  @id @default(cuid())
+  tenantId        String
+  purchaseOrderId String
+  receptionDate   DateTime                @default(now())
+  notes           String?
+  createdById     String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrder  PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  createdBy      User?           @relation("PurchaseReceptionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items          PurchaseReceptionItem[]
+
+  @@index([tenantId, receptionDate])
+  @@index([purchaseOrderId])
+  @@map("purchase_receptions")
+}
+
+model PurchaseReceptionItem {
+  id                String             @id @default(cuid())
+  purchaseReceptionId String
+  purchaseOrderItemId String
+  quantity          Decimal            @db.Decimal(18, 4)
+  notes             String?
+
+  purchaseReception PurchaseReception @relation(fields: [purchaseReceptionId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@index([purchaseReceptionId])
+  @@index([purchaseOrderItemId])
+  @@map("purchase_reception_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// APROBACIONES
+// ─────────────────────────────────────────────────────────────
+
+model ApprovalFlow {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  entityType  String   // ej: "Document", "PurchaseOrder"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  steps     ApprovalStep[]
+  requests  ApprovalRequest[]
+
+  @@index([tenantId, entityType])
+  @@map("approval_flows")
+}
+
+model ApprovalStep {
+  id             String         @id @default(cuid())
+  approvalFlowId String
+  order          Int
+  role           UserRole
+  requiredCount  Int            // cuántos usuarios con ese rol deben aprobar
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  approvalFlow ApprovalFlow    @relation(fields: [approvalFlowId], references: [id], onDelete: Cascade)
+
+  @@index([approvalFlowId])
+  @@map("approval_steps")
+}
+
+model ApprovalRequest {
+  id             String           @id @default(cuid())
+  tenantId       String
+  approvalFlowId String
+  entityType     String
+  entityId       String
+  requestedById  String
+  status         ApprovalStatus  @default(PENDING)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  approvalFlow  ApprovalFlow     @relation(fields: [approvalFlowId], references: [id])
+  requestedBy   User             @relation("ApprovalRequestRequestedBy", fields: [requestedById], references: [id])
+  decisions     ApprovalDecision[]
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, status])
+  @@map("approval_requests")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model ApprovalDecision {
+  id               String            @id @default(cuid())
+  approvalRequestId String
+  userId           String
+  decision         ApprovalDecisionType
+  notes            String?
+  createdAt        DateTime          @default(now())
+
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  user            User             @relation("ApprovalDecisionUser", fields: [userId], references: [id])
+
+  @@index([approvalRequestId])
+  @@index([userId])
+  @@map("approval_decisions")
+}
+
+enum ApprovalDecisionType {
+  APPROVE
+  REJECT
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONVERSIONES DE DOCUMENTOS
+// ─────────────────────────────────────────────────────────────
+
+model DocumentConversion {
+  id              String   @id @default(cuid())
+  tenantId        String
+  sourceId        String   // ID del documento origen
+  targetType      String   // Tipo de documento destino
+  targetId        String?  // ID del documento destino (si ya se creó)
+  status          ConversionStatus @default(PENDING)
+  error           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy  User?  @relation("DocumentConversionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, sourceId])
+  @@index([tenantId, status])
+  @@map("document_conversions")
+}
+
+enum ConversionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
 }

@@ -2,16 +2,43 @@
 
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PackagePlus, Plus, Search, ShoppingCart, Trash2 } from 'lucide-react'
-import { documentsApi, productsApi, stockApi, suppliersApi } from '@/lib/api'
+import { CheckCircle2, PackagePlus, Search, ShoppingCart, Trash2 } from 'lucide-react'
+import { productsApi, purchasesApi, stockApi, suppliersApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
-type Product = { id: string; code: string; name: string; unit?: string; brand?: { name: string }; category?: { name: string } }
+type Product = { id: string; code: string; name: string; brand?: { name: string }; category?: { name: string } }
 type Supplier = { id: string; name: string }
 type Deposit = { id: string; name: string; isDefault?: boolean }
-type Line = { productId: string; code: string; name: string; quantity: number; unitCost: number }
+type Line = { productId: string; code: string; name: string; quantity: number; unitPrice: number; taxRate: number }
+type PurchaseOrderItem = {
+  id: string
+  product?: Product
+  quantity: string | number
+  unitPrice: string | number
+  taxRate: string | number
+  total: string | number
+  receivedQuantity: string | number
+}
+type PurchaseOrder = {
+  id: string
+  number: number
+  status: 'PENDING' | 'SENT' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED'
+  orderDate: string
+  expectedDate?: string | null
+  supplier?: Supplier
+  total: string | number
+  notes?: string | null
+  items: PurchaseOrderItem[]
+}
 
 const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })
+const statusLabels: Record<PurchaseOrder['status'], string> = {
+  PENDING: 'Pendiente',
+  SENT: 'Enviada',
+  PARTIALLY_RECEIVED: 'Parcial',
+  RECEIVED: 'Recibida',
+  CANCELLED: 'Cancelada',
+}
 
 function asArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[]
@@ -29,17 +56,22 @@ function apiMessage(error: unknown, fallback: string) {
   return Array.isArray(message) ? message.join(', ') : message
 }
 
+function pendingQuantity(item: PurchaseOrderItem) {
+  return Math.max(0, Number(item.quantity || 0) - Number(item.receivedQuantity || 0))
+}
+
 export default function ComprasPage() {
   const qc = useQueryClient()
-  const { user } = useAuth()
-  const isOwner = user?.role === 'OWNER'
+  const { hasPermission } = useAuth()
+  const canCreate = hasPermission('purchase.create')
+  const canReceive = hasPermission('purchase.receive')
   const [supplierId, setSupplierId] = useState('')
   const [depositId, setDepositId] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [expectedDate, setExpectedDate] = useState('')
   const [search, setSearch] = useState('')
   const [lines, setLines] = useState<Line[]>([])
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [quickProduct, setQuickProduct] = useState({ code: '', name: '', quantity: '', unitCost: '' })
 
   const { data: suppliersRaw } = useQuery({ queryKey: ['suppliers-purchase'], queryFn: () => suppliersApi.list({ limit: 500 }) })
   const { data: depositsRaw } = useQuery({ queryKey: ['deposits-purchase'], queryFn: stockApi.deposits })
@@ -47,17 +79,18 @@ export default function ComprasPage() {
     queryKey: ['products-purchase', search],
     queryFn: () => productsApi.list({ search: search || undefined, limit: 80 }),
   })
-  const { data: docsRaw } = useQuery({
-    queryKey: ['purchase-documents'],
-    queryFn: () => documentsApi.list({ type: 'PURCHASE_ORDER' }),
+  const { data: ordersRaw, isLoading: loadingOrders } = useQuery({
+    queryKey: ['purchase-orders'],
+    queryFn: () => purchasesApi.list(),
   })
 
   const suppliers = asArray<Supplier>(suppliersRaw)
   const deposits = asArray<Deposit>(depositsRaw)
   const products = asArray<Product>(productsRaw)
-  const docs = asArray<{ id: string; supplierName?: string; total: number; date: string; number?: number }>(docsRaw).slice(0, 8)
+  const orders = asArray<PurchaseOrder>(ordersRaw)
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? orders.find((order) => ['PENDING', 'SENT', 'PARTIALLY_RECEIVED'].includes(order.status)) ?? null
   const effectiveDepositId = depositId || deposits.find((item) => item.isDefault)?.id || deposits[0]?.id || ''
-  const total = useMemo(() => lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0), [lines])
+  const total = useMemo(() => lines.reduce((sum, line) => sum + line.quantity * line.unitPrice * (1 + line.taxRate / 100), 0), [lines])
 
   function addProduct(product: Product) {
     setLines((current) => {
@@ -67,7 +100,7 @@ export default function ComprasPage() {
         next[index] = { ...next[index], quantity: next[index].quantity + 1 }
         return next
       }
-      return [...current, { productId: product.id, code: product.code, name: product.name, quantity: 1, unitCost: 0 }]
+      return [...current, { productId: product.id, code: product.code, name: product.name, quantity: 1, unitPrice: 0, taxRate: 21 }]
     })
     setSearch('')
   }
@@ -76,67 +109,45 @@ export default function ComprasPage() {
     setLines((current) => current.map((line, i) => i === index ? { ...line, ...patch } : line))
   }
 
-  function removeLine(index: number) {
-    setLines((current) => current.filter((_, i) => i !== index))
-  }
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!effectiveDepositId) throw new Error('Falta depósito')
-      if (lines.length === 0) throw new Error('Agregá productos')
-      const document = await documentsApi.create({
-        type: 'PURCHASE_ORDER',
-        supplierId: supplierId || null,
-        date,
-        notes: 'Compra / reposición cargada desde pantalla Compras',
-        items: lines.map((line) => ({
-          productId: line.productId,
-          description: line.name,
-          quantity: line.quantity,
-          unitPrice: line.unitCost,
-          discount: 0,
-          taxRate: 0,
-        })),
-      })
-      await Promise.all(lines.map((line) => stockApi.record({
+  const createMutation = useMutation({
+    mutationFn: () => purchasesApi.create({
+      supplierId,
+      expectedDate: expectedDate || undefined,
+      notes: 'Orden de compra generada desde módulo Compras',
+      items: lines.map((line) => ({
         productId: line.productId,
-        depositId: effectiveDepositId,
-        type: 'PURCHASE',
         quantity: line.quantity,
-        unitCost: line.unitCost,
-        notes: `Entrada por compra${document?.number ? ` #${document.number}` : ''}`,
-      })))
-      return document
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['purchase-documents'] })
-      qc.invalidateQueries({ queryKey: ['stock-current'] })
-      qc.invalidateQueries({ queryKey: ['products'] })
+        unitPrice: line.unitPrice,
+        taxRate: line.taxRate,
+      })),
+    }),
+    onSuccess: (order: PurchaseOrder) => {
+      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
+      setSelectedOrderId(order.id)
       setLines([])
-      setMessage('Compra registrada y stock ingresado.')
+      setMessage(`Orden de compra #${order.number} creada.`)
     },
-    onError: (error) => setMessage(apiMessage(error, 'No se pudo registrar la compra')),
+    onError: (error) => setMessage(apiMessage(error, 'No se pudo crear la orden de compra')),
   })
 
-  const quickProductMutation = useMutation({
-    mutationFn: () => productsApi.create({
-      code: quickProduct.code.trim(),
-      name: quickProduct.name.trim(),
-      unit: 'un',
-      stockQuantity: 0,
+  const receiveMutation = useMutation({
+    mutationFn: (order: PurchaseOrder) => purchasesApi.createReception({
+      purchaseOrderId: order.id,
+      depositId: effectiveDepositId,
+      notes: 'Recepción registrada desde Compras',
+      items: order.items
+        .map((item) => ({
+          purchaseOrderItemId: item.id,
+          quantity: pendingQuantity(item),
+        }))
+        .filter((item) => item.quantity > 0),
     }),
-    onSuccess: (product: Product) => {
-      qc.invalidateQueries({ queryKey: ['products-purchase'] })
-      setLines((current) => [...current, {
-        productId: product.id,
-        code: product.code,
-        name: product.name,
-        quantity: numberInput(quickProduct.quantity) || 1,
-        unitCost: numberInput(quickProduct.unitCost),
-      }])
-      setQuickProduct({ code: '', name: '', quantity: '', unitCost: '' })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['purchase-orders'] })
+      qc.invalidateQueries({ queryKey: ['stock-current'] })
+      setMessage('Recepción registrada. Stock y costos actualizados.')
     },
-    onError: (error) => setMessage(apiMessage(error, 'No se pudo crear el producto')),
+    onError: (error) => setMessage(apiMessage(error, 'No se pudo registrar la recepción')),
   })
 
   return (
@@ -144,18 +155,17 @@ export default function ComprasPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Compras</h1>
-          <p className="page-subtitle">Ingreso rápido de mercadería, costos y reposición de stock</p>
+          <p className="page-subtitle">Órdenes de compra, recepción de mercadería y valorización de stock</p>
         </div>
       </div>
 
-      {message && <div className="counter-alert success">{message}</div>}
+      {message && <div className={`counter-alert ${message.includes('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 340px', gap: 14, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 380px', gap: 14, alignItems: 'start' }}>
         <section className="fc-card">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 160px', gap: 10, marginBottom: 14 }}>
-            <label><span className="fc-label">Proveedor</span><select className="fc-input" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Sin proveedor</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
-            <label><span className="fc-label">Depósito</span><select className="fc-input" value={effectiveDepositId} onChange={(event) => setDepositId(event.target.value)}>{deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}</select></label>
-            <label><span className="fc-label">Fecha</span><input className="fc-input" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 170px', gap: 10, marginBottom: 14 }}>
+            <label><span className="fc-label">Proveedor</span><select className="fc-input" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Seleccionar proveedor</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
+            <label><span className="fc-label">Entrega esperada</span><input className="fc-input" type="date" value={expectedDate} onChange={(event) => setExpectedDate(event.target.value)} /></label>
           </div>
 
           <div className="search-wrap" style={{ maxWidth: 'none' }}>
@@ -175,18 +185,19 @@ export default function ComprasPage() {
 
           <div style={{ overflowX: 'auto' }}>
             <table className="fc-table">
-              <thead><tr><th>Código</th><th>Producto</th><th style={{ textAlign: 'right' }}>Cant.</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>Total</th><th></th></tr></thead>
+              <thead><tr><th>Código</th><th>Producto</th><th style={{ textAlign: 'right' }}>Cant.</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>IVA</th><th style={{ textAlign: 'right' }}>Total</th><th></th></tr></thead>
               <tbody>
                 {lines.length === 0 ? (
-                  <tr><td colSpan={6}><div className="empty-state"><ShoppingCart size={30} /><p>Agregá productos para registrar una compra.</p></div></td></tr>
+                  <tr><td colSpan={7}><div className="empty-state"><ShoppingCart size={30} /><p>Agregá productos para crear una orden.</p></div></td></tr>
                 ) : lines.map((line, index) => (
                   <tr key={line.productId}>
                     <td className="mono-cell">{line.code}</td>
                     <td>{line.name}</td>
-                    <td><input className="fc-input" style={{ width: 90, textAlign: 'right' }} inputMode="decimal" value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} /></td>
-                    <td><input className="fc-input" style={{ width: 110, textAlign: 'right' }} inputMode="decimal" value={String(line.unitCost)} onChange={(event) => updateLine(index, { unitCost: numberInput(event.target.value) })} /></td>
-                    <td className="money-cell strong">{ARS.format(line.quantity * line.unitCost)}</td>
-                    <td><button className="btn btn-icon btn-secondary btn-sm" onClick={() => removeLine(index)}><Trash2 size={13} /></button></td>
+                    <td><input className="fc-input" style={{ width: 84, textAlign: 'right' }} inputMode="decimal" value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} /></td>
+                    <td><input className="fc-input" style={{ width: 106, textAlign: 'right' }} inputMode="decimal" value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} /></td>
+                    <td><input className="fc-input" style={{ width: 72, textAlign: 'right' }} inputMode="decimal" value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value) })} /></td>
+                    <td className="money-cell strong">{ARS.format(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
+                    <td><button className="btn btn-icon btn-secondary btn-sm" onClick={() => setLines((current) => current.filter((_, i) => i !== index))}><Trash2 size={13} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -195,35 +206,45 @@ export default function ComprasPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14 }}>
             <strong style={{ fontSize: 18 }}>Total {ARS.format(total)}</strong>
-            <button className="btn btn-primary" disabled={!isOwner || lines.length === 0 || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-              <PackagePlus size={14} /> {saveMutation.isPending ? 'Guardando...' : 'Registrar compra y stock'}
+            <button className="btn btn-primary" disabled={!canCreate || !supplierId || lines.length === 0 || createMutation.isPending} onClick={() => createMutation.mutate()}>
+              <PackagePlus size={14} /> {createMutation.isPending ? 'Creando...' : 'Crear orden de compra'}
             </button>
           </div>
         </section>
 
         <aside style={{ display: 'grid', gap: 14 }}>
           <section className="fc-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Alta rápida</h2>
-            <label className="fc-label">Código</label>
-            <input className="fc-input" value={quickProduct.code} onChange={(event) => setQuickProduct((current) => ({ ...current, code: event.target.value }))} />
-            <label className="fc-label" style={{ marginTop: 10 }}>Producto</label>
-            <input className="fc-input" value={quickProduct.name} onChange={(event) => setQuickProduct((current) => ({ ...current, name: event.target.value }))} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-              <label><span className="fc-label">Cant.</span><input className="fc-input" value={quickProduct.quantity} onChange={(event) => setQuickProduct((current) => ({ ...current, quantity: event.target.value }))} /></label>
-              <label><span className="fc-label">Costo</span><input className="fc-input" value={quickProduct.unitCost} onChange={(event) => setQuickProduct((current) => ({ ...current, unitCost: event.target.value }))} /></label>
-            </div>
-            <button className="btn btn-secondary" style={{ marginTop: 12 }} disabled={!isOwner || !quickProduct.code || !quickProduct.name || quickProductMutation.isPending} onClick={() => quickProductMutation.mutate()}>
-              <Plus size={14} /> Crear y agregar
-            </button>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Recepción</h2>
+            <label><span className="fc-label">Depósito destino</span><select className="fc-input" value={effectiveDepositId} onChange={(event) => setDepositId(event.target.value)}>{deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}</select></label>
+            {!selectedOrder ? (
+              <div className="empty-state"><p>Seleccioná una orden pendiente.</p></div>
+            ) : (
+              <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                <div>
+                  <b>OC #{selectedOrder.number}</b>
+                  <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>{selectedOrder.supplier?.name}</span>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{statusLabels[selectedOrder.status]}</div>
+                </div>
+                {selectedOrder.items.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: '1px solid var(--fc-border)', paddingTop: 8 }}>
+                    <span>{item.product?.code} {item.product?.name}</span>
+                    <b>{pendingQuantity(item)} pend.</b>
+                  </div>
+                ))}
+                <button className="btn btn-primary" disabled={!canReceive || !effectiveDepositId || selectedOrder.items.every((item) => pendingQuantity(item) <= 0) || receiveMutation.isPending} onClick={() => receiveMutation.mutate(selectedOrder)}>
+                  <CheckCircle2 size={14} /> {receiveMutation.isPending ? 'Recibiendo...' : 'Recibir pendiente'}
+                </button>
+              </div>
+            )}
           </section>
 
           <section className="fc-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Últimas compras</h2>
-            {docs.length === 0 ? <div className="empty-state"><p>Sin compras cargadas.</p></div> : docs.map((doc) => (
-              <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '9px 0', borderBottom: '1px solid var(--fc-border)' }}>
-                <span>{doc.supplierName || 'Sin proveedor'}<small style={{ display: 'block', color: 'var(--text-muted)' }}>{new Date(doc.date).toLocaleDateString('es-AR')}</small></span>
-                <b>{ARS.format(Number(doc.total || 0))}</b>
-              </div>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Órdenes recientes</h2>
+            {loadingOrders ? <div className="empty-state"><span className="spinner" /></div> : orders.length === 0 ? <div className="empty-state"><p>Sin órdenes de compra.</p></div> : orders.slice(0, 10).map((order) => (
+              <button key={order.id} type="button" onClick={() => setSelectedOrderId(order.id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 10, padding: '10px 0', border: 0, borderBottom: '1px solid var(--fc-border)', background: 'transparent', color: 'var(--fc-text)', textAlign: 'left', cursor: 'pointer' }}>
+                <span><b>OC #{order.number}</b><small style={{ display: 'block', color: 'var(--text-muted)' }}>{order.supplier?.name || 'Sin proveedor'} · {statusLabels[order.status]}</small></span>
+                <b>{ARS.format(Number(order.total || 0))}</b>
+              </button>
             ))}
           </section>
         </aside>

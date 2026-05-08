@@ -244,7 +244,7 @@ export default function PedidosPage() {
         <div style={{ overflowX: 'auto', marginTop: 12 }}>
           {lines.length > 0 && (
             <div className="budget-readonly-note order-protected-note">
-              Preparación protegida: podés sumar cantidades, buscar más productos y quitar ítems. Precio, descripción, descuento e IVA salen del catálogo/lista y quedan bloqueados.
+              Preparación protegida: podés sumar cantidades, buscar más productos y quitar ítems. Precio, descripción, descuento e IVA salen de productos y listas de precio.
             </div>
           )}
           <table className="fc-table aguila-items-table">

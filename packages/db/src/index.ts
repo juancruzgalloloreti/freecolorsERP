@@ -19,4 +19,7 @@ export {
   CashMovementType,
   PriceCoefficientScope,
   SalesOrderStatus,
+  ApprovalDecisionType,
+  ApprovalStatus,
+  PurchaseOrderStatus,
 } from '@prisma/client';

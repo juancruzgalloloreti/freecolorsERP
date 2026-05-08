@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
-import { Calculator, CheckCircle2, Play, Plus, Save, Tag, Trash2, X } from 'lucide-react'
+import { Calculator, Play, Plus, Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface PriceList {
@@ -113,6 +113,7 @@ export default function ListasDePrecioPage() {
       return DEFAULT_FORMULAS
     }
   })
+  const [confirmingFormula, setConfirmingFormula] = useState<PriceFormula | null>(null)
 
   const { data: rawLists, isLoading } = useQuery({
     queryKey: ['price-lists'],
@@ -243,11 +244,6 @@ export default function ListasDePrecioPage() {
     return lists.find((list) => list.id === id)?.name || 'Seleccionar'
   }
 
-  function findListByPrefix(prefix: string) {
-    return lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
-      || lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
-  }
-
   function priceListCode(name: string) {
     const upper = name.toUpperCase()
     return REQUIRED_LIST_LABELS.find((prefix) => upper.startsWith(`${prefix} `) || upper.startsWith(`${prefix} -`)) || null
@@ -311,7 +307,13 @@ export default function ListasDePrecioPage() {
       setMessage('La lista destino tiene que ser distinta de la lista base.')
       return
     }
-    recalculateMutation.mutate({ formula: { ...formula, baseListId, targetListId } })
+    setConfirmingFormula({ ...formula, baseListId, targetListId })
+  }
+
+  function confirmApplyFormula() {
+    if (!confirmingFormula) return
+    setConfirmingFormula(null)
+    recalculateMutation.mutate({ formula: confirmingFormula })
   }
 
   function saveCoefficient() {
@@ -326,8 +328,8 @@ export default function ListasDePrecioPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Listas de Precio</h1>
-          <p className="page-subtitle">Precios globales por fórmula: cada producto calcula LP2, LP3, LP4 y LP5 desde LP1 o CR</p>
+          <h1 className="page-title">Precios</h1>
+          <p className="page-subtitle">Listas de venta, costos de referencia y reglas de actualización</p>
         </div>
         {isOwner && (
           <button className="btn btn-primary" onClick={() => { setCreating(true); setMessage(null) }}>
@@ -342,32 +344,125 @@ export default function ListasDePrecioPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
-        <div className="stat-card"><div className="stat-value">{lists.length}</div><div className="stat-label">Listas configuradas</div></div>
-        <div className="stat-card"><div className="stat-value">{activeCount}</div><div className="stat-label">Activas para vender</div></div>
-        <div className="stat-card"><div className="stat-value">{formulaBackedCount}</div><div className="stat-label">Listas con fórmula Aguila</div></div>
+      <div className="price-summary">
+        <div><span>Principal</span><strong>{defaultList?.name || 'Sin lista'}</strong></div>
+        <div><span>Activas</span><strong>{activeCount} de {lists.length}</strong></div>
+        <div><span>Reglas</span><strong>{formulaBackedCount} listas reconocidas</strong></div>
       </div>
 
-      <div className="fc-card required-lists">
-        {REQUIRED_LIST_LABELS.map((prefix) => {
-          const list = findListByPrefix(prefix)
-          return (
-            <div className="required-list" key={prefix}>
-              <span>{prefix}</span>
-              <strong>{list?.name || 'Pendiente'}</strong>
-              <small>{list ? priceListCalculation(list.name) : 'Se crea automáticamente'}</small>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="fc-card" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div className="fc-card price-main-card">
+        <div className="price-section-head">
           <div>
-            <h2 style={{ margin: 0, fontSize: 15 }}>Coeficientes vigentes</h2>
-            <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>El mostrador aplica el mayor coeficiente vigente entre producto y categoría.</p>
+            <h2>Listas</h2>
+            <p>Qué precio usa el mostrador y cómo se calcula cada lista.</p>
           </div>
         </div>
+
+        {isLoading ? (
+          <div className="empty-state"><span className="spinner" /></div>
+        ) : lists.length === 0 ? (
+          <div className="empty-state"><p>No hay listas creadas.</p></div>
+        ) : (
+          <table className="fc-table">
+            <thead>
+              <tr>
+                <th>Lista</th>
+                <th>Uso</th>
+                <th>Cálculo</th>
+                <th style={{ textAlign: 'right' }}>Precios base</th>
+                <th>Estado</th>
+                {isOwner && <th style={{ width: 54 }}></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {lists.map((list) => {
+                const count = list.items?.filter((item) => Number(item.price || 0) > 0).length || 0
+                const isRequired = Boolean(priceListCode(list.name))
+                return (
+                  <tr key={list.id}>
+                    <td style={{ fontWeight: 700 }}>{list.name}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : 'Alternativa para cliente/documento'}</td>
+                    <td style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{priceListCalculation(list.name)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{count}</td>
+                    <td><span className={`badge ${list.isActive === false ? 'badge-red' : 'badge-green'}`}>{list.isActive === false ? 'Inactiva' : 'Activa'}</span></td>
+                    {isOwner && (
+                      <td>
+                        {!isRequired && (
+                          <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingList(list)} title="Eliminar lista">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="fc-card price-formulas-card">
+        <div className="price-section-head">
+          <div>
+            <h2>Reglas de cálculo</h2>
+            <p>Usalas solo cuando quieras guardar/recalcular precios. El mostrador ya calcula las listas reconocidas.</p>
+          </div>
+          {isOwner && <button className="btn btn-secondary btn-sm" onClick={addFormula}><Plus size={13} /> Regla</button>}
+        </div>
+
+        <div className="formula-list">
+          {hydratedFormulas.map((formula) => (
+            <div className="formula-row" key={formula.id}>
+              <label className="formula-cell formula-title">
+                <span>Regla</span>
+                <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
+              </label>
+              <label className="formula-cell">
+                <span>Base</span>
+                <select className="fc-input" aria-label="Lista base" value={formula.baseListId || defaultList?.id || ''} onChange={(e) => updateFormula(formula.id, 'baseListId', e.target.value)} disabled={!isOwner}>
+                  <option value="">Base</option>
+                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                </select>
+              </label>
+              <label className="formula-cell">
+                <span>Destino</span>
+                <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId()} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
+                  <option value="">Destino</option>
+                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                </select>
+              </label>
+              <label className="formula-cell">
+                <span>Coef.</span>
+                <input className="fc-input formula-number" aria-label="Multiplicador" value={formula.multiplier} onChange={(e) => updateFormula(formula.id, 'multiplier', e.target.value)} readOnly={!isOwner} />
+              </label>
+              <label className="formula-cell">
+                <span>Redondeo</span>
+                <input className="fc-input formula-number" aria-label="Redondeo" value={formula.rounding} onChange={(e) => updateFormula(formula.id, 'rounding', e.target.value)} readOnly={!isOwner} />
+              </label>
+              <label className="formula-check">
+                <input type="checkbox" checked={formula.onlyMissing} onChange={(e) => updateFormula(formula.id, 'onlyMissing', e.target.checked)} disabled={!isOwner} />
+                <span>Solo faltantes</span>
+              </label>
+              {isOwner && (
+                <div className="formula-actions">
+                  <button className="btn btn-secondary btn-sm" disabled={recalculateMutation.isPending} onClick={() => applyFormula(formula)} title={`Aplicar sobre ${listName(formula.targetListId || defaultTargetId())}`}>
+                    <Play size={13} /> Aplicar
+                  </button>
+                  <button className="btn btn-icon btn-secondary btn-sm" onClick={() => removeFormula(formula.id)} title="Eliminar regla"><Trash2 size={13} /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <details className="fc-card price-advanced">
+        <summary>
+          <span>Coeficientes por producto o categoría</span>
+          <small>{coefficients.length} vigentes</small>
+        </summary>
+        <p className="price-advanced-help">El mostrador aplica el mayor coeficiente vigente entre producto y categoría.</p>
         {isOwner && (
           <div className="coefficient-form">
             <select className="fc-input" value={coefficientForm.scope} onChange={(e) => setCoefficientForm((current) => ({ ...current, scope: e.target.value, targetId: '' }))}>
@@ -402,112 +497,7 @@ export default function ListasDePrecioPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="fc-card" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(124,58,237,0.12)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.24)' }}>
-              <Calculator size={17} />
-            </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: 15 }}>Fórmulas</h2>
-              <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>Las listas obligatorias se calculan en vivo para todos los productos; aplicar solo recalcula precios guardados si lo necesitás para exportar o auditar.</p>
-            </div>
-          </div>
-          {isOwner && <button className="btn btn-secondary btn-sm" onClick={addFormula}><Plus size={13} /> Fórmula</button>}
-        </div>
-
-        <div className="formula-list">
-          {hydratedFormulas.map((formula) => (
-            <div className="formula-row" key={formula.id}>
-              <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
-              <div className="formula-field">
-                <span>Base</span>
-                <select className="fc-input" value={formula.baseListId || defaultList?.id || ''} onChange={(e) => updateFormula(formula.id, 'baseListId', e.target.value)} disabled={!isOwner}>
-                  <option value="">Seleccionar</option>
-                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
-                </select>
-              </div>
-              <div className="formula-field">
-                <span>Destino</span>
-                <select className="fc-input" value={formula.targetListId || defaultTargetId()} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
-                  <option value="">Seleccionar</option>
-                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
-                </select>
-              </div>
-              <div className="formula-field small">
-                <span>x</span>
-                <input className="fc-input" value={formula.multiplier} onChange={(e) => updateFormula(formula.id, 'multiplier', e.target.value)} readOnly={!isOwner} />
-              </div>
-              <div className="formula-field small">
-                <span>Red.</span>
-                <input className="fc-input" value={formula.rounding} onChange={(e) => updateFormula(formula.id, 'rounding', e.target.value)} readOnly={!isOwner} />
-              </div>
-              <label className="formula-check">
-                <input type="checkbox" checked={formula.onlyMissing} onChange={(e) => updateFormula(formula.id, 'onlyMissing', e.target.checked)} disabled={!isOwner} />
-                <span>Solo faltantes</span>
-              </label>
-              {isOwner && (
-                <div className="formula-actions">
-                  <button className="btn btn-secondary btn-sm" disabled={recalculateMutation.isPending} onClick={() => applyFormula(formula)} title={`Aplicar sobre ${listName(formula.targetListId || defaultTargetId())}`}>
-                    <Play size={13} /> Aplicar
-                  </button>
-                  <button className="btn btn-icon btn-secondary btn-sm" onClick={() => removeFormula(formula.id)} title="Eliminar fórmula"><Trash2 size={13} /></button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="fc-card" style={{ overflow: 'hidden' }}>
-        {isLoading ? (
-          <div className="empty-state"><span className="spinner" /></div>
-        ) : lists.length === 0 ? (
-          <div className="empty-state"><p>No hay listas creadas.</p></div>
-        ) : (
-          <table className="fc-table">
-            <thead>
-              <tr>
-                <th>Lista</th>
-                <th>Uso</th>
-                <th>Cálculo</th>
-                <th style={{ textAlign: 'right' }}>Precios base</th>
-                <th>Estado</th>
-                {isOwner && <th style={{ width: 54 }}></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {lists.map((list) => {
-                const count = list.items?.filter((item) => Number(item.price || 0) > 0).length || 0
-                const isRequired = Boolean(priceListCode(list.name))
-                return (
-                  <tr key={list.id}>
-                    <td style={{ fontWeight: 700 }}>{list.name}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : 'Alternativa para cliente/documento'}</td>
-                    <td style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{priceListCalculation(list.name)}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{count}</td>
-                    <td><span className={`badge ${list.isActive === false ? 'badge-red' : 'badge-green'}`}>{list.isActive === false ? 'Inactiva' : 'Activa'}</span></td>
-                    {isOwner && (
-                      <td>
-                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingList(list)} title={isRequired ? 'Lista obligatoria' : 'Eliminar lista'} disabled={isRequired}>
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <div className="fc-card" style={{ marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-        <div className="locked-field"><Tag size={14} /> Principal: {defaultList?.name || 'Sin lista'}</div>
-        <div className="locked-field"><CheckCircle2 size={14} /> Se usa al emitir documentos</div>
-      </div>
+      </details>
 
       {creating && (
         <div className="modal-overlay">
@@ -556,39 +546,87 @@ export default function ListasDePrecioPage() {
         </div>
       )}
 
+      {confirmingFormula && (
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: 420 }}>
+            <div style={{ padding: '28px 24px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', display: 'grid', placeItems: 'center', marginBottom: 14 }}>
+                <Calculator size={18} color="#a78bfa" />
+              </div>
+              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>¿Aplicar fórmula?</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                Se van a recalcular los precios de <strong>{listName(confirmingFormula.targetListId)}</strong> basándose en <strong>{listName(confirmingFormula.baseListId)}</strong> con un multiplicador de <strong>x{confirmingFormula.multiplier}</strong>.
+                {confirmingFormula.onlyMissing && <span style={{ display: 'block', marginTop: 6 }}>Solo se actualizarán los productos que no tengan precio en la lista destino.</span>}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
+                <button className="btn btn-secondary" disabled={recalculateMutation.isPending} onClick={() => setConfirmingFormula(null)}>Cancelar</button>
+                <button className="btn btn-primary" disabled={recalculateMutation.isPending} onClick={confirmApplyFormula}>
+                  {recalculateMutation.isPending ? 'Aplicando...' : 'Aplicar fórmula'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .formula-list { display: flex; flex-direction: column; gap: 8px; }
-        .required-lists {
+        .price-summary {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 8px;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
-        .required-list {
-          min-height: 48px;
+        .price-summary > div {
+          min-height: 58px;
           border: 1px solid var(--fc-border);
           border-radius: 8px;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 3px;
-          padding: 8px 10px;
+          gap: 5px;
+          padding: 10px 12px;
           background: rgba(255,255,255,0.03);
         }
-        .required-list span {
-          color: #a78bfa;
-          font-size: 11px;
-          font-weight: 800;
-        }
-        .required-list strong {
-          font-size: 12px;
-          line-height: 1.2;
-        }
-        .required-list small {
+        .price-summary span {
           color: var(--text-muted);
           font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .price-summary strong {
+          font-size: 15px;
+          line-height: 1.2;
+          color: var(--fc-text);
+        }
+        .price-main-card {
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+        .price-formulas-card,
+        .price-advanced {
+          margin-top: 12px;
+        }
+        .price-section-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+        }
+        .price-section-head h2 {
+          margin: 0;
+          font-size: 15px;
+        }
+        .price-section-head p,
+        .price-advanced-help {
+          margin: 3px 0 0;
+          color: var(--text-muted);
+          font-size: 13px;
           line-height: 1.2;
         }
+        .formula-list { display: flex; flex-direction: column; gap: 7px; }
         .coefficient-form {
           display: grid;
           grid-template-columns: 130px minmax(220px, 1.4fr) minmax(120px, 1fr) 90px 135px 135px auto;
@@ -611,38 +649,70 @@ export default function ListasDePrecioPage() {
         .coefficient-row b { text-align: right; font-family: var(--font-mono); }
         .formula-row {
           display: grid;
-          grid-template-columns: minmax(130px, 1.1fr) minmax(170px, 1.1fr) minmax(170px, 1.1fr) 74px 78px 128px auto;
+          grid-template-columns: minmax(210px, 1.15fr) minmax(180px, 1fr) minmax(180px, 1fr) 82px 92px 126px 130px;
           gap: 8px;
           align-items: end;
-          padding: 9px;
-          border: 1px solid var(--fc-border);
+          padding: 8px;
+          border: 1px solid rgba(148, 163, 184, 0.14);
           border-radius: 8px;
-          background: rgba(255,255,255,0.03);
+          background: rgba(255,255,255,0.025);
+        }
+        .formula-cell {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          gap: 5px;
+        }
+        .formula-cell > span {
+          color: #8090ad;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          line-height: 1;
+          text-transform: uppercase;
         }
         .formula-name { font-weight: 750; }
-        .formula-field { display: flex; flex-direction: column; gap: 4px; }
-        .formula-field span, .formula-check span { color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-        .formula-field .fc-input, .formula-name { min-height: 32px; height: 32px; }
-        .formula-field.small .fc-input { text-align: right; font-family: var(--font-mono); }
-        .formula-check { min-height: 32px; display: flex; align-items: center; gap: 7px; cursor: pointer; }
-        .formula-check input { width: 15px; height: 15px; accent-color: var(--accent-purple); }
-        .formula-actions { display: flex; gap: 6px; justify-content: flex-end; }
-        .locked-field {
+        .formula-row .fc-input {
           min-height: 38px;
-          border: 1px solid var(--fc-border);
-          border-radius: 8px;
+          height: 38px;
+          padding: 0 12px;
+          font-size: 13px;
+          line-height: 1.2;
+        }
+        .formula-row select.fc-input {
+          padding-right: 30px;
+        }
+        .formula-number { text-align: right; font-family: var(--font-mono); }
+        .formula-check span { color: #aeb9cf; font-size: 12px; font-weight: 650; }
+        .formula-check { min-height: 38px; display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
+        .formula-check input { width: 16px; height: 16px; accent-color: var(--accent-purple); }
+        .formula-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .price-advanced summary {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 0 11px;
-          color: var(--fc-text);
-          background: rgba(255,255,255,0.03);
+          justify-content: space-between;
+          cursor: pointer;
+          list-style: none;
+          font-weight: 750;
+        }
+        .price-advanced summary::-webkit-details-marker { display: none; }
+        .price-advanced summary small {
+          color: var(--text-muted);
+          font-size: 12px;
           font-weight: 650;
         }
+        .price-advanced[open] summary {
+          margin-bottom: 10px;
+        }
         @media (max-width: 1180px) {
+          .price-summary { grid-template-columns: 1fr; }
           .formula-row { grid-template-columns: 1fr 1fr; }
+          .formula-title { grid-column: 1 / -1; }
           .coefficient-form, .coefficient-row { grid-template-columns: 1fr 1fr; }
           .formula-actions { justify-content: flex-start; }
+        }
+        @media (max-width: 720px) {
+          .formula-row { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

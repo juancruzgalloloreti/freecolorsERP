@@ -354,7 +354,7 @@ export default function StockPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Stock</h1>
+          <h1 className="page-title">Existencias</h1>
           <p className="page-subtitle">Control de inventario por depósito</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

@@ -102,22 +102,32 @@ a { color: inherit; }
   border-radius: 99px;
   background: linear-gradient(90deg, #7c3aed, #3b82f6);
 }
-.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.sidebar-nav { flex: 1; padding: 12px; overflow-y: auto; }
+.sidebar-group { padding: 8px 0 10px; }
+.sidebar-group + .sidebar-group { border-top: 1px solid rgba(148, 163, 184, 0.1); }
+.sidebar-group-label {
+  padding: 0 12px 7px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 38px;
+  min-height: 34px;
   padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 8px;
   color: #a6afc3;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
-.sidebar-link + .sidebar-link { margin-top: 4px; }
+.sidebar-link + .sidebar-link { margin-top: 3px; }
 .sidebar-link:hover { background: rgba(148, 163, 184, 0.08); color: #fff; }
 .sidebar-link.active {
   color: #fff;
@@ -604,7 +614,7 @@ select.fc-input { color-scheme: dark; }
 .counter-search > svg {
   color: var(--fc-muted);
 }
-.aguila-command-bar {
+.erp-command-bar {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -615,7 +625,7 @@ select.fc-input { color-scheme: dark; }
   border-radius: 8px;
   background: rgba(7, 10, 18, 0.58);
 }
-.aguila-command-bar .toolbar-btn {
+.erp-command-bar .toolbar-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -630,16 +640,16 @@ select.fc-input { color-scheme: dark; }
   font-weight: 800;
   cursor: pointer;
 }
-.aguila-command-bar .toolbar-btn:hover {
+.erp-command-bar .toolbar-btn:hover {
   background: rgba(148, 163, 184, 0.1);
   border-color: var(--fc-border);
 }
-.aguila-command-bar .toolbar-btn.active {
+.erp-command-bar .toolbar-btn.active {
   border-color: rgba(124, 58, 237, 0.56);
   background: rgba(124, 58, 237, 0.18);
   color: #fff;
 }
-.aguila-command-bar .toolbar-btn:disabled {
+.erp-command-bar .toolbar-btn:disabled {
   color: var(--fc-muted);
   cursor: not-allowed;
   opacity: 0.55;
@@ -679,7 +689,7 @@ select.fc-input { color-scheme: dark; }
   font-family: var(--font-mono);
   font-size: 12px;
 }
-.aguila-lookup {
+.erp-lookup {
   display: grid;
   gap: 12px;
 }
@@ -1010,42 +1020,42 @@ select.fc-input { color-scheme: dark; }
   font-weight: 800;
   white-space: nowrap;
 }
-.aguila-items-table {
+.erp-items-table {
   table-layout: fixed;
   min-width: 1040px;
 }
-.aguila-items-table th:nth-child(1),
-.aguila-items-table td:nth-child(1) {
+.erp-items-table th:nth-child(1),
+.erp-items-table td:nth-child(1) {
   width: 120px;
 }
-.aguila-items-table th:nth-child(2),
-.aguila-items-table td:nth-child(2) {
+.erp-items-table th:nth-child(2),
+.erp-items-table td:nth-child(2) {
   width: auto;
   min-width: 430px;
 }
-.aguila-items-table th:nth-child(n+3),
-.aguila-items-table td:nth-child(n+3) {
+.erp-items-table th:nth-child(n+3),
+.erp-items-table td:nth-child(n+3) {
   width: 112px;
 }
-.aguila-items-table th:last-child,
-.aguila-items-table td:last-child {
+.erp-items-table th:last-child,
+.erp-items-table td:last-child {
   width: 48px;
 }
-.aguila-items-table td {
+.erp-items-table td {
   vertical-align: top;
 }
-.aguila-items-table .quantity-input,
-.aguila-items-table .money-input {
+.erp-items-table .quantity-input,
+.erp-items-table .money-input {
   min-width: 0;
   max-width: 128px;
 }
-.aguila-items-table td {
+.erp-items-table td {
   min-width: 76px;
 }
-.aguila-items-table td:nth-child(2) {
+.erp-items-table td:nth-child(2) {
   min-width: 260px;
 }
-.aguila-items-table td:last-child {
+.erp-items-table td:last-child {
   min-width: 46px;
 }
 .counter-line-cards { display: none; }
@@ -1889,13 +1899,13 @@ select.fc-input { color-scheme: dark; }
   .operation-grid label:nth-child(5) {
     grid-column: 1 / -1;
   }
-  .aguila-command-bar {
+  .erp-command-bar {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 8px;
     gap: 7px;
   }
-  .aguila-command-bar .toolbar-btn,
+  .erp-command-bar .toolbar-btn,
   .toolbar-check {
     min-height: 42px;
     width: 100%;

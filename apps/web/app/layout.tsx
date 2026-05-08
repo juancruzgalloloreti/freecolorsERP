@@ -5,8 +5,8 @@ import Providers from './providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'FreeColors ERP',
-  description: 'Sistema de gestión — Pinturerias FreeColors',
+  title: 'Freecolors',
+  description: 'Sistema de gestión — Pinturerias Freecolors',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

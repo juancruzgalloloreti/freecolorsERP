@@ -501,8 +501,8 @@ export default function ProductosPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Catálogo</h1>
-          <p className="page-subtitle">{products.length} producto{products.length !== 1 ? 's' : ''}, marcas, categorías y precios</p>
+          <h1 className="page-title">Productos</h1>
+          <p className="page-subtitle">{products.length} producto{products.length !== 1 ? 's' : ''}, marcas, rubros y precios</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
@@ -517,7 +517,7 @@ export default function ProductosPage() {
           <button
             className="btn btn-secondary"
             disabled={!canImportProducts || exportMutation.isPending}
-            title={!canImportProducts ? 'Solo OWNER puede exportar el catálogo' : undefined}
+            title={!canImportProducts ? 'Solo OWNER puede exportar productos' : undefined}
             onClick={() => exportMutation.mutate()}
           >
             <Download size={14} /> {exportMutation.isPending ? 'Exportando...' : 'Exportar CSV'}

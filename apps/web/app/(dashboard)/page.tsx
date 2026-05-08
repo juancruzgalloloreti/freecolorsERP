@@ -6,12 +6,12 @@ import { Package, FileText, Users, TrendingUp, AlertTriangle, ArrowRight } from 
 import Link from 'next/link'
 
 const QUICK_LINKS = [
-  { href: '/documentos',  label: 'Nueva factura',        desc: 'Emitir factura o remito',         color: '#7c3aed', dot: '#a78bfa' },
-  { href: '/productos',   label: 'Productos',             desc: 'ABM catálogo completo',            color: '#3b82f6', dot: '#60a5fa' },
-  { href: '/stock',       label: 'Movimiento de stock',   desc: 'Registrar entradas y salidas',     color: '#22c55e', dot: '#4ade80' },
-  { href: '/clientes',    label: 'Clientes',              desc: 'Gestión y cuenta corriente',       color: '#f59e0b', dot: '#fbbf24' },
-  { href: '/reportes',    label: 'Reportes',              desc: 'Analytics y métricas del negocio', color: '#ef4444', dot: '#f87171' },
-  { href: '/listas-de-precio', label: 'Listas de precio', desc: 'Precios por cliente o segmento', color: '#8b5cf6', dot: '#c4b5fd' },
+  { href: '/ventas', label: 'Abrir mostrador', desc: 'Vender, cobrar y emitir', color: '#7c3aed', dot: '#a78bfa' },
+  { href: '/compras', label: 'Cargar compra', desc: 'Ordenes y recepciones', color: '#3b82f6', dot: '#60a5fa' },
+  { href: '/productos', label: 'Productos', desc: 'Fichas, marcas y rubros', color: '#22c55e', dot: '#4ade80' },
+  { href: '/stock', label: 'Existencias', desc: 'Saldos y movimientos', color: '#f59e0b', dot: '#fbbf24' },
+  { href: '/clientes', label: 'Clientes', desc: 'Datos y cuenta corriente', color: '#ef4444', dot: '#f87171' },
+  { href: '/listas-de-precio', label: 'Precios', desc: 'Listas y actualizaciones', color: '#8b5cf6', dot: '#c4b5fd' },
 ]
 
 export default function DashboardPage() {
@@ -31,7 +31,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="page-header" style={{ marginBottom: '28px' }}>
         <div>
-          <h1 className="page-title">Dashboard</h1>
+          <h1 className="page-title">Inicio</h1>
           <p className="page-subtitle" style={{ textTransform: 'capitalize' }}>{today}</p>
         </div>
       </div>
@@ -71,7 +71,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Divider label */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -79,7 +78,7 @@ export default function DashboardPage() {
         marginBottom: '16px',
       }}>
         <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          Accesos rápidos
+          Trabajo frecuente
         </span>
         <div style={{ flex: 1, height: '1px', background: 'var(--fc-border)' }} />
       </div>

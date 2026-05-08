@@ -332,6 +332,18 @@ export class DocumentsService {
         });
         puntoDeVentaId = punto?.id ?? null;
       }
+
+      // Create conversion tracking record
+      const conversion = await tx.documentConversion.create({
+        data: {
+          tenantId,
+          sourceId: id,
+          targetType,
+          createdById: userId,
+          status: 'PENDING',
+        },
+      });
+
       const converted = await this.writeDraft(tx, tenantId, userId, role, {
         ...data,
         type: targetType,
@@ -349,7 +361,33 @@ export class DocumentsService {
           taxRate: Number(item.taxRate),
         })),
       });
+
+      // Update conversion with target document ID
+      await tx.documentConversion.update({
+        where: { id: conversion.id },
+        data: {
+          targetId: converted.id,
+          status: 'COMPLETED',
+        },
+      });
+
       return converted;
+    });
+  }
+
+  async getConversions(tenantId: string, sourceId?: string, status?: string): Promise<any> {
+    return this.prisma.documentConversion.findMany({
+      where: {
+        tenantId,
+        ...(sourceId && { sourceId }),
+        ...(status && { status: status as any }),
+      },
+      include: {
+        createdBy: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
