@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, PackagePlus, Search, ShoppingCart, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ClipboardList, PackagePlus, Search, ShoppingCart, Trash2, Warehouse } from 'lucide-react'
 import { productsApi, purchasesApi, stockApi, suppliersApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -38,6 +38,13 @@ const statusLabels: Record<PurchaseOrder['status'], string> = {
   PARTIALLY_RECEIVED: 'Parcial',
   RECEIVED: 'Recibida',
   CANCELLED: 'Cancelada',
+}
+const statusBadgeClass: Record<PurchaseOrder['status'], string> = {
+  PENDING: 'badge-yellow',
+  SENT: 'badge-gray',
+  PARTIALLY_RECEIVED: 'badge-yellow',
+  RECEIVED: 'badge-green',
+  CANCELLED: 'badge-red',
 }
 
 function asArray<T>(value: unknown): T[] {
@@ -88,9 +95,12 @@ export default function ComprasPage() {
   const deposits = asArray<Deposit>(depositsRaw)
   const products = asArray<Product>(productsRaw)
   const orders = asArray<PurchaseOrder>(ordersRaw)
-  const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? orders.find((order) => ['PENDING', 'SENT', 'PARTIALLY_RECEIVED'].includes(order.status)) ?? null
+  const receivableOrders = orders.filter((order) => ['PENDING', 'SENT', 'PARTIALLY_RECEIVED'].includes(order.status))
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? receivableOrders[0] ?? null
   const effectiveDepositId = depositId || deposits.find((item) => item.isDefault)?.id || deposits[0]?.id || ''
   const total = useMemo(() => lines.reduce((sum, line) => sum + line.quantity * line.unitPrice * (1 + line.taxRate / 100), 0), [lines])
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0)
+  const selectedPending = selectedOrder?.items.reduce((sum, item) => sum + pendingQuantity(item), 0) ?? 0
 
   function addProduct(product: Product) {
     setLines((current) => {
@@ -151,21 +161,48 @@ export default function ComprasPage() {
   })
 
   return (
-    <div>
-      <div className="page-header">
+    <div className="purchase-page">
+      <div className="page-header purchase-header">
         <div>
           <h1 className="page-title">Compras</h1>
-          <p className="page-subtitle">Órdenes de compra, recepción de mercadería y valorización de stock</p>
+          <p className="page-subtitle">Crear órdenes, recibir mercadería y actualizar stock sin perder el hilo operativo.</p>
+        </div>
+        <div className="purchase-summary-strip" aria-label="Resumen de compras">
+          <div><span>Pendientes</span><strong>{receivableOrders.length}</strong></div>
+          <div><span>En edición</span><strong>{lines.length}</strong></div>
+          <div><span>Total</span><strong>{ARS.format(total)}</strong></div>
         </div>
       </div>
 
-      {message && <div className={`counter-alert ${message.includes('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
+      {message && (
+        <div className={`counter-alert ${message.includes('No se pudo') ? 'danger' : 'success'}`}>
+          {message.includes('No se pudo') ? <AlertCircle size={15} /> : <CheckCircle2 size={15} />}
+          {message}
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 380px', gap: 14, alignItems: 'start' }}>
-        <section className="fc-card">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 170px', gap: 10, marginBottom: 14 }}>
-            <label><span className="fc-label">Proveedor</span><select className="fc-input" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">Seleccionar proveedor</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
-            <label><span className="fc-label">Entrega esperada</span><input className="fc-input" type="date" value={expectedDate} onChange={(event) => setExpectedDate(event.target.value)} /></label>
+      <div className="purchase-layout">
+        <section className="fc-card purchase-order-panel" aria-labelledby="purchase-create-title">
+          <header className="purchase-panel-header">
+            <div className="purchase-step">1</div>
+            <div>
+              <h2 id="purchase-create-title">Armar orden</h2>
+              <p>Elegí proveedor, cargá productos y revisá el total antes de emitir la OC.</p>
+            </div>
+          </header>
+
+          <div className="purchase-form-grid">
+            <label>
+              <span className="fc-label">Proveedor</span>
+              <select className="fc-input" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
+                <option value="">Seleccionar proveedor</option>
+                {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="fc-label">Entrega esperada</span>
+              <input className="fc-input" type="date" value={expectedDate} onChange={(event) => setExpectedDate(event.target.value)} />
+            </label>
           </div>
 
           <div className="search-wrap" style={{ maxWidth: 'none' }}>
@@ -173,22 +210,22 @@ export default function ComprasPage() {
             <input className="fc-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar producto por código, nombre o marca..." />
           </div>
           {search.trim() && (
-            <div className="fc-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 12 }}>
+            <div className="purchase-search-results">
               {isFetching ? <div className="empty-state"><span className="spinner" /></div> : products.slice(0, 8).map((product) => (
-                <button key={product.id} type="button" onClick={() => addProduct(product)} style={{ width: '100%', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', background: 'transparent', border: 0, borderBottom: '1px solid var(--fc-border)', color: 'var(--fc-text)', cursor: 'pointer' }}>
+                <button key={product.id} className="purchase-product-result" type="button" onClick={() => addProduct(product)}>
                   <span><b>{product.code}</b> {product.name}</span>
-                  <small style={{ color: 'var(--text-muted)' }}>{product.brand?.name || product.category?.name || 'Agregar'}</small>
+                  <small>{product.brand?.name || product.category?.name || 'Agregar'}</small>
                 </button>
               ))}
             </div>
           )}
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="fc-table">
+          <div className="purchase-table-wrap">
+            <table className="fc-table purchase-lines-table">
               <thead><tr><th>Código</th><th>Producto</th><th style={{ textAlign: 'right' }}>Cant.</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>IVA</th><th style={{ textAlign: 'right' }}>Total</th><th></th></tr></thead>
               <tbody>
                 {lines.length === 0 ? (
-                  <tr><td colSpan={7}><div className="empty-state"><ShoppingCart size={30} /><p>Agregá productos para crear una orden.</p></div></td></tr>
+                  <tr><td colSpan={7}><div className="empty-state purchase-empty"><ShoppingCart size={30} /><p>Agregá productos para crear una orden.</p><small>Buscá por código o nombre. Si repetís un producto, se suma una unidad.</small></div></td></tr>
                 ) : lines.map((line, index) => (
                   <tr key={line.productId}>
                     <td className="mono-cell">{line.code}</td>
@@ -197,52 +234,73 @@ export default function ComprasPage() {
                     <td><input className="fc-input" style={{ width: 106, textAlign: 'right' }} inputMode="decimal" value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} /></td>
                     <td><input className="fc-input" style={{ width: 72, textAlign: 'right' }} inputMode="decimal" value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value) })} /></td>
                     <td className="money-cell strong">{ARS.format(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
-                    <td><button className="btn btn-icon btn-secondary btn-sm" onClick={() => setLines((current) => current.filter((_, i) => i !== index))}><Trash2 size={13} /></button></td>
+                    <td><button className="btn btn-icon btn-secondary btn-sm" aria-label={`Quitar ${line.name}`} onClick={() => setLines((current) => current.filter((_, i) => i !== index))}><Trash2 size={13} /></button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14 }}>
-            <strong style={{ fontSize: 18 }}>Total {ARS.format(total)}</strong>
+          <footer className="purchase-submit-bar">
+            <div>
+              <span>{lines.length} línea(s) · {itemCount.toLocaleString('es-AR')} unidad(es)</span>
+              <strong>{ARS.format(total)}</strong>
+            </div>
             <button className="btn btn-primary" disabled={!canCreate || !supplierId || lines.length === 0 || createMutation.isPending} onClick={() => createMutation.mutate()}>
               <PackagePlus size={14} /> {createMutation.isPending ? 'Creando...' : 'Crear orden de compra'}
             </button>
-          </div>
+          </footer>
         </section>
 
-        <aside style={{ display: 'grid', gap: 14 }}>
-          <section className="fc-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Recepción</h2>
-            <label><span className="fc-label">Depósito destino</span><select className="fc-input" value={effectiveDepositId} onChange={(event) => setDepositId(event.target.value)}>{deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}</select></label>
+        <aside className="purchase-side">
+          <section className="fc-card purchase-reception-panel" aria-labelledby="purchase-reception-title">
+            <header className="purchase-panel-header">
+              <div className="purchase-step">2</div>
+              <div>
+                <h2 id="purchase-reception-title">Recibir mercadería</h2>
+                <p>Seleccioná una OC pendiente y el depósito destino.</p>
+              </div>
+            </header>
+            <label>
+              <span className="fc-label">Depósito destino</span>
+              <select className="fc-input" value={effectiveDepositId} onChange={(event) => setDepositId(event.target.value)}>
+                {deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}
+              </select>
+            </label>
             {!selectedOrder ? (
-              <div className="empty-state"><p>Seleccioná una orden pendiente.</p></div>
+              <div className="empty-state"><Warehouse size={28} /><p>No hay órdenes pendientes para recibir.</p></div>
             ) : (
-              <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-                <div>
+              <div className="purchase-reception-detail">
+                <div className="purchase-selected-order">
                   <b>OC #{selectedOrder.number}</b>
-                  <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>{selectedOrder.supplier?.name}</span>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{statusLabels[selectedOrder.status]}</div>
+                  <span>{selectedOrder.supplier?.name || 'Sin proveedor'}</span>
+                  <em className={`badge ${statusBadgeClass[selectedOrder.status]}`}>{statusLabels[selectedOrder.status]}</em>
                 </div>
                 {selectedOrder.items.map((item) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, borderTop: '1px solid var(--fc-border)', paddingTop: 8 }}>
+                  <div key={item.id} className="purchase-pending-line">
                     <span>{item.product?.code} {item.product?.name}</span>
-                    <b>{pendingQuantity(item)} pend.</b>
+                    <b>{pendingQuantity(item).toLocaleString('es-AR')} pend.</b>
                   </div>
                 ))}
                 <button className="btn btn-primary" disabled={!canReceive || !effectiveDepositId || selectedOrder.items.every((item) => pendingQuantity(item) <= 0) || receiveMutation.isPending} onClick={() => receiveMutation.mutate(selectedOrder)}>
-                  <CheckCircle2 size={14} /> {receiveMutation.isPending ? 'Recibiendo...' : 'Recibir pendiente'}
+                  <CheckCircle2 size={14} /> {receiveMutation.isPending ? 'Recibiendo...' : `Recibir ${selectedPending.toLocaleString('es-AR')} unidad(es)`}
                 </button>
               </div>
             )}
           </section>
 
-          <section className="fc-card">
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Órdenes recientes</h2>
-            {loadingOrders ? <div className="empty-state"><span className="spinner" /></div> : orders.length === 0 ? <div className="empty-state"><p>Sin órdenes de compra.</p></div> : orders.slice(0, 10).map((order) => (
-              <button key={order.id} type="button" onClick={() => setSelectedOrderId(order.id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 10, padding: '10px 0', border: 0, borderBottom: '1px solid var(--fc-border)', background: 'transparent', color: 'var(--fc-text)', textAlign: 'left', cursor: 'pointer' }}>
-                <span><b>OC #{order.number}</b><small style={{ display: 'block', color: 'var(--text-muted)' }}>{order.supplier?.name || 'Sin proveedor'} · {statusLabels[order.status]}</small></span>
+          <section className="fc-card purchase-orders-panel" aria-labelledby="purchase-orders-title">
+            <header className="purchase-panel-header compact">
+              <div className="purchase-step">3</div>
+              <div>
+                <h2 id="purchase-orders-title">Órdenes recientes</h2>
+                <p>Usalas para recepción o seguimiento.</p>
+              </div>
+            </header>
+            {loadingOrders ? <div className="empty-state"><span className="spinner" /></div> : orders.length === 0 ? <div className="empty-state"><ClipboardList size={28} /><p>Sin órdenes de compra.</p></div> : orders.slice(0, 10).map((order) => (
+              <button key={order.id} className={`purchase-order-row ${selectedOrder?.id === order.id ? 'active' : ''}`} type="button" onClick={() => setSelectedOrderId(order.id)}>
+                <span><b>OC #{order.number}</b><small>{order.supplier?.name || 'Sin proveedor'}</small></span>
+                <em className={`badge ${statusBadgeClass[order.status]}`}>{statusLabels[order.status]}</em>
                 <b>{ARS.format(Number(order.total || 0))}</b>
               </button>
             ))}

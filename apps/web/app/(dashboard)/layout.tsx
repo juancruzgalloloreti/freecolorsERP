@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile header */}
         <div className="mobile-header">
-          <button className="btn btn-icon btn-secondary" onClick={() => setSidebarOpen(true)}>
+          <button className="btn btn-icon btn-secondary" type="button" aria-label="Abrir menú" onClick={() => setSidebarOpen(true)}>
             <Menu size={17} />
           </button>
           <Image className="mobile-logo-image" src="/freecolors-logo.png" alt="Freecolors Pinturerias" width={168} height={50} priority style={{ width: 148, height: 'auto' }} />

@@ -237,6 +237,8 @@ export default function VentasPage() {
   const [search, setSearch] = useState('')
   const [lines, setLines] = useState<CounterLine[]>([])
   const [lastDocument, setLastDocument] = useState<Record<string, unknown> | null>(null)
+  const [lastDocumentId, setLastDocumentId] = useState<string | null>(null)
+  const [printing, setPrinting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [customerSheet, setCustomerSheet] = useState(false)
@@ -269,6 +271,7 @@ export default function VentasPage() {
   const brands = asArray<{ id: string; name: string }>(brandsRaw)
   const categories = asArray<{ id: string; name: string }>(categoriesRaw)
   const recentDocs = asArray<RecentDoc>(recentRaw).slice(0, 8)
+  const printableDocumentId = lastDocumentId || recentDocs[0]?.id || null
 
   const effectivePriceListId = priceListId || priceLists.find((list) => list.isDefault)?.id || priceLists[0]?.id || ''
   const effectiveDepositId = depositId || deposits.find((deposit) => deposit.isDefault)?.id || deposits[0]?.id || ''
@@ -398,6 +401,29 @@ export default function VentasPage() {
     setIncludeVat(false)
   }
 
+  const printLastDocument = async () => {
+    const documentId = printableDocumentId
+    if (!documentId && !lastDocument) {
+      setError('No hay un comprobante disponible para imprimir.')
+      return
+    }
+    setPrinting(true)
+    setError(null)
+    try {
+      const detail = documentId ? await documentsApi.get(documentId) : lastDocument
+      setLastDocument(detail as Record<string, unknown>)
+      if ((detail as { id?: string })?.id) setLastDocumentId((detail as { id: string }).id)
+      const opened = printDocumentA4(detail as Parameters<typeof printDocumentA4>[0])
+      if (!opened) setError('El navegador bloqueó la ventana de impresión. Habilitá pop-ups para este sitio y probá de nuevo.')
+    } catch (printError) {
+      const apiError = printError as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
+      const detail = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || 'No se pudo preparar el comprobante para imprimir.'
+      setError(Array.isArray(detail) ? detail.join(', ') : detail)
+    } finally {
+      setPrinting(false)
+    }
+  }
+
   const openCustomerSheet = () => {
     const customer = customers.find((item) => item.id === customerId)
     setQuickCustomer({
@@ -411,6 +437,30 @@ export default function VentasPage() {
       deliveryAddress: notes.match(/(?:^|\n)Entrega:\s*(.+)/)?.[1] || customer?.address || '',
     })
     setCustomerSheet(true)
+  }
+
+  const selectCustomerInSheet = (nextId: string) => {
+    setCustomerId(nextId)
+    const customer = customers.find((item) => item.id === nextId)
+    setQuickCustomer({
+      name: customer?.name || '',
+      cuit: customer?.cuit || '',
+      phone: customer?.phone || '',
+      address: customer?.address || '',
+      city: customer?.city || '',
+      province: customer?.province || '',
+      ivaCondition: customer?.ivaCondition || 'CONSUMIDOR_FINAL',
+      deliveryAddress: notes.match(/(?:^|\n)Entrega:\s*(.+)/)?.[1] || customer?.address || '',
+    })
+    if (customer?.priceListId) setPriceListId(customer.priceListId)
+  }
+
+  const saveDeliveryOnly = () => {
+    setNotes((current) => {
+      const clean = current.split(/\r?\n/).filter((line) => !/^Entrega:/i.test(line.trim())).join('\n')
+      return quickCustomer.deliveryAddress.trim() ? appendNote(clean, `Entrega: ${quickCustomer.deliveryAddress.trim()}`) : clean
+    })
+    setCustomerSheet(false)
   }
 
   const toggleVat = (enabled: boolean) => {
@@ -566,7 +616,7 @@ export default function VentasPage() {
         payments: normalizedPayments,
       })
     },
-    onSuccess: (document: { type: string; status: string; number?: number | null }) => {
+    onSuccess: (document: { id?: string; type: string; status: string; number?: number | null }) => {
       qc.invalidateQueries({ queryKey: ['counter-recent-documents'] })
       qc.invalidateQueries({ queryKey: ['ventas-documents'] })
       qc.invalidateQueries({ queryKey: ['documents-history'] })
@@ -574,6 +624,7 @@ export default function VentasPage() {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['cash-current'] })
       setLastDocument(document as unknown as Record<string, unknown>)
+      setLastDocumentId(document.id ?? null)
       setMessage(`${document.type === 'BUDGET' ? 'Presupuesto' : 'Documento'} ${document.status === 'CONFIRMED' ? 'confirmado' : 'guardado'} correctamente.`)
       setError(null)
       resetCounter()
@@ -609,6 +660,14 @@ export default function VentasPage() {
       setCustomerSheet(false)
     },
   })
+
+  const saveCustomerSheet = () => {
+    if (!quickCustomer.name.trim()) {
+      saveDeliveryOnly()
+      return
+    }
+    quickCustomerMutation.mutate()
+  }
 
   const quickProductMutation = useMutation({
     mutationFn: async () => {
@@ -678,7 +737,7 @@ export default function VentasPage() {
               <button className="btn btn-secondary" type="button" data-customer-action="true" onClick={openCustomerSheet}>
                 <UserPlus size={14} /> Datos cliente
               </button>
-              <button className="btn btn-secondary" type="button" onClick={() => { setQuickProduct(emptyQuickProduct(effectivePriceListId)); setProductSheet(true) }}>
+              <button className="btn btn-secondary" type="button" data-create-action="true" onClick={() => { setQuickProduct(emptyQuickProduct(effectivePriceListId)); setProductSheet(true) }}>
                 <PackagePlus size={14} /> Producto
               </button>
             </RoleGate>
@@ -686,7 +745,16 @@ export default function VentasPage() {
         )}
       />
 
-      {message && <div className="counter-alert success"><Check size={15} /> {message}</div>}
+      {message && (
+        <div className="counter-alert success counter-alert-row">
+          <span><Check size={15} /> {message}</span>
+          {lastDocumentId && (
+            <Link className="btn btn-secondary btn-sm" href={`/documentos?selected=${lastDocumentId}`}>
+              <FileText size={13} /> Ver comprobante
+            </Link>
+          )}
+        </div>
+      )}
       {error && <div className="counter-alert danger"><AlertTriangle size={15} /> {error}</div>}
       <button type="button" data-escape-action="true" onClick={closeTopSheet} hidden />
       <button type="button" data-undo-line-action="true" onClick={undoLastLine} hidden />
@@ -704,11 +772,6 @@ export default function VentasPage() {
           <span>Saldo esperado</span>
           <strong>{cashLoading ? '...' : ARS.format(Number((currentCash as { expectedAmount?: number } | null)?.expectedAmount || 0))}</strong>
         </div>
-        {!currentCash && canUseCounter && (
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => setCashSheet(true)}>
-            Abrir caja
-          </button>
-        )}
       </div>
 
       <div className="counter-layout">
@@ -786,7 +849,7 @@ export default function VentasPage() {
           </div>
 
           <div className="counter-control-row">
-            <div className="aguila-command-bar">
+            <div className="erp-command-bar">
               <button
                 className={`toolbar-btn ${currentCash ? 'active' : ''}`}
                 type="button"
@@ -799,7 +862,7 @@ export default function VentasPage() {
                 className={`toolbar-btn ${totals.requestedDiscount > 0 ? 'active' : ''}`}
                 type="button"
                 onClick={() => setDiscountSheet(true)}
-                disabled={!canUseCounter}
+                disabled={!canUseCounter || lines.length === 0}
               >
                 <Percent size={15} /> {totals.requestedDiscount > 0 ? `Descuento ${totals.requestedDiscount.toLocaleString('es-AR')}%` : 'Descuento'}
               </button>
@@ -807,17 +870,17 @@ export default function VentasPage() {
                 <input type="checkbox" checked={includeVat} onChange={(event) => toggleVat(event.target.checked)} disabled={!canUseCounter} />
                 IVA
               </label>
-              <button className="toolbar-btn" type="button" data-payment-action="true" onClick={() => setPaymentSheet(true)} disabled={!canUseCounter}>
+              <button className="toolbar-btn" type="button" data-payment-action="true" onClick={() => setPaymentSheet(true)} disabled={!canUseCounter || lines.length === 0}>
                 <DollarSign size={15} /> Cobrar
               </button>
               <button
                 className="toolbar-btn"
                 type="button"
                 data-print-action="true"
-                onClick={() => lastDocument && printDocumentA4(lastDocument as Parameters<typeof printDocumentA4>[0])}
-                disabled={!lastDocument}
+                onClick={printLastDocument}
+                disabled={printing || (!lastDocument && !printableDocumentId)}
               >
-                <Printer size={15} /> Imprimir PDF
+                <Printer size={15} /> {printing ? 'Preparando...' : 'Imprimir último'}
               </button>
               <span className="payment-status">
                 {payments.length > 0 ? `${payments.length} pago(s) · ${ARS.format(paymentSummary.paid)}` : paymentLabel}
@@ -847,7 +910,7 @@ export default function VentasPage() {
                 autoFocus
                 disabled={!canUseCounter}
               />
-              {search && <button className="btn btn-icon btn-secondary" type="button" onClick={() => setSearch('')}><X size={14} /></button>}
+              {search && <button className="btn btn-icon btn-secondary" type="button" aria-label="Limpiar búsqueda" onClick={() => setSearch('')}><X size={14} /></button>}
             </div>
             {search.trim() && (
               <div className="product-results">
@@ -930,7 +993,7 @@ export default function VentasPage() {
                           <td>{budgetMode ? <span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>
                           {includeVat && <td>{budgetMode ? <span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value), productTaxRate: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>}
                           <td className="line-total">{ARS.format(lineSubtotal(line) + lineTax(line))}</td>
-                          <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter} title="Quitar item"><X size={13} /></button></td>
+                          <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter} title="Quitar item" aria-label={`Quitar ${line.description}`}><X size={13} /></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -945,7 +1008,7 @@ export default function VentasPage() {
                           <b>{line.code}</b>
                           <span>{line.description}</span>
                         </div>
-                        <button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter}><X size={13} /></button>
+                        <button className="btn btn-icon btn-secondary btn-sm" type="button" aria-label={`Quitar ${line.description}`} onClick={() => removeLine(index)} disabled={!canUseCounter}><X size={13} /></button>
                       </header>
                       <small>Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
                       <div className="mobile-line-grid">
@@ -1026,18 +1089,25 @@ export default function VentasPage() {
 
       <EntitySheet
         open={customerSheet}
-        title={customerId ? 'Editar datos del cliente' : 'Alta rápida de cliente'}
+        title="Cliente, datos fiscales y entrega"
         onClose={() => setCustomerSheet(false)}
         footer={(
           <>
             <button className="btn btn-secondary" type="button" onClick={() => setCustomerSheet(false)}>Cancelar</button>
-            <button className="btn btn-primary" type="button" disabled={!quickCustomer.name || quickCustomerMutation.isPending} onClick={() => quickCustomerMutation.mutate()}>
-              {quickCustomerMutation.isPending ? 'Guardando...' : customerId ? 'Guardar datos' : 'Crear cliente'}
+            <button className="btn btn-primary" type="button" disabled={quickCustomerMutation.isPending} onClick={saveCustomerSheet}>
+              {quickCustomerMutation.isPending ? 'Guardando...' : quickCustomer.name.trim() ? (customerId ? 'Guardar cliente' : 'Crear cliente') : 'Guardar entrega'}
             </button>
           </>
         )}
       >
         <div className="sheet-form-grid">
+          <label>
+            <span>Cliente existente</span>
+            <select className="fc-input" value={customerId} onChange={(event) => selectCustomerInSheet(event.target.value)}>
+              <option value="">Consumidor final / venta ocasional</option>
+              {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+            </select>
+          </label>
           <label><span>Razón social</span><input className="fc-input" value={quickCustomer.name} onChange={(event) => setQuickCustomer((current) => ({ ...current, name: event.target.value }))} autoFocus /></label>
           <label><span>CUIT / DNI</span><input className="fc-input" value={quickCustomer.cuit} onChange={(event) => setQuickCustomer((current) => ({ ...current, cuit: event.target.value }))} /></label>
           <label><span>Condición IVA</span><select className="fc-input" value={quickCustomer.ivaCondition} onChange={(event) => setQuickCustomer((current) => ({ ...current, ivaCondition: event.target.value }))}>
@@ -1144,7 +1214,7 @@ export default function VentasPage() {
               <div className="payment-row" key={payment.id}>
                 <span>{PAYMENT_METHOD_LABELS[payment.method]}</span>
                 <strong>{ARS.format(payment.amount)}</strong>
-                <button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removePayment(payment.id)} title="Quitar pago">
+                <button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removePayment(payment.id)} title="Quitar pago" aria-label={`Quitar pago ${PAYMENT_METHOD_LABELS[payment.method]}`}>
                   <X size={13} />
                 </button>
               </div>
@@ -1185,65 +1255,4 @@ export default function VentasPage() {
       </EntitySheet>
     </div>
   )
-}
-
-// Mobile-specific styles for improved UX on touch devices
-const mobileStyles = `
-  @media (max-width: 768px) {
-    .counter-layout {
-      flex-direction: column;
-    }
-    .counter-search {
-      padding: 12px;
-    }
-    .counter-search input {
-      font-size: 16px;
-      padding: 14px;
-    }
-    .counter-product-list {
-      max-height: 200px;
-    }
-    .counter-product-item {
-      padding: 12px;
-      min-height: 60px;
-    }
-    .counter-lines {
-      max-height: 180px;
-    }
-    .counter-line {
-      padding: 10px;
-    }
-    .counter-summary {
-      padding: 14px;
-    }
-    .counter-primary-actions {
-      flex-direction: column;
-      gap: 10px;
-    }
-    .counter-primary-actions button {
-      padding: 16px;
-      font-size: 16px;
-    }
-    .recent-card {
-      margin-top: 12px;
-    }
-    .payment-options button {
-      padding: 16px;
-      min-height: 70px;
-    }
-    .sheet-form-grid label {
-      margin-bottom: 16px;
-    }
-    .sheet-form-grid input,
-    .sheet-form-grid select {
-      padding: 14px;
-      font-size: 16px;
-    }
-  }
-`
-
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style')
-  style.textContent = mobileStyles
-  document.head.appendChild(style)
 }

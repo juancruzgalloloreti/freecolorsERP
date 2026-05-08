@@ -17,6 +17,19 @@ interface AccountRow {
   date?: string
 }
 
+const DOCUMENT_LABELS: Record<string, string> = {
+  INVOICE_A: 'Factura A',
+  INVOICE_B: 'Factura B',
+  INVOICE_C: 'Factura C',
+  BUDGET: 'Presupuesto',
+  REMITO: 'Remito',
+}
+
+function descriptionLabel(value?: string) {
+  if (!value) return '-'
+  return value.replace(/\b(INVOICE_A|INVOICE_B|INVOICE_C|BUDGET|REMITO)\b/g, (type) => DOCUMENT_LABELS[type] || type)
+}
+
 export default function CuentaCorrientePage() {
   const qc = useQueryClient()
   const { user } = useAuth()
@@ -96,7 +109,7 @@ export default function CuentaCorrientePage() {
                 <tr key={row.id ?? index}>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date || row.createdAt ? new Date(row.date || row.createdAt || '').toLocaleDateString('es-AR') : '-'}</td>
                   <td style={{ fontWeight: 600 }}>{row.customerName || row.customer?.name || '-'}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{row.description || '-'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{descriptionLabel(row.description)}</td>
                   <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(row.amount ?? 0) >= 0 ? '#fca5a5' : '#86efac' }}>${Number(row.amount ?? 0).toLocaleString('es-AR')}</td>
                   <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>${Number(row.balance ?? 0).toLocaleString('es-AR')}</td>
                 </tr>

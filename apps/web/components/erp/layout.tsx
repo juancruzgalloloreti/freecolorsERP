@@ -76,7 +76,7 @@ export function EntitySheet({
       <section className="entity-sheet" ref={sheetRef} role="dialog" aria-modal="true" tabIndex={-1}>
         <header className="entity-sheet-header">
           <h2>{title}</h2>
-          <button className="btn btn-icon btn-secondary" type="button" onClick={onClose}>×</button>
+          <button className="btn btn-icon btn-secondary" type="button" aria-label="Cerrar panel" onClick={onClose}>×</button>
         </header>
         <div className="entity-sheet-body">{children}</div>
         {footer && <footer className="entity-sheet-footer">{footer}</footer>}

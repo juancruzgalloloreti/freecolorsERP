@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
@@ -146,6 +147,8 @@ function downloadDocumentCsv(detail: Detail) {
 
 export default function DocumentosPage() {
   const qc = useQueryClient()
+  const searchParams = useSearchParams()
+  const selectedParam = searchParams.get('selected')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'all' | DocumentStatus>('all')
   const [type, setType] = useState<'all' | DocumentType>('all')
@@ -163,7 +166,7 @@ export default function DocumentosPage() {
   })
   const rows = asArray<DocumentRow>(rowsRaw)
 
-  const activeId = selectedId && rows.some((row) => row.id === selectedId) ? selectedId : rows[0]?.id ?? null
+  const activeId = selectedId || selectedParam || rows[0]?.id || null
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['document-detail', activeId],

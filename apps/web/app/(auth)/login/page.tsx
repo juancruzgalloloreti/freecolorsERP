@@ -118,8 +118,9 @@ export default function LoginPage() {
             <form onSubmit={submit}>
               {/* Email */}
               <div style={{ marginBottom: '18px' }}>
-                <label className="fc-label">Email</label>
+                <label className="fc-label" htmlFor="login-email">Email</label>
                 <input
+                  id="login-email"
                   className="fc-input"
                   type="email"
                   value={email}
@@ -132,8 +133,9 @@ export default function LoginPage() {
 
               {/* Password */}
               <div style={{ marginBottom: '28px' }}>
-                <label className="fc-label">Contraseña</label>
+                <label className="fc-label" htmlFor="login-password">Contraseña</label>
                 <input
+                  id="login-password"
                   className="fc-input"
                   type="password"
                   value={password}
