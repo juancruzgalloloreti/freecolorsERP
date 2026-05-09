@@ -1,0 +1,2258 @@
+[
+  {
+    "text": "(24) Tabla de Numeradores",
+    "control_type": "Window",
+    "auto_id": "frmNumeradores",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      52,
+      52,
+      838,
+      609
+    ]
+  },
+  {
+    "text": "Fecha Vto. CAI:",
+    "control_type": "Pane",
+    "auto_id": "pnlNumeradores",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      68,
+      115,
+      477,
+      582
+    ]
+  },
+  {
+    "text": "Fecha Vto. CAI:",
+    "control_type": "List",
+    "auto_id": "lvwEmpresas",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      68,
+      139,
+      474,
+      582
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      70,
+      141,
+      455,
+      165
+    ]
+  },
+  {
+    "text": "Nombre",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      70,
+      141,
+      239,
+      165
+    ]
+  },
+  {
+    "text": "Pto.vta.",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      239,
+      141,
+      294,
+      165
+    ]
+  },
+  {
+    "text": "Próximo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      294,
+      141,
+      368,
+      165
+    ]
+  },
+  {
+    "text": "Vencimiento CAI",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      368,
+      141,
+      464,
+      165
+    ]
+  },
+  {
+    "text": "Vertical",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientVerticalScrollBar",
+    "class": "",
+    "rect": [
+      455,
+      141,
+      472,
+      563
+    ]
+  },
+  {
+    "text": "Línea arriba",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      455,
+      141,
+      472,
+      158
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      455,
+      158,
+      472,
+      446
+    ]
+  },
+  {
+    "text": "Av Pág",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      455,
+      446,
+      472,
+      546
+    ]
+  },
+  {
+    "text": "Línea abajo",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      455,
+      546,
+      472,
+      563
+    ]
+  },
+  {
+    "text": "Horizontal",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientHorizontalScrollBar",
+    "class": "",
+    "rect": [
+      70,
+      563,
+      455,
+      580
+    ]
+  },
+  {
+    "text": "Columna a la izquierda",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      70,
+      563,
+      87,
+      580
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      87,
+      563,
+      430,
+      580
+    ]
+  },
+  {
+    "text": "Página a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      430,
+      563,
+      438,
+      580
+    ]
+  },
+  {
+    "text": "Columna a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      438,
+      563,
+      455,
+      580
+    ]
+  },
+  {
+    "text": "Ajuste por Inventario",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      165,
+      455,
+      182
+    ]
+  },
+  {
+    "text": "Ajuste por Inventario",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      165,
+      455,
+      182
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      165,
+      294,
+      182
+    ]
+  },
+  {
+    "text": "6195",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      165,
+      368,
+      182
+    ]
+  },
+  {
+    "text": "01/09/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      165,
+      455,
+      182
+    ]
+  },
+  {
+    "text": "Aplicacion de Comprobantes",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      182,
+      455,
+      199
+    ]
+  },
+  {
+    "text": "Aplicacion de Comprobantes",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      182,
+      455,
+      199
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      182,
+      294,
+      199
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      182,
+      368,
+      199
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      182,
+      455,
+      199
+    ]
+  },
+  {
+    "text": "Armado de Conjuntos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      199,
+      455,
+      216
+    ]
+  },
+  {
+    "text": "Armado de Conjuntos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      199,
+      455,
+      216
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      199,
+      294,
+      216
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      199,
+      368,
+      216
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      199,
+      455,
+      216
+    ]
+  },
+  {
+    "text": "Asiento Contable",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      216,
+      455,
+      233
+    ]
+  },
+  {
+    "text": "Asiento Contable",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      216,
+      455,
+      233
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      216,
+      294,
+      233
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      216,
+      368,
+      233
+    ]
+  },
+  {
+    "text": "09/12/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      216,
+      455,
+      233
+    ]
+  },
+  {
+    "text": "Asiento por cheque Diferido",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      233,
+      455,
+      250
+    ]
+  },
+  {
+    "text": "Asiento por cheque Diferido",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      233,
+      455,
+      250
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      233,
+      294,
+      250
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      233,
+      368,
+      250
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      233,
+      455,
+      250
+    ]
+  },
+  {
+    "text": "Cheque Rechazado Recibido",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      250,
+      455,
+      267
+    ]
+  },
+  {
+    "text": "Cheque Rechazado Recibido",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      250,
+      455,
+      267
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      250,
+      294,
+      267
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      250,
+      368,
+      267
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      250,
+      455,
+      267
+    ]
+  },
+  {
+    "text": "Cheque Rechazados",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      267,
+      455,
+      284
+    ]
+  },
+  {
+    "text": "Cheque Rechazados",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      267,
+      455,
+      284
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      267,
+      294,
+      284
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      267,
+      368,
+      284
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      267,
+      455,
+      284
+    ]
+  },
+  {
+    "text": "Compras",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      284,
+      455,
+      301
+    ]
+  },
+  {
+    "text": "Compras",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      284,
+      455,
+      301
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      284,
+      294,
+      301
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      284,
+      368,
+      301
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      284,
+      455,
+      301
+    ]
+  },
+  {
+    "text": "Consumos de Repuestos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      301,
+      455,
+      318
+    ]
+  },
+  {
+    "text": "Consumos de Repuestos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      301,
+      455,
+      318
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      301,
+      294,
+      318
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      301,
+      368,
+      318
+    ]
+  },
+  {
+    "text": "18/02/2025",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      301,
+      455,
+      318
+    ]
+  },
+  {
+    "text": "Deposito bancario",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      318,
+      455,
+      335
+    ]
+  },
+  {
+    "text": "Deposito bancario",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      318,
+      455,
+      335
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      318,
+      294,
+      335
+    ]
+  },
+  {
+    "text": "2",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      318,
+      368,
+      335
+    ]
+  },
+  {
+    "text": "02/09/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      318,
+      455,
+      335
+    ]
+  },
+  {
+    "text": "Deposito de Cheques",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      335,
+      455,
+      352
+    ]
+  },
+  {
+    "text": "Deposito de Cheques",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      335,
+      455,
+      352
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      335,
+      294,
+      352
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      335,
+      368,
+      352
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      335,
+      455,
+      352
+    ]
+  },
+  {
+    "text": "Inventario Fisico",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      352,
+      455,
+      369
+    ]
+  },
+  {
+    "text": "Inventario Fisico",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      352,
+      455,
+      369
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      352,
+      294,
+      369
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      352,
+      368,
+      369
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      352,
+      455,
+      369
+    ]
+  },
+  {
+    "text": "Nota de Credito",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      369,
+      455,
+      386
+    ]
+  },
+  {
+    "text": "Nota de Credito",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      369,
+      455,
+      386
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      369,
+      294,
+      386
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      369,
+      368,
+      386
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      369,
+      455,
+      386
+    ]
+  },
+  {
+    "text": "Orden de Pago",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      386,
+      455,
+      403
+    ]
+  },
+  {
+    "text": "Orden de Pago",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      386,
+      455,
+      403
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      386,
+      294,
+      403
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      386,
+      368,
+      403
+    ]
+  },
+  {
+    "text": "15/01/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      386,
+      455,
+      403
+    ]
+  },
+  {
+    "text": "Pagos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      403,
+      455,
+      420
+    ]
+  },
+  {
+    "text": "Pagos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      403,
+      455,
+      420
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      403,
+      294,
+      420
+    ]
+  },
+  {
+    "text": "510",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      403,
+      368,
+      420
+    ]
+  },
+  {
+    "text": "01/12/2016",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      403,
+      455,
+      420
+    ]
+  },
+  {
+    "text": "Recibos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      420,
+      455,
+      437
+    ]
+  },
+  {
+    "text": "Recibos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      420,
+      455,
+      437
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      420,
+      294,
+      437
+    ]
+  },
+  {
+    "text": "10",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      420,
+      368,
+      437
+    ]
+  },
+  {
+    "text": "09/12/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      420,
+      455,
+      437
+    ]
+  },
+  {
+    "text": "Recibos - Cobros 2",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      437,
+      455,
+      454
+    ]
+  },
+  {
+    "text": "Recibos - Cobros 2",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      437,
+      455,
+      454
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      437,
+      294,
+      454
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      437,
+      368,
+      454
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      437,
+      455,
+      454
+    ]
+  },
+  {
+    "text": "Recibos - Cobros 3",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      454,
+      455,
+      471
+    ]
+  },
+  {
+    "text": "Recibos - Cobros 3",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      454,
+      455,
+      471
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      454,
+      294,
+      471
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      454,
+      368,
+      471
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      454,
+      455,
+      471
+    ]
+  },
+  {
+    "text": "Retenciones Ganancias",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      471,
+      455,
+      488
+    ]
+  },
+  {
+    "text": "Retenciones Ganancias",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      471,
+      455,
+      488
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      471,
+      294,
+      488
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      471,
+      368,
+      488
+    ]
+  },
+  {
+    "text": "01/12/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      471,
+      455,
+      488
+    ]
+  },
+  {
+    "text": "Retenciones IIBB",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      488,
+      455,
+      505
+    ]
+  },
+  {
+    "text": "Retenciones IIBB",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      488,
+      455,
+      505
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      488,
+      294,
+      505
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      488,
+      368,
+      505
+    ]
+  },
+  {
+    "text": "01/12/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      488,
+      455,
+      505
+    ]
+  },
+  {
+    "text": "Tranferencias",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      505,
+      455,
+      522
+    ]
+  },
+  {
+    "text": "Tranferencias",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      505,
+      455,
+      522
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      505,
+      294,
+      522
+    ]
+  },
+  {
+    "text": "745",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      505,
+      368,
+      522
+    ]
+  },
+  {
+    "text": "09/12/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      505,
+      455,
+      522
+    ]
+  },
+  {
+    "text": "Ajuste de inventario presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      522,
+      455,
+      539
+    ]
+  },
+  {
+    "text": "Ajuste de inventario presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      522,
+      455,
+      539
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      522,
+      294,
+      539
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      522,
+      368,
+      539
+    ]
+  },
+  {
+    "text": "18/10/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      522,
+      455,
+      539
+    ]
+  },
+  {
+    "text": "Aplicacion de comprobantes presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      539,
+      455,
+      556
+    ]
+  },
+  {
+    "text": "Aplicacion de comprobantes presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      539,
+      455,
+      556
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      539,
+      294,
+      556
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      539,
+      368,
+      556
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      539,
+      455,
+      556
+    ]
+  },
+  {
+    "text": "Asiento Contable Presupuestos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      556,
+      455,
+      563
+    ]
+  },
+  {
+    "text": "Asiento Contable Presupuestos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      556,
+      455,
+      563
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      239,
+      556,
+      294,
+      563
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      294,
+      556,
+      368,
+      563
+    ]
+  },
+  {
+    "text": "18/10/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      368,
+      556,
+      455,
+      563
+    ]
+  },
+  {
+    "text": "Deposito Bancario Presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Deposito Bancario Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Deposito de Clientes Presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Deposito de Clientes Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Orden de Pago Presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Orden de Pago Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "18/10/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pagos Presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pagos Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "964",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Recibo Presupuestos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Recibo Presupuestos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "18/10/2018",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Recibos Presupuestos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Recibos Presupuestos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "1986",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Transferencia de Valores Presupuesto",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Transferencia de Valores Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "2035",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "07/07/2020",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tstHerramientas",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      68,
+      115,
+      477,
+      140
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      70,
+      115,
+      75,
+      140
+    ]
+  },
+  {
+    "text": "Añadir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      77,
+      116,
+      100,
+      138
+    ]
+  },
+  {
+    "text": "Editar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      100,
+      116,
+      123,
+      138
+    ]
+  },
+  {
+    "text": "Eliminar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      123,
+      116,
+      146,
+      138
+    ]
+  },
+  {
+    "text": "Tomar Numerador",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      146,
+      116,
+      270,
+      138
+    ]
+  },
+  {
+    "text": "Comprobantes que lo utilizan",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      485,
+      115,
+      627,
+      128
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwDefinicionesComprobante",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      485,
+      139,
+      749,
+      378
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      487,
+      141,
+      747,
+      165
+    ]
+  },
+  {
+    "text": "Nombre de definición de comprobante",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      487,
+      141,
+      742,
+      165
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      60,
+      60,
+      82,
+      82
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      60,
+      60,
+      82,
+      82
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      691,
+      53,
+      738,
+      83
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      738,
+      53,
+      784,
+      83
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      784,
+      53,
+      831,
+      83
+    ]
+  }
+]

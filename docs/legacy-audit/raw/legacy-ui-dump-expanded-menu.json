@@ -1,0 +1,794 @@
+[
+  {
+    "text": "Registrar Llamada",
+    "control_type": "Button",
+    "auto_id": "cmdRegistroDeLlamados",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1020,
+      176,
+      1149,
+      204
+    ]
+  },
+  {
+    "text": "Soporte",
+    "control_type": "Button",
+    "auto_id": "Button1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      575,
+      178,
+      655,
+      206
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      584,
+      1204,
+      736
+    ]
+  },
+  {
+    "text": "Proyecto:STD",
+    "control_type": "Text",
+    "auto_id": "lProyecto",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      242,
+      678,
+      316,
+      691
+    ]
+  },
+  {
+    "text": "TICKETS Soporte",
+    "control_type": "Button",
+    "auto_id": "cmdTickets",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      933,
+      602,
+      1025,
+      724
+    ]
+  },
+  {
+    "text": "Versión: 4247",
+    "control_type": "Text",
+    "auto_id": "lVersion",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      650,
+      313,
+      663
+    ]
+  },
+  {
+    "text": "JUAMPY",
+    "control_type": "Text",
+    "auto_id": "lUsuario",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      619,
+      303,
+      635
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "PictureBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      1042,
+      602,
+      1172,
+      719
+    ]
+  },
+  {
+    "text": "Pinturerias FreeColors",
+    "control_type": "Text",
+    "auto_id": "lEmpresa",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      590,
+      407,
+      610
+    ]
+  },
+  {
+    "text": "Agenda",
+    "control_type": "Button",
+    "auto_id": "cmdAgenda",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      773,
+      176,
+      852,
+      204
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdBorrarBuscador",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      543,
+      178,
+      571,
+      206
+    ]
+  },
+  {
+    "text": "Unid.De Neg.",
+    "control_type": "Button",
+    "auto_id": "cmdVerUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      671,
+      176,
+      767,
+      204
+    ]
+  },
+  {
+    "text": "Obtener CAE / Imp.Fiscal",
+    "control_type": "Button",
+    "auto_id": "cmdAvisos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      858,
+      176,
+      1016,
+      204
+    ]
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "List",
+    "auto_id": "lvwAnclados",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      673,
+      210,
+      1197,
+      579
+    ]
+  },
+  {
+    "text": "Carga de Operaciones",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      212,
+      749,
+      277
+    ]
+  },
+  {
+    "text": "Consultar Productos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      750,
+      212,
+      824,
+      277
+    ]
+  },
+  {
+    "text": "Preparar Transferencia entre depósitos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      825,
+      212,
+      899,
+      277
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtBuscar",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      315,
+      181,
+      537,
+      201
+    ]
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "Text",
+    "auto_id": "Label7",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      246,
+      184,
+      310,
+      197
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tree",
+    "auto_id": "tvwMenu",
+    "class": "WindowsForms10.SysTreeView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      244,
+      242,
+      657,
+      579
+    ]
+  },
+  {
+    "text": "Vertical",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientVerticalScrollBar",
+    "class": "",
+    "rect": [
+      638,
+      244,
+      655,
+      577
+    ]
+  },
+  {
+    "text": "Línea arriba",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      638,
+      244,
+      655,
+      261
+    ]
+  },
+  {
+    "text": "Re Pág",
+    "control_type": "Button",
+    "auto_id": "UpPageButton",
+    "class": "",
+    "rect": [
+      638,
+      261,
+      655,
+      339
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      638,
+      339,
+      655,
+      560
+    ]
+  },
+  {
+    "text": "Línea abajo",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      638,
+      560,
+      655,
+      577
+    ]
+  },
+  {
+    "text": "Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Carga de Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "PreCarga de Factura de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Comprobantes Anulados",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Nota de Crédito por Bonificación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cierre y Apertura de Ejercicio",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Generar arvhivos PDF con Facturacion",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Autorizaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      244,
+      360,
+      260
+    ]
+  },
+  {
+    "text": "Devengamiento de Cuotas Pendientes",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      260,
+      473,
+      276
+    ]
+  },
+  {
+    "text": "Facturacion de Abonos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      276,
+      401,
+      292
+    ]
+  },
+  {
+    "text": "Ajuste por Inflación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      292,
+      381,
+      308
+    ]
+  },
+  {
+    "text": "Nota de Credito por Descuentos Especiales",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      308,
+      497,
+      324
+    ]
+  },
+  {
+    "text": "Importar Asientos Contable desde Excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      324,
+      478,
+      340
+    ]
+  },
+  {
+    "text": "Pre-Validar números de Serie",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      340,
+      427,
+      356
+    ]
+  },
+  {
+    "text": "Importar Google Sheets con Compras Contado",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      356,
+      510,
+      372
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      372,
+      319,
+      388
+    ]
+  },
+  {
+    "text": "Reparaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      388,
+      357,
+      404
+    ]
+  },
+  {
+    "text": "Call Center",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      404,
+      342,
+      420
+    ]
+  },
+  {
+    "text": "Consultas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      268,
+      420,
+      318,
+      436
+    ]
+  },
+  {
+    "text": "Administración",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      436,
+      359,
+      452
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      452,
+      319,
+      468
+    ]
+  },
+  {
+    "text": "Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      468,
+      324,
+      484
+    ]
+  },
+  {
+    "text": "Consultas Definidas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      484,
+      384,
+      500
+    ]
+  },
+  {
+    "text": "Pedidos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      268,
+      500,
+      310,
+      516
+    ]
+  },
+  {
+    "text": "Pedidos de Compra",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      516,
+      383,
+      532
+    ]
+  },
+  {
+    "text": "Pedidos de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      532,
+      375,
+      548
+    ]
+  },
+  {
+    "text": "Administrar Pedidos Catalogo Web Aguila",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      287,
+      548,
+      486,
+      564
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      147,
+      1203,
+      174
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      238,
+      147,
+      243,
+      174
+    ]
+  },
+  {
+    "text": "Cambiar Clave Usuario",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      245,
+      148,
+      269,
+      172
+    ]
+  },
+  {
+    "text": "Email",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      269,
+      148,
+      341,
+      172
+    ]
+  },
+  {
+    "text": "Colores",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      341,
+      148,
+      412,
+      172
+    ]
+  },
+  {
+    "text": "Versiones Instaladas",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      412,
+      148,
+      547,
+      172
+    ]
+  },
+  {
+    "text": "Manual del sistema",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      547,
+      148,
+      680,
+      172
+    ]
+  },
+  {
+    "text": "Terminos y Condiciones",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      680,
+      148,
+      837,
+      172
+    ]
+  },
+  {
+    "text": "Ver Mensajes",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      837,
+      148,
+      936,
+      172
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1064,
+      117,
+      1111,
+      147
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1111,
+      117,
+      1157,
+      147
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1157,
+      117,
+      1204,
+      147
+    ]
+  }
+]

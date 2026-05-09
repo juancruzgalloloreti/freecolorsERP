@@ -1,0 +1,1430 @@
+[
+  {
+    "text": "(86) Consulta Caja Diaria",
+    "control_type": "Window",
+    "auto_id": "frmCajaDiaria",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      129,
+      114,
+      1311,
+      745
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwMonedas",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      842,
+      181,
+      1291,
+      334
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      844,
+      183,
+      1289,
+      207
+    ]
+  },
+  {
+    "text": "Sigla",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      844,
+      183,
+      883,
+      207
+    ]
+  },
+  {
+    "text": "Inicial",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      883,
+      183,
+      957,
+      207
+    ]
+  },
+  {
+    "text": "Entradas",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      957,
+      183,
+      1069,
+      207
+    ]
+  },
+  {
+    "text": "Salidas",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      1069,
+      183,
+      1161,
+      207
+    ]
+  },
+  {
+    "text": "Saldo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      1161,
+      183,
+      1263,
+      207
+    ]
+  },
+  {
+    "text": "Invertir Tildes",
+    "control_type": "Button",
+    "auto_id": "cmdInvertirTildes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      243,
+      149,
+      337,
+      173
+    ]
+  },
+  {
+    "text": "Tildar Todo",
+    "control_type": "Button",
+    "auto_id": "cmdTildarTodo",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      153,
+      149,
+      237,
+      173
+    ]
+  },
+  {
+    "text": "Tildar toda la Caja",
+    "control_type": "CheckBox",
+    "auto_id": "cbTodaLaCaja",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      349,
+      154,
+      460,
+      171
+    ]
+  },
+  {
+    "text": "Valores habilitados al usuario:",
+    "control_type": "Group",
+    "auto_id": "GrupoOperaciones",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      149,
+      338,
+      1297,
+      725
+    ]
+  },
+  {
+    "text": "Incluye Detalle x Unid. de Negocios",
+    "control_type": "CheckBox",
+    "auto_id": "cbIncluyeUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1172,
+      353,
+      1291,
+      385
+    ]
+  },
+  {
+    "text": "Acumula Saldo Inicial",
+    "control_type": "CheckBox",
+    "auto_id": "cbAcumulaSI",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      530,
+      350,
+      618,
+      382
+    ]
+  },
+  {
+    "text": "Exportar",
+    "control_type": "Button",
+    "auto_id": "cmdExportar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      896,
+      350,
+      973,
+      376
+    ]
+  },
+  {
+    "text": "Ordenar x Comprobante",
+    "control_type": "RadioButton",
+    "auto_id": "rbXComprobante",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      326,
+      371,
+      463,
+      388
+    ]
+  },
+  {
+    "text": "Ordenar x Tipo de Valor",
+    "control_type": "RadioButton",
+    "auto_id": "rbXValor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      326,
+      350,
+      463,
+      367
+    ]
+  },
+  {
+    "text": "Ampliar Operacion",
+    "control_type": "Button",
+    "auto_id": "cmdAmpliar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      769,
+      350,
+      890,
+      376
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "cmdImprimir",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      695,
+      350,
+      763,
+      376
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      624,
+      350,
+      689,
+      376
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "List",
+    "auto_id": "lvwOperaciones",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      155,
+      394,
+      1293,
+      718
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      157,
+      396,
+      1291,
+      420
+    ]
+  },
+  {
+    "text": "Comprobante",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      157,
+      396,
+      294,
+      420
+    ]
+  },
+  {
+    "text": "Número",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      294,
+      396,
+      409,
+      420
+    ]
+  },
+  {
+    "text": "F.Contable",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 13",
+    "class": "",
+    "rect": [
+      409,
+      396,
+      479,
+      420
+    ]
+  },
+  {
+    "text": "F.Comprobante",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      479,
+      396,
+      556,
+      420
+    ]
+  },
+  {
+    "text": "Razón Social",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      556,
+      396,
+      676,
+      420
+    ]
+  },
+  {
+    "text": "Concepto",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      676,
+      396,
+      792,
+      420
+    ]
+  },
+  {
+    "text": "Entradas",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      792,
+      396,
+      878,
+      420
+    ]
+  },
+  {
+    "text": "Salidas",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 6",
+    "class": "",
+    "rect": [
+      878,
+      396,
+      964,
+      420
+    ]
+  },
+  {
+    "text": "Cambio",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 15",
+    "class": "",
+    "rect": [
+      964,
+      396,
+      1019,
+      420
+    ]
+  },
+  {
+    "text": "Tipo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 7",
+    "class": "",
+    "rect": [
+      1019,
+      396,
+      1069,
+      420
+    ]
+  },
+  {
+    "text": "Mda",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 14",
+    "class": "",
+    "rect": [
+      1069,
+      396,
+      1105,
+      420
+    ]
+  },
+  {
+    "text": "Valor",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 8",
+    "class": "",
+    "rect": [
+      1105,
+      396,
+      1175,
+      420
+    ]
+  },
+  {
+    "text": "Banco",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 10",
+    "class": "",
+    "rect": [
+      1175,
+      396,
+      1258,
+      420
+    ]
+  },
+  {
+    "text": "Número",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 11",
+    "class": "",
+    "rect": [
+      1258,
+      396,
+      1326,
+      420
+    ]
+  },
+  {
+    "text": "Pago",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 12",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Unidad de Negocios",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 9",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lblSaldo",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1027,
+      355,
+      1043,
+      372
+    ]
+  },
+  {
+    "text": "Saldo:",
+    "control_type": "Text",
+    "auto_id": "Label3",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      979,
+      355,
+      1027,
+      372
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      253,
+      371,
+      320,
+      391
+    ]
+  },
+  {
+    "text": "Valores habilitados al usuario:",
+    "control_type": "Edit",
+    "auto_id": "txtFechaDesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      253,
+      348,
+      320,
+      368
+    ]
+  },
+  {
+    "text": "Rango de fechas:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      150,
+      362,
+      242,
+      375
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "LvwValores",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      153,
+      181,
+      836,
+      334
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      155,
+      183,
+      834,
+      207
+    ]
+  },
+  {
+    "text": "Caja",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      155,
+      183,
+      355,
+      207
+    ]
+  },
+  {
+    "text": "Valor",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      355,
+      183,
+      555,
+      207
+    ]
+  },
+  {
+    "text": "Tipo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      555,
+      183,
+      615,
+      207
+    ]
+  },
+  {
+    "text": "Moneda",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      615,
+      183,
+      675,
+      207
+    ]
+  },
+  {
+    "text": "Sigla",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      675,
+      183,
+      735,
+      207
+    ]
+  },
+  {
+    "text": "Código",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      735,
+      183,
+      815,
+      207
+    ]
+  },
+  {
+    "text": "Vertical",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientVerticalScrollBar",
+    "class": "",
+    "rect": [
+      817,
+      183,
+      834,
+      332
+    ]
+  },
+  {
+    "text": "Línea arriba",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      817,
+      183,
+      834,
+      200
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      817,
+      200,
+      834,
+      301
+    ]
+  },
+  {
+    "text": "Av Pág",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      817,
+      301,
+      834,
+      315
+    ]
+  },
+  {
+    "text": "Línea abajo",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      817,
+      315,
+      834,
+      332
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      207,
+      815,
+      224
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      207,
+      815,
+      224
+    ]
+  },
+  {
+    "text": "Valores a depositar",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      207,
+      555,
+      224
+    ]
+  },
+  {
+    "text": "CD",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      207,
+      615,
+      224
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      207,
+      675,
+      224
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      207,
+      735,
+      224
+    ]
+  },
+  {
+    "text": "110101005",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      207,
+      815,
+      224
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      224,
+      815,
+      241
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      224,
+      815,
+      241
+    ]
+  },
+  {
+    "text": "Banco Credicoop",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      224,
+      555,
+      241
+    ]
+  },
+  {
+    "text": "DB",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      224,
+      615,
+      241
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      224,
+      675,
+      241
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      224,
+      735,
+      241
+    ]
+  },
+  {
+    "text": "110102001",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      224,
+      815,
+      241
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      241,
+      815,
+      258
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      241,
+      815,
+      258
+    ]
+  },
+  {
+    "text": "Efectivo",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      241,
+      555,
+      258
+    ]
+  },
+  {
+    "text": "DE",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      241,
+      615,
+      258
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      241,
+      675,
+      258
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      241,
+      735,
+      258
+    ]
+  },
+  {
+    "text": "110101001",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      241,
+      815,
+      258
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      258,
+      815,
+      275
+    ]
+  },
+  {
+    "text": "Caja Mostrador",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      258,
+      815,
+      275
+    ]
+  },
+  {
+    "text": "Dolares",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      258,
+      555,
+      275
+    ]
+  },
+  {
+    "text": "DE",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      258,
+      615,
+      275
+    ]
+  },
+  {
+    "text": "Dolar",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      258,
+      675,
+      275
+    ]
+  },
+  {
+    "text": "U$S",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      258,
+      735,
+      275
+    ]
+  },
+  {
+    "text": "110101004",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      258,
+      815,
+      275
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      275,
+      815,
+      292
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      275,
+      815,
+      292
+    ]
+  },
+  {
+    "text": "Valores a depositar",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      275,
+      555,
+      292
+    ]
+  },
+  {
+    "text": "CD",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      275,
+      615,
+      292
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      275,
+      675,
+      292
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      275,
+      735,
+      292
+    ]
+  },
+  {
+    "text": "110101005",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      275,
+      815,
+      292
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      292,
+      815,
+      309
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      292,
+      815,
+      309
+    ]
+  },
+  {
+    "text": "Banco Credicoop",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      292,
+      555,
+      309
+    ]
+  },
+  {
+    "text": "DB",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      292,
+      615,
+      309
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      292,
+      675,
+      309
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      292,
+      735,
+      309
+    ]
+  },
+  {
+    "text": "110102001",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      292,
+      815,
+      309
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      309,
+      815,
+      326
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      309,
+      815,
+      326
+    ]
+  },
+  {
+    "text": "Efectivo",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      309,
+      555,
+      326
+    ]
+  },
+  {
+    "text": "DE",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      309,
+      615,
+      326
+    ]
+  },
+  {
+    "text": "Pesos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      309,
+      675,
+      326
+    ]
+  },
+  {
+    "text": "$",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      309,
+      735,
+      326
+    ]
+  },
+  {
+    "text": "110101001",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      309,
+      815,
+      326
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      326,
+      815,
+      332
+    ]
+  },
+  {
+    "text": "Caja Central",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      326,
+      815,
+      332
+    ]
+  },
+  {
+    "text": "Dolares",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      326,
+      555,
+      332
+    ]
+  },
+  {
+    "text": "DE",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      555,
+      326,
+      615,
+      332
+    ]
+  },
+  {
+    "text": "Dolar",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      615,
+      326,
+      675,
+      332
+    ]
+  },
+  {
+    "text": "U$S",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      326,
+      735,
+      332
+    ]
+  },
+  {
+    "text": "110101004",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      735,
+      326,
+      815,
+      332
+    ]
+  },
+  {
+    "text": "O M A R",
+    "control_type": "Text",
+    "auto_id": "lblUsuario",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      711,
+      153,
+      779,
+      170
+    ]
+  },
+  {
+    "text": "Valores habilitados al usuario:",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      476,
+      153,
+      705,
+      170
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      137,
+      122,
+      159,
+      144
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      137,
+      122,
+      159,
+      144
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1164,
+      115,
+      1211,
+      145
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1211,
+      115,
+      1257,
+      145
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1257,
+      115,
+      1304,
+      145
+    ]
+  }
+]

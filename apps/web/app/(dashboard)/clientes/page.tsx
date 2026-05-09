@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { customersApi, priceListsApi } from '@/lib/api'
+import { corePriceLists } from '@/lib/price-list-rules'
 import { Plus, Edit2, X, Search, CreditCard, Users, Upload, Download, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -308,7 +309,7 @@ export default function ClientesPage() {
   })
 
   const customers: Customer[] = Array.isArray(data) ? data : (data as { data?: Customer[] })?.data || []
-  const pls = Array.isArray(priceLists) ? priceLists : (priceLists as { data?: { id: string; name: string }[] })?.data || []
+  const pls = corePriceLists(Array.isArray(priceLists) ? priceLists : (priceLists as { data?: { id: string; name: string }[] })?.data || [])
 
   function handleImport(file: File | null) {
     if (!file) return

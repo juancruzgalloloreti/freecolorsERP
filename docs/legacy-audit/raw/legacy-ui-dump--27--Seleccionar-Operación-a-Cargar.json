@@ -1,0 +1,950 @@
+[
+  {
+    "text": "(27) Seleccionar Operación a Cargar",
+    "control_type": "Window",
+    "auto_id": "frmSeleccionarOperacionCarga",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      182,
+      182,
+      996,
+      747
+    ]
+  },
+  {
+    "text": "Punto de venta:",
+    "control_type": "ComboBox",
+    "auto_id": "cboPtoVta",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      618,
+      221,
+      733,
+      242
+    ]
+  },
+  {
+    "text": "Punto de venta:",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      621,
+      224,
+      713,
+      239
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      717,
+      222,
+      732,
+      241
+    ]
+  },
+  {
+    "text": "Punto de venta:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      530,
+      224,
+      613,
+      237
+    ]
+  },
+  {
+    "text": "Buscar Comprobantes Pendientes",
+    "control_type": "Button",
+    "auto_id": "cmdBuscarPendientes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      888,
+      444,
+      978,
+      510
+    ]
+  },
+  {
+    "text": "Buscar\r\nOperaciones",
+    "control_type": "Button",
+    "auto_id": "cmdBuscarOperaciones",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      888,
+      371,
+      978,
+      425
+    ]
+  },
+  {
+    "text": "Unidad de negocios:",
+    "control_type": "ComboBox",
+    "auto_id": "cboUnidadNegocios",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      310,
+      221,
+      518,
+      242
+    ]
+  },
+  {
+    "text": "Unidad de negocios:",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      313,
+      224,
+      498,
+      239
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      502,
+      222,
+      517,
+      241
+    ]
+  },
+  {
+    "text": "Unidad de negocios:",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      198,
+      221,
+      303,
+      234
+    ]
+  },
+  {
+    "text": "Buscar\r\nComprobantes",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      888,
+      311,
+      978,
+      365
+    ]
+  },
+  {
+    "text": "Cargar",
+    "control_type": "Button",
+    "auto_id": "cmdCargar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      888,
+      279,
+      978,
+      303
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl6",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      659,
+      514,
+      883,
+      730
+    ]
+  },
+  {
+    "text": "Varios",
+    "control_type": "Pane",
+    "auto_id": "TabPage6",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      663,
+      536,
+      879,
+      726
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwVarios",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      663,
+      535,
+      879,
+      727
+    ]
+  },
+  {
+    "text": "Varios",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      661,
+      516,
+      703,
+      534
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl5",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      430,
+      514,
+      654,
+      730
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "Pane",
+    "auto_id": "TabPage5",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      434,
+      536,
+      650,
+      726
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwStock",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      434,
+      535,
+      650,
+      727
+    ]
+  },
+  {
+    "text": "Ajuste de Inventario Negativo",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      537,
+      647,
+      554
+    ]
+  },
+  {
+    "text": "Ajuste de Inventario Negativo",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      537,
+      647,
+      554
+    ]
+  },
+  {
+    "text": "Ajuste de Inventario Positivo",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      554,
+      647,
+      571
+    ]
+  },
+  {
+    "text": "Ajuste de Inventario Positivo",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      554,
+      647,
+      571
+    ]
+  },
+  {
+    "text": "Transferencia entre Depositos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      571,
+      647,
+      588
+    ]
+  },
+  {
+    "text": "Transferencia entre Depositos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      571,
+      647,
+      588
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      432,
+      516,
+      474,
+      534
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl4",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      198,
+      514,
+      422,
+      730
+    ]
+  },
+  {
+    "text": "Contabilidad",
+    "control_type": "Pane",
+    "auto_id": "TabPage4",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      202,
+      536,
+      418,
+      726
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwContabilidad",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      202,
+      535,
+      418,
+      727
+    ]
+  },
+  {
+    "text": "Aplicacion de Comprobantes Pres.",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      537,
+      415,
+      554
+    ]
+  },
+  {
+    "text": "Aplicacion de Comprobantes Pres.",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      537,
+      415,
+      554
+    ]
+  },
+  {
+    "text": "Asiento Contable",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      554,
+      415,
+      571
+    ]
+  },
+  {
+    "text": "Asiento Contable",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      554,
+      415,
+      571
+    ]
+  },
+  {
+    "text": "Contabilidad",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      200,
+      516,
+      270,
+      534
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl3",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      659,
+      259,
+      883,
+      506
+    ]
+  },
+  {
+    "text": "Tesorería",
+    "control_type": "Pane",
+    "auto_id": "TabPage2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      663,
+      281,
+      879,
+      502
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwTesoreria",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      663,
+      280,
+      879,
+      503
+    ]
+  },
+  {
+    "text": "Depositos Bancarios",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      282,
+      876,
+      299
+    ]
+  },
+  {
+    "text": "Depositos Bancarios",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      282,
+      876,
+      299
+    ]
+  },
+  {
+    "text": "Pagos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      299,
+      876,
+      316
+    ]
+  },
+  {
+    "text": "Pagos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      299,
+      876,
+      316
+    ]
+  },
+  {
+    "text": "Recibos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      316,
+      876,
+      333
+    ]
+  },
+  {
+    "text": "Recibos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      316,
+      876,
+      333
+    ]
+  },
+  {
+    "text": "Transferencias de Valores",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      333,
+      876,
+      350
+    ]
+  },
+  {
+    "text": "Transferencias de Valores",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      665,
+      333,
+      876,
+      350
+    ]
+  },
+  {
+    "text": "Tesorería",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      661,
+      261,
+      719,
+      279
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl2",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      430,
+      259,
+      654,
+      508
+    ]
+  },
+  {
+    "text": "Ventas",
+    "control_type": "Pane",
+    "auto_id": "TabPage1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      434,
+      281,
+      650,
+      504
+    ]
+  },
+  {
+    "text": "Seleccionar impresora por defecto (este usuario, esta máquina)",
+    "control_type": "Button",
+    "auto_id": "cmdSeleccionaImpresoraFacturacion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      437,
+      468,
+      647,
+      501
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwVentas",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      434,
+      285,
+      650,
+      468
+    ]
+  },
+  {
+    "text": "(F4)-Factura Fiscal",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      287,
+      647,
+      304
+    ]
+  },
+  {
+    "text": "(F4)-Factura Fiscal",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      287,
+      647,
+      304
+    ]
+  },
+  {
+    "text": "(F5)-Factura manual",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      304,
+      647,
+      321
+    ]
+  },
+  {
+    "text": "(F5)-Factura manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      304,
+      647,
+      321
+    ]
+  },
+  {
+    "text": "(F6)-NC Fiscal",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      321,
+      647,
+      338
+    ]
+  },
+  {
+    "text": "(F6)-NC Fiscal",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      321,
+      647,
+      338
+    ]
+  },
+  {
+    "text": "(F7)-NC Manual",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      338,
+      647,
+      355
+    ]
+  },
+  {
+    "text": "(F7)-NC Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      338,
+      647,
+      355
+    ]
+  },
+  {
+    "text": "(F8)-ND Fiscal",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      355,
+      647,
+      372
+    ]
+  },
+  {
+    "text": "(F8)-ND Fiscal",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      355,
+      647,
+      372
+    ]
+  },
+  {
+    "text": "(F9)-ND Manual",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      372,
+      647,
+      389
+    ]
+  },
+  {
+    "text": "(F9)-ND Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      436,
+      372,
+      647,
+      389
+    ]
+  },
+  {
+    "text": "Ventas",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      432,
+      261,
+      477,
+      279
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tab",
+    "auto_id": "TabControl1",
+    "class": "WindowsForms10.SysTabControl32.app.0.141b42a_r8_ad1",
+    "rect": [
+      198,
+      259,
+      422,
+      506
+    ]
+  },
+  {
+    "text": "Compras",
+    "control_type": "Pane",
+    "auto_id": "TabPage3",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      202,
+      281,
+      418,
+      502
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwCompras",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      202,
+      281,
+      418,
+      504
+    ]
+  },
+  {
+    "text": "Factura Proveedores",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      283,
+      415,
+      300
+    ]
+  },
+  {
+    "text": "Factura Proveedores",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      283,
+      415,
+      300
+    ]
+  },
+  {
+    "text": "NC Proveedores",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      300,
+      415,
+      317
+    ]
+  },
+  {
+    "text": "NC Proveedores",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      300,
+      415,
+      317
+    ]
+  },
+  {
+    "text": "ND Proveedores",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      317,
+      415,
+      334
+    ]
+  },
+  {
+    "text": "ND Proveedores",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      204,
+      317,
+      415,
+      334
+    ]
+  },
+  {
+    "text": "Compras",
+    "control_type": "TabItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      200,
+      261,
+      253,
+      279
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      190,
+      190,
+      212,
+      212
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      190,
+      190,
+      212,
+      212
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      849,
+      183,
+      896,
+      213
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      896,
+      183,
+      942,
+      213
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      942,
+      183,
+      989,
+      213
+    ]
+  }
+]

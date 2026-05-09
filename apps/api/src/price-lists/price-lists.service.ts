@@ -8,17 +8,13 @@ export class PriceListsService {
 
   async findAll(tenantId: string): Promise<any> {
     await this.ensureRequiredLists(tenantId);
-    return this.prisma.priceList.findMany({ where: { tenantId }, include: { items: { include: { product: true } } }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] });
+    const lists = await this.prisma.priceList.findMany({ where: { tenantId }, include: { items: { include: { product: true } } }, orderBy: { name: 'asc' } });
+    return this.sortPriceLists(lists);
   }
 
   create(tenantId: string, role: string, data: any): any {
     this.assertManager(role);
-    return this.prisma.$transaction(async (tx) => {
-      if (data.isDefault) {
-        await tx.priceList.updateMany({ where: { tenantId }, data: { isDefault: false } });
-      }
-      return tx.priceList.create({ data: { tenantId, name: data.name, isDefault: Boolean(data.isDefault), isActive: data.isActive ?? true } });
-    });
+    throw new ForbiddenException('Las listas de precio son fijas: LP1, LP2, LP3, LP4, LP5, CR y CU. Usá coeficientes para reglas especiales.');
   }
 
   async updateItem(tenantId: string, role: string, priceListId: string, productId: string, price: number): Promise<any> {
@@ -198,6 +194,16 @@ export class PriceListsService {
     if (normalized.startsWith('cr') || normalized.includes('costoreposicion')) return 'CR';
     if (normalized.startsWith('cu') || normalized.includes('costoultimacompra') || normalized.includes('costoultcp')) return 'CU';
     return null;
+  }
+
+  private sortPriceLists<T extends { name: string }>(lists: T[]): T[] {
+    const order = ['LP1', 'LP2', 'LP3', 'LP4', 'LP5', 'CR', 'CU'];
+    return [...lists].sort((a, b) => {
+      const ai = order.indexOf(this.priceListCode(a.name) || '');
+      const bi = order.indexOf(this.priceListCode(b.name) || '');
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.name.localeCompare(b.name, 'es');
+    });
   }
 
   private async ensureRequiredLists(tenantId: string): Promise<void> {

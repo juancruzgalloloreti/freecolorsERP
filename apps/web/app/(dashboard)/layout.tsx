@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { BottomNav } from '@/components/erp/layout'
 import { GlobalShortcuts } from '@/components/erp/global-shortcuts'
 import { useAuth } from '@/contexts/AuthContext'
 import { Menu } from 'lucide-react'
@@ -71,11 +72,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}>
           {children}
         </main>
+        <BottomNav />
       </div>
       <style>{`
         @media (max-width: 768px) {
           .main-content { margin-left: 0 !important; }
-          main { padding: 14px 12px 24px !important; }
+          main { padding: 14px 12px calc(96px + env(safe-area-inset-bottom)) !important; }
         }
       `}</style>
     </div>

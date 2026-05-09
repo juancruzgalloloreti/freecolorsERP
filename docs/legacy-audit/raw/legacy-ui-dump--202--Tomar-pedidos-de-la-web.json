@@ -1,0 +1,230 @@
+[
+  {
+    "text": "(202) Tomar pedidos de la web",
+    "control_type": "Window",
+    "auto_id": "frmStPedidoVtaWeb",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      218,
+      177,
+      1221,
+      682
+    ]
+  },
+  {
+    "text": "DataGridView",
+    "control_type": "Table",
+    "auto_id": "dgvPedidosWeb",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      238,
+      250,
+      1201,
+      662
+    ]
+  },
+  {
+    "text": "Fila superior",
+    "control_type": "Custom",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      238,
+      250,
+      1200,
+      272
+    ]
+  },
+  {
+    "text": "Empresa",
+    "control_type": "Header",
+    "auto_id": "4214237410",
+    "class": "",
+    "rect": [
+      240,
+      250,
+      784,
+      272
+    ]
+  },
+  {
+    "text": "Usuario",
+    "control_type": "Header",
+    "auto_id": "4261027830",
+    "class": "",
+    "rect": [
+      784,
+      250,
+      852,
+      272
+    ]
+  },
+  {
+    "text": "Cod. CC",
+    "control_type": "Header",
+    "auto_id": "4212379565",
+    "class": "",
+    "rect": [
+      852,
+      250,
+      923,
+      272
+    ]
+  },
+  {
+    "text": "Cta. Cte.",
+    "control_type": "Header",
+    "auto_id": "4244307222",
+    "class": "",
+    "rect": [
+      923,
+      250,
+      996,
+      272
+    ]
+  },
+  {
+    "text": "Telefono",
+    "control_type": "Header",
+    "auto_id": "4263220684",
+    "class": "",
+    "rect": [
+      996,
+      250,
+      1070,
+      272
+    ]
+  },
+  {
+    "text": "Cantidad",
+    "control_type": "Header",
+    "auto_id": "4232115247",
+    "class": "",
+    "rect": [
+      1070,
+      250,
+      1144,
+      272
+    ]
+  },
+  {
+    "text": "Total",
+    "control_type": "Header",
+    "auto_id": "4220601768",
+    "class": "",
+    "rect": [
+      1144,
+      250,
+      1200,
+      272
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tsPedidoWeb",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      226,
+      208,
+      1213,
+      233
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      228,
+      208,
+      233,
+      233
+    ]
+  },
+  {
+    "text": "Asignar Cta. Cte. (F1)",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      235,
+      209,
+      373,
+      231
+    ]
+  },
+  {
+    "text": "Ver Detalle (F2)",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      373,
+      209,
+      478,
+      231
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      226,
+      185,
+      248,
+      207
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      226,
+      185,
+      248,
+      207
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1074,
+      178,
+      1121,
+      208
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1121,
+      178,
+      1167,
+      208
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1167,
+      178,
+      1214,
+      208
+    ]
+  }
+]

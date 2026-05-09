@@ -1,0 +1,446 @@
+[
+  {
+    "text": "(112) Buscar Operación / Comprobante",
+    "control_type": "Window",
+    "auto_id": "FrmBuscarOperacionComprobante",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      165,
+      133,
+      1274,
+      726
+    ]
+  },
+  {
+    "text": "Operaciones",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      185,
+      169,
+      575,
+      332
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtNumero",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      332,
+      246,
+      409,
+      266
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "CmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      505,
+      298,
+      568,
+      321
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtfechahasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      425,
+      215,
+      502,
+      235
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "TxtFechadesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      332,
+      215,
+      409,
+      235
+    ]
+  },
+  {
+    "text": "Todos",
+    "control_type": "ComboBox",
+    "auto_id": "cmbusuario",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      332,
+      269,
+      568,
+      290
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      335,
+      272,
+      548,
+      287
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      552,
+      270,
+      567,
+      289
+    ]
+  },
+  {
+    "text": "Usuario (último):",
+    "control_type": "ComboBox",
+    "auto_id": "cmbOperaciones",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      332,
+      188,
+      568,
+      209
+    ]
+  },
+  {
+    "text": "Usuario (último):",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      335,
+      191,
+      548,
+      206
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      552,
+      189,
+      567,
+      208
+    ]
+  },
+  {
+    "text": "Usuario (último):",
+    "control_type": "Text",
+    "auto_id": "Label4",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      193,
+      277,
+      275,
+      290
+    ]
+  },
+  {
+    "text": "Número:",
+    "control_type": "Text",
+    "auto_id": "Label3",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      193,
+      249,
+      240,
+      262
+    ]
+  },
+  {
+    "text": "Fecha:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      193,
+      222,
+      233,
+      235
+    ]
+  },
+  {
+    "text": "Definición de operaciones:",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      193,
+      196,
+      326,
+      209
+    ]
+  },
+  {
+    "text": "Ordenar Columnas",
+    "control_type": "Button",
+    "auto_id": "btnOrdenarColumnas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1169,
+      176,
+      1257,
+      216
+    ]
+  },
+  {
+    "text": "Fecha:",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      335,
+      1260,
+      707
+    ]
+  },
+  {
+    "text": "0.00",
+    "control_type": "Text",
+    "auto_id": "lTotal",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1131,
+      686,
+      1159,
+      699
+    ]
+  },
+  {
+    "text": "TOTAL:",
+    "control_type": "Text",
+    "auto_id": "Label9",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1080,
+      686,
+      1125,
+      699
+    ]
+  },
+  {
+    "text": "Fecha:",
+    "control_type": "List",
+    "auto_id": "LvwComprobantes",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      363,
+      1254,
+      679
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      176,
+      365,
+      1252,
+      389
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      335,
+      1260,
+      362
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      176,
+      335,
+      181,
+      362
+    ]
+  },
+  {
+    "text": "Operaciones / Comprobantes",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      183,
+      336,
+      346,
+      360
+    ]
+  },
+  {
+    "text": "Ampliar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      346,
+      336,
+      370,
+      360
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      370,
+      336,
+      394,
+      360
+    ]
+  },
+  {
+    "text": "Imprimir listado",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      405,
+      336,
+      429,
+      360
+    ]
+  },
+  {
+    "text": "Exportar a Excel",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      429,
+      336,
+      453,
+      360
+    ]
+  },
+  {
+    "text": "Resumen x Clasificación",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      459,
+      336,
+      618,
+      360
+    ]
+  },
+  {
+    "text": "Excel con detalle de productos",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      618,
+      336,
+      642,
+      360
+    ]
+  },
+  {
+    "text": "Link Web Ventas",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      642,
+      336,
+      666,
+      360
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      173,
+      141,
+      195,
+      163
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      173,
+      141,
+      195,
+      163
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1127,
+      134,
+      1174,
+      164
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1174,
+      134,
+      1220,
+      164
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1220,
+      134,
+      1267,
+      164
+    ]
+  }
+]

@@ -1,0 +1,602 @@
+[
+  {
+    "text": "(91) Buscar Operación / Comprobante",
+    "control_type": "Window",
+    "auto_id": "FrmBuscarOperacionComprobante",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      165,
+      133,
+      1274,
+      726
+    ]
+  },
+  {
+    "text": "Ordenar Columnas",
+    "control_type": "Button",
+    "auto_id": "btnOrdenarColumnas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1169,
+      176,
+      1257,
+      216
+    ]
+  },
+  {
+    "text": "Comprobantes",
+    "control_type": "Group",
+    "auto_id": "GroupBox3",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      195,
+      166,
+      1163,
+      329
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      467,
+      176,
+      1157,
+      216
+    ]
+  },
+  {
+    "text": "Modificacion",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechaModificacion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      731,
+      188,
+      816,
+      205
+    ]
+  },
+  {
+    "text": "Carga",
+    "control_type": "RadioButton",
+    "auto_id": "rbFCarga",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      672,
+      189,
+      725,
+      206
+    ]
+  },
+  {
+    "text": "Contabilización",
+    "control_type": "RadioButton",
+    "auto_id": "rbFContab",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      565,
+      188,
+      661,
+      205
+    ]
+  },
+  {
+    "text": "Comprobante",
+    "control_type": "RadioButton",
+    "auto_id": "rbFComp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      473,
+      188,
+      561,
+      205
+    ]
+  },
+  {
+    "text": "Fecha:",
+    "control_type": "Edit",
+    "auto_id": "txtdesde1",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      989,
+      188,
+      1066,
+      208
+    ]
+  },
+  {
+    "text": "Fecha:",
+    "control_type": "Text",
+    "auto_id": "Label7",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      943,
+      193,
+      983,
+      206
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txthasta1",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      1074,
+      188,
+      1151,
+      208
+    ]
+  },
+  {
+    "text": "Concepto:",
+    "control_type": "Edit",
+    "auto_id": "txtConcepto",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      794,
+      274,
+      1023,
+      294
+    ]
+  },
+  {
+    "text": "Concepto:",
+    "control_type": "Text",
+    "auto_id": "Label11",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      718,
+      276,
+      774,
+      289
+    ]
+  },
+  {
+    "text": "Seleccionar",
+    "control_type": "Text",
+    "auto_id": "LinkDefComp",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      361,
+      216,
+      424,
+      229
+    ]
+  },
+  {
+    "text": "Seleccionar",
+    "control_type": "Hyperlink",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      361,
+      216,
+      417,
+      229
+    ]
+  },
+  {
+    "text": "Mas Opciones de búsqueda",
+    "control_type": "Button",
+    "auto_id": "cmdMasOpciones",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      721,
+      298,
+      890,
+      321
+    ]
+  },
+  {
+    "text": "Comprobantes sin Imputación",
+    "control_type": "Button",
+    "auto_id": "frmCompSinImp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      902,
+      298,
+      1079,
+      321
+    ]
+  },
+  {
+    "text": "Un Comprobante por Número",
+    "control_type": "RadioButton",
+    "auto_id": "rbUnComprobante",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      714,
+      225,
+      885,
+      245
+    ]
+  },
+  {
+    "text": "Asientos",
+    "control_type": "RadioButton",
+    "auto_id": "rbAsientos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      390,
+      305,
+      455,
+      322
+    ]
+  },
+  {
+    "text": "Comprobantes de Stock",
+    "control_type": "RadioButton",
+    "auto_id": "rbStock",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      206,
+      305,
+      345,
+      322
+    ]
+  },
+  {
+    "text": "Comprobantes de Valores",
+    "control_type": "RadioButton",
+    "auto_id": "rbValores",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      206,
+      282,
+      352,
+      299
+    ]
+  },
+  {
+    "text": "Compras",
+    "control_type": "RadioButton",
+    "auto_id": "rbCompras",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      206,
+      260,
+      275,
+      277
+    ]
+  },
+  {
+    "text": "Facturación",
+    "control_type": "RadioButton",
+    "auto_id": "rbVentas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      206,
+      239,
+      287,
+      256
+    ]
+  },
+  {
+    "text": "Una Def.de Comprob.",
+    "control_type": "RadioButton",
+    "auto_id": "rbUnaDefinicion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      206,
+      191,
+      334,
+      208
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "CmdBuscar1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      555,
+      298,
+      624,
+      322
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "Text",
+    "auto_id": "LnkEmpresas",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1028,
+      253,
+      1081,
+      266
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "Hyperlink",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1028,
+      253,
+      1074,
+      266
+    ]
+  },
+  {
+    "text": "Razón social:",
+    "control_type": "Edit",
+    "auto_id": "TxtRazonSocial",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      794,
+      251,
+      1023,
+      271
+    ]
+  },
+  {
+    "text": "Razón social:",
+    "control_type": "Text",
+    "auto_id": "Label5",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      718,
+      253,
+      789,
+      266
+    ]
+  },
+  {
+    "text": "Definición de Comprobante:",
+    "control_type": "Text",
+    "auto_id": "Label8",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      204,
+      216,
+      342,
+      229
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      335,
+      1260,
+      707
+    ]
+  },
+  {
+    "text": "0.00",
+    "control_type": "Text",
+    "auto_id": "lTotal",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1131,
+      686,
+      1159,
+      699
+    ]
+  },
+  {
+    "text": "TOTAL:",
+    "control_type": "Text",
+    "auto_id": "Label9",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1080,
+      686,
+      1125,
+      699
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "LvwComprobantes",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      363,
+      1254,
+      679
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      176,
+      365,
+      1252,
+      389
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      174,
+      335,
+      1260,
+      362
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      176,
+      335,
+      181,
+      362
+    ]
+  },
+  {
+    "text": "Operaciones / Comprobantes",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      183,
+      336,
+      346,
+      360
+    ]
+  },
+  {
+    "text": "Ampliar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      346,
+      336,
+      370,
+      360
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      370,
+      336,
+      394,
+      360
+    ]
+  },
+  {
+    "text": "Imprimir listado",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      405,
+      336,
+      429,
+      360
+    ]
+  },
+  {
+    "text": "Exportar a Excel",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      429,
+      336,
+      453,
+      360
+    ]
+  },
+  {
+    "text": "Resumen x Clasificación",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      459,
+      336,
+      618,
+      360
+    ]
+  },
+  {
+    "text": "Excel con detalle de productos",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      618,
+      336,
+      642,
+      360
+    ]
+  },
+  {
+    "text": "Link Web Ventas",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      642,
+      336,
+      666,
+      360
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      173,
+      141,
+      195,
+      163
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      173,
+      141,
+      195,
+      163
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1127,
+      134,
+      1174,
+      164
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1174,
+      134,
+      1220,
+      164
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1220,
+      134,
+      1267,
+      164
+    ]
+  }
+]

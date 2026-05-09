@@ -108,6 +108,13 @@ export const authApi = {
     api.get('/permissions/me').then((r) => r.data),
 }
 
+export const permissionsApi = {
+  list: () => api.get('/permissions').then((r) => r.data),
+  user: (userId: string) => api.get(`/permissions/user/${userId}`).then((r) => r.data),
+  syncUser: (userId: string, permissionCodes: string[]) =>
+    api.put(`/permissions/user/${userId}/sync`, { permissionCodes }).then((r) => r.data),
+}
+
 // ─── Products ───────────────────────────────────────────────
 export const productsApi = {
   list: (params?: Record<string, unknown>) =>

@@ -1,0 +1,422 @@
+[
+  {
+    "text": "(13) Listas de Precios",
+    "control_type": "Window",
+    "auto_id": "frmStListasPrecios",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      26,
+      26,
+      420,
+      292
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwLP",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      46,
+      81,
+      400,
+      273
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      48,
+      83,
+      398,
+      107
+    ]
+  },
+  {
+    "text": "Nombre",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      48,
+      83,
+      387,
+      107
+    ]
+  },
+  {
+    "text": "Tipo de Actualización",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      387,
+      83,
+      523,
+      107
+    ]
+  },
+  {
+    "text": "Horizontal",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientHorizontalScrollBar",
+    "class": "",
+    "rect": [
+      48,
+      254,
+      398,
+      271
+    ]
+  },
+  {
+    "text": "Columna a la izquierda",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      48,
+      254,
+      65,
+      271
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      65,
+      254,
+      298,
+      271
+    ]
+  },
+  {
+    "text": "Página a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      298,
+      254,
+      381,
+      271
+    ]
+  },
+  {
+    "text": "Columna a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      381,
+      254,
+      398,
+      271
+    ]
+  },
+  {
+    "text": "Lista de Precios",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      107,
+      398,
+      124
+    ]
+  },
+  {
+    "text": "Lista de Precios",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      107,
+      398,
+      124
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      387,
+      107,
+      398,
+      124
+    ]
+  },
+  {
+    "text": "Lista 2",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      124,
+      398,
+      141
+    ]
+  },
+  {
+    "text": "Lista 2",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      124,
+      398,
+      141
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      387,
+      124,
+      398,
+      141
+    ]
+  },
+  {
+    "text": "Lista 3",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      141,
+      398,
+      158
+    ]
+  },
+  {
+    "text": "Lista 3",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      141,
+      398,
+      158
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      387,
+      141,
+      398,
+      158
+    ]
+  },
+  {
+    "text": "Lista 4",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      158,
+      398,
+      175
+    ]
+  },
+  {
+    "text": "Lista 4",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      158,
+      398,
+      175
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      387,
+      158,
+      398,
+      175
+    ]
+  },
+  {
+    "text": "Lista 5",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      175,
+      398,
+      192
+    ]
+  },
+  {
+    "text": "Lista 5",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      48,
+      175,
+      398,
+      192
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      387,
+      175,
+      398,
+      192
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tstHerramientas",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      34,
+      57,
+      412,
+      82
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      36,
+      57,
+      41,
+      82
+    ]
+  },
+  {
+    "text": "Añadir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      43,
+      58,
+      66,
+      80
+    ]
+  },
+  {
+    "text": "Editar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      66,
+      58,
+      89,
+      80
+    ]
+  },
+  {
+    "text": "Eliminar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      89,
+      58,
+      112,
+      80
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      34,
+      34,
+      56,
+      56
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      34,
+      34,
+      56,
+      56
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      273,
+      27,
+      320,
+      57
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      320,
+      27,
+      366,
+      57
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      366,
+      27,
+      413,
+      57
+    ]
+  }
+]

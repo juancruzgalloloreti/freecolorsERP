@@ -1,0 +1,470 @@
+[
+  {
+    "text": "(124) Consulta Cheques Propios",
+    "control_type": "Window",
+    "auto_id": "frmAdmConsultaChequesPropios",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      78,
+      78,
+      919,
+      677
+    ]
+  },
+  {
+    "text": "0.00",
+    "control_type": "Text",
+    "auto_id": "lTotal",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      802,
+      647,
+      830,
+      660
+    ]
+  },
+  {
+    "text": "TOTAL:",
+    "control_type": "Text",
+    "auto_id": "Label4",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      751,
+      647,
+      796,
+      660
+    ]
+  },
+  {
+    "text": "Registros",
+    "control_type": "Text",
+    "auto_id": "lbRegistros",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      101,
+      647,
+      152,
+      660
+    ]
+  },
+  {
+    "text": "-",
+    "control_type": "Pane",
+    "auto_id": "Panel2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      98,
+      249,
+      895,
+      640
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      98,
+      249,
+      895,
+      274
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      100,
+      249,
+      105,
+      274
+    ]
+  },
+  {
+    "text": "Ampliar Comprobante",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      107,
+      250,
+      253,
+      272
+    ]
+  },
+  {
+    "text": "Exportar a Excel",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      253,
+      250,
+      363,
+      272
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      363,
+      250,
+      436,
+      272
+    ]
+  },
+  {
+    "text": "DataGridView",
+    "control_type": "Table",
+    "auto_id": "dgvCheques",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      104,
+      277,
+      890,
+      637
+    ]
+  },
+  {
+    "text": "Fila superior",
+    "control_type": "Custom",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      104,
+      277,
+      889,
+      299
+    ]
+  },
+  {
+    "text": "Banco",
+    "control_type": "Header",
+    "auto_id": "4214237410",
+    "class": "",
+    "rect": [
+      106,
+      277,
+      169,
+      299
+    ]
+  },
+  {
+    "text": "Emision",
+    "control_type": "Header",
+    "auto_id": "4261027830",
+    "class": "",
+    "rect": [
+      169,
+      277,
+      237,
+      299
+    ]
+  },
+  {
+    "text": "Pago",
+    "control_type": "Header",
+    "auto_id": "4212379565",
+    "class": "",
+    "rect": [
+      237,
+      277,
+      294,
+      299
+    ]
+  },
+  {
+    "text": "Numero",
+    "control_type": "Header",
+    "auto_id": "4244307222",
+    "class": "",
+    "rect": [
+      294,
+      277,
+      363,
+      299
+    ]
+  },
+  {
+    "text": "Importe",
+    "control_type": "Header",
+    "auto_id": "4263220684",
+    "class": "",
+    "rect": [
+      363,
+      277,
+      430,
+      299
+    ]
+  },
+  {
+    "text": "Comprobante",
+    "control_type": "Header",
+    "auto_id": "4232115247",
+    "class": "",
+    "rect": [
+      430,
+      277,
+      525,
+      299
+    ]
+  },
+  {
+    "text": "Razon Social",
+    "control_type": "Header",
+    "auto_id": "4220601768",
+    "class": "",
+    "rect": [
+      525,
+      277,
+      620,
+      299
+    ]
+  },
+  {
+    "text": "Opciones de Busqueda",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      98,
+      121,
+      608,
+      235
+    ]
+  },
+  {
+    "text": "-",
+    "control_type": "Text",
+    "auto_id": "Label3",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      527,
+      146,
+      537,
+      159
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtImporte2",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      540,
+      143,
+      590,
+      163
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtImporte1",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      471,
+      143,
+      521,
+      163
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtNumero",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      524,
+      171,
+      574,
+      191
+    ]
+  },
+  {
+    "text": "Numero de cheque",
+    "control_type": "CheckBox",
+    "auto_id": "ckbNumero",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      401,
+      171,
+      518,
+      188
+    ]
+  },
+  {
+    "text": "Importe",
+    "control_type": "CheckBox",
+    "auto_id": "ckbImportes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      401,
+      147,
+      465,
+      164
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "btnBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      126,
+      199,
+      194,
+      229
+    ]
+  },
+  {
+    "text": "Fecha Hasta",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      264,
+      142,
+      385,
+      188
+    ]
+  },
+  {
+    "text": "Fecha de Pago",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechaPago",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      267,
+      168,
+      365,
+      185
+    ]
+  },
+  {
+    "text": "Fecha de Emision",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechaEmision",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      267,
+      145,
+      376,
+      162
+    ]
+  },
+  {
+    "text": "Fecha Hasta",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      104,
+      171,
+      172,
+      184
+    ]
+  },
+  {
+    "text": "Fecha Desde",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      104,
+      145,
+      175,
+      158
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      180,
+      168,
+      249,
+      188
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaDesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      180,
+      142,
+      249,
+      162
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      86,
+      86,
+      108,
+      108
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      86,
+      86,
+      108,
+      108
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      772,
+      79,
+      819,
+      109
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      819,
+      79,
+      865,
+      109
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      865,
+      79,
+      912,
+      109
+    ]
+  }
+]

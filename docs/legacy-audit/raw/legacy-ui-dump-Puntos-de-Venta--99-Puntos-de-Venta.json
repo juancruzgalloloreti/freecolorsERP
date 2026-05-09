@@ -1,0 +1,890 @@
+[
+  {
+    "text": "(99) Puntos de Venta",
+    "control_type": "Window",
+    "auto_id": "FrmAdmDefPuntoVtaFac",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      184,
+      222,
+      1256,
+      638
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tlsPrincipal",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      192,
+      253,
+      1248,
+      278
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      194,
+      253,
+      199,
+      278
+    ]
+  },
+  {
+    "text": "Agregar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      201,
+      254,
+      224,
+      276
+    ]
+  },
+  {
+    "text": "Editar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      224,
+      254,
+      247,
+      276
+    ]
+  },
+  {
+    "text": "Eliminar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      247,
+      254,
+      270,
+      276
+    ]
+  },
+  {
+    "text": "Múltiples formatos de impresión",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      270,
+      254,
+      293,
+      276
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwDatos",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      204,
+      281,
+      1236,
+      618
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      206,
+      283,
+      1234,
+      307
+    ]
+  },
+  {
+    "text": "Número",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      206,
+      283,
+      277,
+      307
+    ]
+  },
+  {
+    "text": "Negocio",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 12",
+    "class": "",
+    "rect": [
+      277,
+      283,
+      355,
+      307
+    ]
+  },
+  {
+    "text": "Descripción",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      355,
+      283,
+      540,
+      307
+    ]
+  },
+  {
+    "text": "Impresión",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      540,
+      283,
+      637,
+      307
+    ]
+  },
+  {
+    "text": "Dom. Facturación",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      637,
+      283,
+      757,
+      307
+    ]
+  },
+  {
+    "text": "Loc. Facturación",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      757,
+      283,
+      881,
+      307
+    ]
+  },
+  {
+    "text": "Num FcA",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      881,
+      283,
+      941,
+      307
+    ]
+  },
+  {
+    "text": "Num FcB",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 6",
+    "class": "",
+    "rect": [
+      941,
+      283,
+      1001,
+      307
+    ]
+  },
+  {
+    "text": "Num NDA",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 7",
+    "class": "",
+    "rect": [
+      1001,
+      283,
+      1061,
+      307
+    ]
+  },
+  {
+    "text": "Num NDB",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 8",
+    "class": "",
+    "rect": [
+      1061,
+      283,
+      1121,
+      307
+    ]
+  },
+  {
+    "text": "Num NCA",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 9",
+    "class": "",
+    "rect": [
+      1121,
+      283,
+      1181,
+      307
+    ]
+  },
+  {
+    "text": "Num NCB",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 10",
+    "class": "",
+    "rect": [
+      1181,
+      283,
+      1241,
+      307
+    ]
+  },
+  {
+    "text": "Num Rm",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 11",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Horizontal",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientHorizontalScrollBar",
+    "class": "",
+    "rect": [
+      206,
+      599,
+      1234,
+      616
+    ]
+  },
+  {
+    "text": "Columna a la izquierda",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      206,
+      599,
+      223,
+      616
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      223,
+      599,
+      1156,
+      616
+    ]
+  },
+  {
+    "text": "Página a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      1156,
+      599,
+      1217,
+      616
+    ]
+  },
+  {
+    "text": "Columna a la derecha",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      1217,
+      599,
+      1234,
+      616
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      307,
+      1234,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      307,
+      1234,
+      324
+    ]
+  },
+  {
+    "text": "Freecolors",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      277,
+      307,
+      355,
+      324
+    ]
+  },
+  {
+    "text": "Manual",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      307,
+      540,
+      324
+    ]
+  },
+  {
+    "text": "Impresora Común",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      540,
+      307,
+      637,
+      324
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      637,
+      307,
+      757,
+      324
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      757,
+      307,
+      881,
+      324
+    ]
+  },
+  {
+    "text": "3",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      881,
+      307,
+      941,
+      324
+    ]
+  },
+  {
+    "text": "77",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      941,
+      307,
+      1001,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1001,
+      307,
+      1061,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1061,
+      307,
+      1121,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1121,
+      307,
+      1181,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1181,
+      307,
+      1234,
+      324
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "6",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      324,
+      1234,
+      341
+    ]
+  },
+  {
+    "text": "6",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      324,
+      1234,
+      341
+    ]
+  },
+  {
+    "text": "Freecolors",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      277,
+      324,
+      355,
+      341
+    ]
+  },
+  {
+    "text": "Fiscal",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      324,
+      540,
+      341
+    ]
+  },
+  {
+    "text": "Impresora Común",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      540,
+      324,
+      637,
+      341
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      637,
+      324,
+      757,
+      341
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      757,
+      324,
+      881,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      881,
+      324,
+      941,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      941,
+      324,
+      1001,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1001,
+      324,
+      1061,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1061,
+      324,
+      1121,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1121,
+      324,
+      1181,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1181,
+      324,
+      1234,
+      341
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      341,
+      1234,
+      358
+    ]
+  },
+  {
+    "text": "9",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      206,
+      341,
+      1234,
+      358
+    ]
+  },
+  {
+    "text": "Presupuestos",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      277,
+      341,
+      355,
+      358
+    ]
+  },
+  {
+    "text": "Presupuesto",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      355,
+      341,
+      540,
+      358
+    ]
+  },
+  {
+    "text": "Impresora Común",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      540,
+      341,
+      637,
+      358
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      637,
+      341,
+      757,
+      358
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      757,
+      341,
+      881,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      881,
+      341,
+      941,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      941,
+      341,
+      1001,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1001,
+      341,
+      1061,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1061,
+      341,
+      1121,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1121,
+      341,
+      1181,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1181,
+      341,
+      1234,
+      358
+    ]
+  },
+  {
+    "text": "1",
+    "control_type": "Text",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      192,
+      230,
+      214,
+      252
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      192,
+      230,
+      214,
+      252
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1109,
+      223,
+      1156,
+      253
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1156,
+      223,
+      1202,
+      253
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1202,
+      223,
+      1249,
+      253
+    ]
+  }
+]

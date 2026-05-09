@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
@@ -13,6 +13,7 @@ import {
   Printer,
   RefreshCw,
   Search,
+  X,
 } from 'lucide-react'
 import { ConfirmDialog, PageHeader } from '@/components/erp/layout'
 import { documentsApi } from '@/lib/api'
@@ -26,7 +27,7 @@ type DocumentRow = {
   type: DocumentType
   status: DocumentStatus
   number: number | null
-  puntoDeVenta: number | null
+  puntoDeVenta: number | { number?: number | null } | null
   customerName: string | null
   customerCuit: string | null
   supplierName?: string | null
@@ -97,10 +98,16 @@ function asArray<T>(value: unknown): T[] {
   return Array.isArray(data) ? data : []
 }
 
-function documentNumber(item?: { number?: number | null; puntoDeVenta?: number | null }) {
+function puntoDeVentaNumber(value?: number | { number?: number | null } | null) {
+  if (typeof value === 'number') return value
+  return value?.number ?? null
+}
+
+function documentNumber(item?: { number?: number | null; puntoDeVenta?: number | { number?: number | null } | null }) {
   if (!item || item.number == null) return 'Borrador'
-  if (item.puntoDeVenta == null) return String(item.number).padStart(8, '0')
-  return `${String(item.puntoDeVenta).padStart(4, '0')}-${String(item.number).padStart(8, '0')}`
+  const puntoDeVenta = puntoDeVentaNumber(item.puntoDeVenta)
+  if (puntoDeVenta == null) return String(item.number).padStart(8, '0')
+  return `${String(puntoDeVenta).padStart(4, '0')}-${String(item.number).padStart(8, '0')}`
 }
 
 function statusClass(status: DocumentStatus) {
@@ -147,6 +154,7 @@ function downloadDocumentCsv(detail: Detail) {
 
 export default function DocumentosPage() {
   const qc = useQueryClient()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const selectedParam = searchParams.get('selected')
   const [search, setSearch] = useState('')
@@ -166,7 +174,7 @@ export default function DocumentosPage() {
   })
   const rows = asArray<DocumentRow>(rowsRaw)
 
-  const activeId = selectedId || selectedParam || rows[0]?.id || null
+  const activeId = selectedId || selectedParam || null
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['document-detail', activeId],
@@ -182,6 +190,11 @@ export default function DocumentosPage() {
     revenue: rows.filter((row) => row.status === 'CONFIRMED').reduce((sum, row) => sum + Number(row.total || 0), 0),
   }), [rows])
 
+  const closeDetail = () => {
+    setSelectedId(null)
+    if (selectedParam) router.replace('/documentos', { scroll: false })
+  }
+
   const actionMutation = useMutation({
     mutationFn: async (action: 'confirm' | 'cancel' | 'convert-a' | 'convert-b' | 'convert-c') => {
       if (!activeId) throw new Error('Seleccioná un documento')
@@ -192,9 +205,12 @@ export default function DocumentosPage() {
     },
     onSuccess: (doc: { id?: string }) => {
       qc.invalidateQueries({ queryKey: ['documents-history'] })
+      qc.invalidateQueries({ queryKey: ['document-detail'] })
       qc.invalidateQueries({ queryKey: ['counter-recent-documents'] })
       qc.invalidateQueries({ queryKey: ['stock-current'] })
       qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['cash-current'] })
+      qc.invalidateQueries({ queryKey: ['current-account'] })
       if (doc?.id) setSelectedId(doc.id)
       setPendingAction(null)
       setError(null)
@@ -308,7 +324,12 @@ export default function DocumentosPage() {
           )}
         </section>
 
-        <aside className="document-detail-panel">
+        {activeId && <button className="document-detail-backdrop" type="button" aria-label="Cerrar detalle" onClick={closeDetail} />}
+
+        {activeId && <aside className="document-detail-panel" aria-label="Detalle de comprobante">
+          <button className="btn btn-icon btn-secondary document-detail-close" type="button" aria-label="Cerrar detalle" onClick={closeDetail}>
+            <X size={15} />
+          </button>
           {!activeId ? (
             <div className="empty-state"><FileText size={28} /><p>Seleccioná un documento.</p></div>
           ) : detailLoading || !selected ? (
@@ -447,7 +468,7 @@ export default function DocumentosPage() {
               )}
             </>
           )}
-        </aside>
+        </aside>}
       </div>
 
       <ConfirmDialog

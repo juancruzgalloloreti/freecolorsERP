@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   Home, Package, Layers3, FileText, Users, Truck,
   CreditCard, Tag, BarChart3, LogOut, ReceiptText, ShoppingCart, WalletCards,
-  Landmark, CheckSquare, Settings,
+  Landmark, CheckSquare, ClipboardList, UserCog,
 } from 'lucide-react'
 
 const NAV_GROUPS = [
@@ -16,6 +16,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/dashboard', label: 'Inicio', icon: Home, permissions: [] },
       { href: '/ventas', label: 'Mostrador', icon: ReceiptText, permissions: ['sale.view', 'sale.create'] },
+      { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, permissions: ['document.create'] },
       { href: '/compras', label: 'Compras', icon: ShoppingCart, permissions: ['purchase.view', 'purchase.create'] },
       { href: '/documentos', label: 'Comprobantes', icon: FileText, permissions: ['document.create'] },
     ],
@@ -47,8 +48,8 @@ const NAV_GROUPS = [
     label: 'Control',
     items: [
       { href: '/aprobaciones', label: 'Aprobaciones', icon: CheckSquare, permissions: ['approval.view', 'approval.decide'] },
+      { href: '/empleados', label: 'Empleados', icon: UserCog, permissions: ['user.create', 'user.edit', 'user.manage_permissions'] },
       { href: '/reportes', label: 'Reportes', icon: BarChart3, permissions: ['report.view', 'audit.read'] },
-      { href: '/configuracion/afip', label: 'Configuración', icon: Settings, permissions: [] },
     ],
   },
 ]

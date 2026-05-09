@@ -1,0 +1,398 @@
+[
+  {
+    "text": "(176) Consulta Movimientos de Valores",
+    "control_type": "Window",
+    "auto_id": "frmConsMovValores",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      -8,
+      -8,
+      1448,
+      868
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lbTotalChequeAplicado",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      844,
+      838,
+      858,
+      851
+    ]
+  },
+  {
+    "text": "Total Cheque Aplicado:",
+    "control_type": "Text",
+    "auto_id": "Label11",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      722,
+      838,
+      859,
+      851
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lbTotalCupon",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      646,
+      838,
+      660,
+      851
+    ]
+  },
+  {
+    "text": "Total Cupon:",
+    "control_type": "Text",
+    "auto_id": "Label9",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      574,
+      838,
+      652,
+      851
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lbTotalChequePropio",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      482,
+      838,
+      496,
+      851
+    ]
+  },
+  {
+    "text": "Cheque Propio:",
+    "control_type": "Text",
+    "auto_id": "Label7",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      397,
+      838,
+      491,
+      851
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lbTotalChequeDepositar",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      302,
+      839,
+      316,
+      852
+    ]
+  },
+  {
+    "text": "Total Cheque Depositar :",
+    "control_type": "Text",
+    "auto_id": "Label5",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      172,
+      838,
+      319,
+      851
+    ]
+  },
+  {
+    "text": "0",
+    "control_type": "Text",
+    "auto_id": "lbTotalEfectivo",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      82,
+      839,
+      96,
+      852
+    ]
+  },
+  {
+    "text": "Total Efectivo:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      7,
+      838,
+      95,
+      851
+    ]
+  },
+  {
+    "text": "Rango de Fechas",
+    "control_type": "Pane",
+    "auto_id": "Panel2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      12,
+      140,
+      1430,
+      831
+    ]
+  },
+  {
+    "text": "Rango de Fechas",
+    "control_type": "List",
+    "auto_id": "lvwDatos",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      20,
+      168,
+      1422,
+      826
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      22,
+      170,
+      1420,
+      194
+    ]
+  },
+  {
+    "text": "Talleres",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      22,
+      170,
+      398,
+      194
+    ]
+  },
+  {
+    "text": "ToolStrip2",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      12,
+      140,
+      1430,
+      165
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      14,
+      140,
+      19,
+      165
+    ]
+  },
+  {
+    "text": "Ampliar Comprobante",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      21,
+      141,
+      167,
+      163
+    ]
+  },
+  {
+    "text": "Exportar Excel",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      167,
+      141,
+      268,
+      163
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      12,
+      51,
+      1427,
+      134
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      21,
+      88,
+      459,
+      121
+    ]
+  },
+  {
+    "text": "Solo Entradas",
+    "control_type": "RadioButton",
+    "auto_id": "rbEntradas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      177,
+      95,
+      268,
+      112
+    ]
+  },
+  {
+    "text": "Solo Salidas",
+    "control_type": "RadioButton",
+    "auto_id": "rbSalidas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      85,
+      95,
+      168,
+      112
+    ]
+  },
+  {
+    "text": "Todos",
+    "control_type": "RadioButton",
+    "auto_id": "rbTodos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      24,
+      95,
+      79,
+      112
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      189,
+      62,
+      258,
+      82
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaDesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      116,
+      62,
+      183,
+      82
+    ]
+  },
+  {
+    "text": "Rango de Fechas",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      18,
+      67,
+      110,
+      80
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "btnBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      466,
+      88,
+      536,
+      118
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1299,
+      8,
+      1346,
+      22
+    ]
+  },
+  {
+    "text": "Restaurar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1346,
+      8,
+      1392,
+      22
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1392,
+      8,
+      1448,
+      22
+    ]
+  }
+]

@@ -1,0 +1,350 @@
+[
+  {
+    "text": "(314) Grabar pedido de Transferencia entre depósitos",
+    "control_type": "Window",
+    "auto_id": "frmStTransDepPend",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      303,
+      148,
+      1136,
+      711
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "Button1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      543,
+      205,
+      611,
+      228
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaH",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      456,
+      207,
+      523,
+      227
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaD",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      387,
+      207,
+      454,
+      227
+    ]
+  },
+  {
+    "text": "Todos",
+    "control_type": "RadioButton",
+    "auto_id": "rbTodos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      208,
+      375,
+      225
+    ]
+  },
+  {
+    "text": "Pendientes",
+    "control_type": "RadioButton",
+    "auto_id": "rbPendientes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      188,
+      398,
+      205
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "PanelProductos",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      242,
+      1119,
+      681
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "cmdBotonera",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      242,
+      1119,
+      269
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      322,
+      242,
+      327,
+      269
+    ]
+  },
+  {
+    "text": "Nuevo",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      329,
+      243,
+      353,
+      267
+    ]
+  },
+  {
+    "text": "Editar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      353,
+      243,
+      377,
+      267
+    ]
+  },
+  {
+    "text": "Eliminar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      377,
+      243,
+      401,
+      267
+    ]
+  },
+  {
+    "text": "Imprimir (x Código)",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      401,
+      243,
+      537,
+      267
+    ]
+  },
+  {
+    "text": "Imprimir (Alfabético)",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      537,
+      243,
+      679,
+      267
+    ]
+  },
+  {
+    "text": "Imprimir (x Carga)",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      679,
+      243,
+      807,
+      267
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwDatos",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      266,
+      1119,
+      678
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      322,
+      268,
+      1117,
+      292
+    ]
+  },
+  {
+    "text": "Nro",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 6",
+    "class": "",
+    "rect": [
+      322,
+      268,
+      382,
+      292
+    ]
+  },
+  {
+    "text": "Fecha",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      382,
+      268,
+      470,
+      292
+    ]
+  },
+  {
+    "text": "Usuario",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      470,
+      268,
+      625,
+      292
+    ]
+  },
+  {
+    "text": "Depósito Origen",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      625,
+      268,
+      755,
+      292
+    ]
+  },
+  {
+    "text": "Depósito Destino",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      755,
+      268,
+      881,
+      292
+    ]
+  },
+  {
+    "text": "Estado",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      881,
+      268,
+      987,
+      292
+    ]
+  },
+  {
+    "text": "Comentarios",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      987,
+      268,
+      1345,
+      292
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      311,
+      156,
+      333,
+      178
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      311,
+      156,
+      333,
+      178
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      989,
+      149,
+      1036,
+      179
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1036,
+      149,
+      1082,
+      179
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1082,
+      149,
+      1129,
+      179
+    ]
+  }
+]

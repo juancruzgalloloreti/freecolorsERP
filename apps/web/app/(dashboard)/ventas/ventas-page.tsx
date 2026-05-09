@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useBarcodeScan } from '@/hooks/use-barcode-scan'
 import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
+import { corePriceLists } from '@/lib/price-list-rules'
 import { printDocumentA4 } from '@/lib/print-document'
 
 type DocumentType = 'INVOICE_A' | 'INVOICE_B' | 'INVOICE_C' | 'REMITO' | 'BUDGET'
@@ -53,6 +54,7 @@ type ProductHit = {
   brandName?: string | null
   categoryName?: string | null
   price: number
+  pricesByList?: Partial<Record<'LP1' | 'LP2' | 'LP3' | 'LP4' | 'LP5' | 'CR' | 'CU', number>>
   basePrice?: number
   taxRate?: number
   appliedCoefficient?: number
@@ -128,6 +130,7 @@ const ARS = new Intl.NumberFormat('es-AR', {
   currency: 'ARS',
   maximumFractionDigits: 2,
 })
+const COUNTER_PRICE_COLUMNS = ['LP1', 'LP2', 'LP3', 'LP4'] as const
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Efectivo',
@@ -264,7 +267,7 @@ export default function VentasPage() {
   })
   const { data: currentCash, isLoading: cashLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
 
-  const priceLists = asArray<PriceList>(priceListsRaw)
+  const priceLists = corePriceLists(asArray<PriceList>(priceListsRaw))
   const customers = asArray<Customer>(customersRaw)
   const deposits = asArray<Deposit>(depositsRaw)
   const puntos = asArray<Punto>(puntosRaw)
@@ -935,6 +938,13 @@ export default function VentasPage() {
                         </small>
                       )}
                       <small>Stock {Number(product.stock || 0).toLocaleString('es-AR')}</small>
+                      {product.pricesByList && (
+                        <small className="result-price-strip">
+                          {COUNTER_PRICE_COLUMNS.map((code) => (
+                            <span key={code}>{code} {ARS.format(product.pricesByList?.[code] || 0)}</span>
+                          ))}
+                        </small>
+                      )}
                     </span>
                   </button>
                 ))}

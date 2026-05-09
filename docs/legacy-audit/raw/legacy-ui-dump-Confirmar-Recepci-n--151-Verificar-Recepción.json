@@ -1,0 +1,290 @@
+[
+  {
+    "text": "(151) Verificar Recepción",
+    "control_type": "Window",
+    "auto_id": "frmOCVerificarRecepcion",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      130,
+      130,
+      1229,
+      649
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      150,
+      251,
+      1281,
+      629
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tstHerramientas",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      153,
+      267,
+      1278,
+      292
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      155,
+      267,
+      160,
+      292
+    ]
+  },
+  {
+    "text": "Verificar Recepción",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      162,
+      268,
+      289,
+      290
+    ]
+  },
+  {
+    "text": "Ver Verificaciones",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      289,
+      268,
+      407,
+      290
+    ]
+  },
+  {
+    "text": "Imprimir Orden de Compras",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      407,
+      268,
+      583,
+      290
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "gEmpresa",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      150,
+      173,
+      985,
+      245
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      421,
+      204,
+      790,
+      239
+    ]
+  },
+  {
+    "text": "x Nro.O.Cp.",
+    "control_type": "RadioButton",
+    "auto_id": "rbXNumero",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      663,
+      214,
+      743,
+      231
+    ]
+  },
+  {
+    "text": "x Proveedor",
+    "control_type": "RadioButton",
+    "auto_id": "rbXProveedor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      566,
+      214,
+      648,
+      231
+    ]
+  },
+  {
+    "text": "x Fecha Estimada",
+    "control_type": "RadioButton",
+    "auto_id": "rbXFecha",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      427,
+      216,
+      536,
+      233
+    ]
+  },
+  {
+    "text": "Buscar Pendientes",
+    "control_type": "Button",
+    "auto_id": "cmdBuscarPendientes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      856,
+      216,
+      982,
+      239
+    ]
+  },
+  {
+    "text": "Número de Orden de Compras:",
+    "control_type": "Edit",
+    "auto_id": "tNumero",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      205,
+      396,
+      225
+    ]
+  },
+  {
+    "text": "Número de Orden de Compras:",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      161,
+      208,
+      314,
+      221
+    ]
+  },
+  {
+    "text": "Todos",
+    "control_type": "RadioButton",
+    "auto_id": "rbTodos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      467,
+      182,
+      522,
+      199
+    ]
+  },
+  {
+    "text": "Una Cta.Contable",
+    "control_type": "RadioButton",
+    "auto_id": "rbCuenta",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      338,
+      181,
+      447,
+      198
+    ]
+  },
+  {
+    "text": "Una Obra",
+    "control_type": "RadioButton",
+    "auto_id": "rbObra",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      261,
+      182,
+      332,
+      199
+    ]
+  },
+  {
+    "text": "Un Proveedor",
+    "control_type": "RadioButton",
+    "auto_id": "rbProveedor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      164,
+      182,
+      255,
+      199
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      138,
+      138,
+      160,
+      160
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      138,
+      138,
+      160,
+      160
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1082,
+      131,
+      1129,
+      161
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1129,
+      131,
+      1175,
+      161
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1175,
+      131,
+      1222,
+      161
+    ]
+  }
+]

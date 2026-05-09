@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
 import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
 import * as XLSX from 'xlsx'
 
 interface Product {
@@ -100,6 +101,48 @@ const money = new Intl.NumberFormat('es-AR', {
 function priceOf(list: PriceList, productId: string) {
   const item = list.items?.find((i) => i.productId === productId)
   return item ? Number(item.price || 0) : 0
+}
+
+function moneyValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return 0
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function directPrice(lists: PriceList[], productId: string, code: string) {
+  const list = lists.find((item) => priceListCode(item.name) === code)
+  return list ? priceOf(list, productId) : 0
+}
+
+function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
+  const code = priceListCode(list.name)
+  const direct = priceOf(list, product.id)
+  const lp1 = directPrice(lists, product.id, 'LP1') || direct
+  const cr = directPrice(lists, product.id, 'CR') || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
+  const cu = directPrice(lists, product.id, 'CU') || moneyValue(product.lastPurchaseCost) || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
+  if (code === 'LP2') return Math.round(lp1 * 0.6 * 100) / 100
+  if (code === 'LP3') return Math.round(lp1 * 0.8 * 100) / 100
+  if (code === 'LP4') return Math.round(cr * 1.2 * 100) / 100
+  if (code === 'LP5') return Math.round(cr * 100) / 100
+  if (code === 'CR') return Math.round(cr * 100) / 100
+  if (code === 'CU') return Math.round(cu * 100) / 100
+  return direct
+}
+
+function priceListHint(name: string) {
+  const code = priceListCode(name)
+  if (code === 'LP2') return 'Automática: LP1 x 0.60'
+  if (code === 'LP3') return 'Automática: LP1 x 0.80'
+  if (code === 'LP4') return 'Automática: CR x 1.20'
+  if (code === 'LP5') return 'Automática: CR'
+  if (code === 'CR') return 'Manual: costo reposición'
+  if (code === 'CU') return 'Manual: última compra'
+  return 'Manual'
+}
+
+function isEditablePriceList(name: string) {
+  const code = priceListCode(name)
+  return !code || ['LP1', 'CR', 'CU'].includes(code)
 }
 
 function ProductModal({ product, brands, categories, priceLists, onClose, onSave }: {
@@ -266,18 +309,24 @@ function ProductModal({ product, brands, categories, priceLists, onClose, onSave
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Se cargan junto con el producto</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-              {priceLists.map((list, index) => (
+              {priceLists.map((list) => {
+                const editable = isEditablePriceList(list.name)
+                return (
                 <div key={list.id}>
-                  <label className="fc-label">L{index + 1} · {list.name}</label>
+                  <label className="fc-label">{list.name}</label>
                   <input
                     className="fc-input"
                     inputMode="decimal"
                     value={prices[list.id] || ''}
                     onChange={(e) => setPrice(list.id, e.target.value)}
-                    placeholder="0.00"
+                    placeholder={editable ? '0.00' : priceListHint(list.name)}
+                    readOnly={!editable}
+                    disabled={!editable}
                   />
+                  <small style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontSize: 11 }}>{priceListHint(list.name)}</small>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
@@ -428,7 +477,7 @@ export default function ProductosPage() {
   )
   const brs = Array.isArray(brands) ? brands : (brands as { data?: { id: string; name: string }[] }).data || []
   const cats = Array.isArray(categories) ? categories : (categories as { data?: { id: string; name: string }[] }).data || []
-  const priceLists: PriceList[] = (Array.isArray(rawPriceLists) ? rawPriceLists : (rawPriceLists as { data?: PriceList[] }).data || []).slice(0, 4)
+  const priceLists: PriceList[] = corePriceLists(Array.isArray(rawPriceLists) ? rawPriceLists : (rawPriceLists as { data?: PriceList[] }).data || [])
   const selectedProducts = useMemo(
     () => products.filter((product) => selectedProductIds.has(product.id)),
     [products, selectedProductIds]
@@ -603,7 +652,7 @@ export default function ProductosPage() {
                   <th style={{ textAlign: 'right' }}>Stock</th>
                   <th style={{ textAlign: 'right' }}>IVA</th>
                   <th style={{ textAlign: 'right' }}>Costo rep.</th>
-                  {priceLists.map((list, index) => <th key={list.id} style={{ textAlign: 'right' }}>L{index + 1}</th>)}
+                  {priceLists.map((list) => <th key={list.id} style={{ textAlign: 'right' }}>{priceListCode(list.name) || list.name}</th>)}
                   <th>Estado</th>
                   {canManageCatalog && <th style={{ width: canDeleteProducts ? '90px' : '44px' }}></th>}
                 </tr>
@@ -640,7 +689,7 @@ export default function ProductosPage() {
                         {p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}
                       </td>
                       {priceLists.map((list) => {
-                        const price = priceOf(list, p.id)
+                        const price = computedPrice(p, priceLists, list)
                         return (
                           <td key={list.id} style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: price ? 'var(--fc-text)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                             {price ? money.format(price) : '—'}
@@ -690,9 +739,9 @@ export default function ProductosPage() {
                   <div className="catalog-card-prices">
                     <span>IVA: <b>{Number(p.taxRate ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%</b></span>
                     <span>Costo rep.: <b>{p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}</b></span>
-                    {priceLists.map((list, index) => {
-                      const price = priceOf(list, p.id)
-                      return <span key={list.id}>L{index + 1}: <b>{price ? money.format(price) : '—'}</b></span>
+                    {priceLists.map((list) => {
+                      const price = computedPrice(p, priceLists, list)
+                      return <span key={list.id}>{priceListCode(list.name) || list.name}: <b>{price ? money.format(price) : '—'}</b></span>
                     })}
                   </div>
                   <footer>

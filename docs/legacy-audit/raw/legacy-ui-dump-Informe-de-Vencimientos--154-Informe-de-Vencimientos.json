@@ -1,0 +1,446 @@
+[
+  {
+    "text": "(154) Informe de Vencimientos",
+    "control_type": "Window",
+    "auto_id": "frmConsInformeDeVencimientos",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      251,
+      98,
+      1189,
+      762
+    ]
+  },
+  {
+    "text": "Varios Grupos de Cta.Cte.",
+    "control_type": "CheckBox",
+    "auto_id": "cbDefCCVarias",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      670,
+      134,
+      818,
+      151
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      444,
+      141,
+      513,
+      161
+    ]
+  },
+  {
+    "text": "Vencidos con respecto a:",
+    "control_type": "Group",
+    "auto_id": "GroupBox3",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      521,
+      140,
+      660,
+      217
+    ]
+  },
+  {
+    "text": "F.Comprob.",
+    "control_type": "RadioButton",
+    "auto_id": "rbFComp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      542,
+      194,
+      621,
+      211
+    ]
+  },
+  {
+    "text": "F.Vto.",
+    "control_type": "RadioButton",
+    "auto_id": "rbFVto",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      543,
+      155,
+      596,
+      172
+    ]
+  },
+  {
+    "text": "Vto.+Días",
+    "control_type": "RadioButton",
+    "auto_id": "rbFDias",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      542,
+      173,
+      615,
+      190
+    ]
+  },
+  {
+    "text": "Ordena",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      1032,
+      130,
+      1174,
+      183
+    ]
+  },
+  {
+    "text": "x Fecha Comprobante",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechaComp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1040,
+      142,
+      1169,
+      159
+    ]
+  },
+  {
+    "text": "x Fecha Vencimiento",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechaVto",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1040,
+      161,
+      1164,
+      178
+    ]
+  },
+  {
+    "text": "Solo Sin Cobrador",
+    "control_type": "CheckBox",
+    "auto_id": "chkSinCobrador",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      951,
+      204,
+      1027,
+      239
+    ]
+  },
+  {
+    "text": "ORIANA",
+    "control_type": "ComboBox",
+    "auto_id": "cboCobrador",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      759,
+      212,
+      947,
+      233
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      762,
+      215,
+      927,
+      230
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      931,
+      213,
+      946,
+      232
+    ]
+  },
+  {
+    "text": "Un Cobrador",
+    "control_type": "CheckBox",
+    "auto_id": "chkCobrador",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      670,
+      214,
+      756,
+      231
+    ]
+  },
+  {
+    "text": "Un Vendedor",
+    "control_type": "CheckBox",
+    "auto_id": "chkUnVendedor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      270,
+      171,
+      359,
+      188
+    ]
+  },
+  {
+    "text": "Seleccionar Comprobantes",
+    "control_type": "CheckBox",
+    "auto_id": "chkDefComp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      270,
+      193,
+      423,
+      210
+    ]
+  },
+  {
+    "text": "Indicador giratorio",
+    "control_type": "Spinner",
+    "auto_id": "txtCtaCte",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      759,
+      187,
+      831,
+      207
+    ]
+  },
+  {
+    "text": "NumericUpDown",
+    "control_type": "Spinner",
+    "auto_id": "1771456",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      814,
+      188,
+      830,
+      206
+    ]
+  },
+  {
+    "text": "Subir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      814,
+      188,
+      830,
+      197
+    ]
+  },
+  {
+    "text": "Bajar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      814,
+      197,
+      830,
+      206
+    ]
+  },
+  {
+    "text": "Indicador giratorio",
+    "control_type": "Edit",
+    "auto_id": "1967872",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      761,
+      189,
+      813,
+      205
+    ]
+  },
+  {
+    "text": ".",
+    "control_type": "Text",
+    "auto_id": "lbCtaCte",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      878,
+      190,
+      888,
+      203
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdCtaCte",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      837,
+      185,
+      869,
+      208
+    ]
+  },
+  {
+    "text": "Una Cta.Cte",
+    "control_type": "CheckBox",
+    "auto_id": "chkCtaCte",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      670,
+      187,
+      754,
+      204
+    ]
+  },
+  {
+    "text": "Grupo Ctas Ctes:",
+    "control_type": "Text",
+    "auto_id": "Label3",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      667,
+      163,
+      754,
+      176
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1032,
+      187,
+      1173,
+      233
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFecha",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      364,
+      141,
+      433,
+      161
+    ]
+  },
+  {
+    "text": "Clientes",
+    "control_type": "ComboBox",
+    "auto_id": "cboDefCtaCte",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      760,
+      161,
+      928,
+      182
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      763,
+      164,
+      908,
+      179
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      912,
+      162,
+      927,
+      181
+    ]
+  },
+  {
+    "text": "Saldos e/ fechas:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      269,
+      144,
+      360,
+      157
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      259,
+      106,
+      281,
+      128
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      259,
+      106,
+      281,
+      128
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1042,
+      99,
+      1089,
+      129
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1089,
+      99,
+      1135,
+      129
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1135,
+      99,
+      1182,
+      129
+    ]
+  }
+]

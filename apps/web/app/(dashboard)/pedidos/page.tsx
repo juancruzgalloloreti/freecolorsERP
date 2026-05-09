@@ -303,7 +303,12 @@ export default function PedidosPage() {
                     {order.documentId ? (
                       <Link className="btn btn-secondary btn-sm" href={`/documentos?selected=${order.documentId}`}><FileText size={13} /> Documento</Link>
                     ) : (
-                      <button className="btn btn-primary btn-sm" disabled={!canEdit || order.status === 'CANCELLED' || documentMutation.isPending} onClick={() => documentMutation.mutate(order.id)}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        title={order.status !== 'BILLABLE' ? 'Marcá el pedido como Facturable antes de facturar' : undefined}
+                        disabled={!canEdit || order.status !== 'BILLABLE' || documentMutation.isPending}
+                        onClick={() => documentMutation.mutate(order.id)}
+                      >
                         <FileText size={13} /> Facturar
                       </button>
                     )}

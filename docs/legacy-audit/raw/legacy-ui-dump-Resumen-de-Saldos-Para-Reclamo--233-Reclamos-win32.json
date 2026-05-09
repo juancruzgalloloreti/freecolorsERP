@@ -1,0 +1,162 @@
+[
+  {
+    "text": "(233) Reclamos",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      288,
+      155,
+      1152,
+      704
+    ]
+  },
+  {
+    "text": "Todas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      581,
+      253,
+      637,
+      270
+    ]
+  },
+  {
+    "text": "Pesos",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      468,
+      251,
+      571,
+      272
+    ]
+  },
+  {
+    "text": "Pesos",
+    "class": "Edit",
+    "rect": [
+      471,
+      254,
+      551,
+      269
+    ]
+  },
+  {
+    "text": "Moneda:",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      412,
+      254,
+      461,
+      267
+    ]
+  },
+  {
+    "text": "",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      305,
+      278,
+      1132,
+      684
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      308,
+      294,
+      1129,
+      321
+    ]
+  },
+  {
+    "text": "",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      311,
+      322,
+      1127,
+      673
+    ]
+  },
+  {
+    "text": "",
+    "class": "SysHeader32",
+    "rect": [
+      313,
+      324,
+      1125,
+      348
+    ]
+  },
+  {
+    "text": "Buscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1060,
+      223,
+      1127,
+      246
+    ]
+  },
+  {
+    "text": "y el",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      548,
+      228,
+      571,
+      241
+    ]
+  },
+  {
+    "text": "08/05/2026",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      596,
+      225,
+      665,
+      245
+    ]
+  },
+  {
+    "text": "Grupo de Cuentas Corrientes:",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      315,
+      202,
+      461,
+      215
+    ]
+  },
+  {
+    "text": "3 -Clientes",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      468,
+      198,
+      724,
+      219
+    ]
+  },
+  {
+    "text": "3 -Clientes",
+    "class": "Edit",
+    "rect": [
+      471,
+      201,
+      704,
+      216
+    ]
+  },
+  {
+    "text": "Comprobantes con fecha de Vencimiento anterior o igual al:",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      302,
+      228,
+      590,
+      241
+    ]
+  }
+]

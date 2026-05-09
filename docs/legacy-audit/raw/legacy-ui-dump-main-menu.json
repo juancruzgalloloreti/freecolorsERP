@@ -1,0 +1,534 @@
+[
+  {
+    "text": "Menu principal",
+    "control_type": "Window",
+    "auto_id": "frmMenu",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      228,
+      116,
+      1211,
+      743
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Registrar Llamada",
+    "control_type": "Button",
+    "auto_id": "cmdRegistroDeLlamados",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1020,
+      176,
+      1149,
+      204
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Soporte",
+    "control_type": "Button",
+    "auto_id": "Button1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      575,
+      178,
+      655,
+      206
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      584,
+      1204,
+      736
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Proyecto:STD",
+    "control_type": "Text",
+    "auto_id": "lProyecto",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      242,
+      678,
+      316,
+      691
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "TICKETS Soporte",
+    "control_type": "Button",
+    "auto_id": "cmdTickets",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      933,
+      602,
+      1025,
+      724
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Versión: 4247",
+    "control_type": "Text",
+    "auto_id": "lVersion",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      650,
+      313,
+      663
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "JUAMPY",
+    "control_type": "Text",
+    "auto_id": "lUsuario",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      619,
+      303,
+      635
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "PictureBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      1042,
+      602,
+      1172,
+      719
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Pinturerias FreeColors",
+    "control_type": "Text",
+    "auto_id": "lEmpresa",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      590,
+      407,
+      610
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Agenda",
+    "control_type": "Button",
+    "auto_id": "cmdAgenda",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      773,
+      176,
+      852,
+      204
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdBorrarBuscador",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      543,
+      178,
+      571,
+      206
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Unid.De Neg.",
+    "control_type": "Button",
+    "auto_id": "cmdVerUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      671,
+      176,
+      767,
+      204
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Obtener CAE / Imp.Fiscal",
+    "control_type": "Button",
+    "auto_id": "cmdAvisos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      858,
+      176,
+      1016,
+      204
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "List",
+    "auto_id": "lvwAnclados",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      673,
+      210,
+      1197,
+      579
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Carga de Operaciones",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      212,
+      749,
+      277
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Consultar Productos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      750,
+      212,
+      824,
+      277
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Preparar Transferencia entre depósitos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      825,
+      212,
+      899,
+      277
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtBuscar",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      315,
+      181,
+      537,
+      201
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "Text",
+    "auto_id": "Label7",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      246,
+      184,
+      310,
+      197
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "",
+    "control_type": "Tree",
+    "auto_id": "tvwMenu",
+    "class": "WindowsForms10.SysTreeView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      244,
+      242,
+      657,
+      579
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      268,
+      244,
+      332,
+      260
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Consultas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      268,
+      260,
+      318,
+      276
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Pedidos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      268,
+      276,
+      310,
+      292
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      147,
+      1203,
+      174
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      238,
+      147,
+      243,
+      174
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Cambiar Clave Usuario",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      245,
+      148,
+      269,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Email",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      269,
+      148,
+      341,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Colores",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      341,
+      148,
+      412,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Versiones Instaladas",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      412,
+      148,
+      547,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Manual del sistema",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      547,
+      148,
+      680,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Terminos y Condiciones",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      680,
+      148,
+      837,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Ver Mensajes",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      837,
+      148,
+      936,
+      172
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1064,
+      117,
+      1111,
+      147
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1111,
+      117,
+      1157,
+      147
+    ],
+    "enabled": true,
+    "visible": true
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1157,
+      117,
+      1204,
+      147
+    ],
+    "enabled": true,
+    "visible": true
+  }
+]

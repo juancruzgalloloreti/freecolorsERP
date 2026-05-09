@@ -12,6 +12,7 @@ import {
   LegacyWindow,
 } from '@/components/legacy/legacy-ui'
 import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
+import { corePriceLists } from '@/lib/price-list-rules'
 
 type ProductHit = {
   id: string
@@ -80,7 +81,7 @@ export default function LegacyInvoiceBudgetPage() {
   const { data: currentCash } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
 
   const customers = asArray<OptionRow>(customersRaw)
-  const priceLists = asArray<OptionRow>(priceListsRaw)
+  const priceLists = corePriceLists(asArray<OptionRow>(priceListsRaw))
   const deposits = asArray<OptionRow>(depositsRaw)
   const puntos = asArray<OptionRow>(puntosRaw)
   const effectiveDepositId = depositId || deposits.find((item) => item.isDefault)?.id || deposits[0]?.id || ''

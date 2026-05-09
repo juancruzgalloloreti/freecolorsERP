@@ -91,7 +91,7 @@ export default function CajaPage() {
         </div>
       </div>
 
-      {message && <div className="counter-alert success">{message}</div>}
+      {message && <div className={`counter-alert ${message.startsWith('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 14 }}>
         <div className="stat-card"><div className="stat-value">{isLoading ? '...' : currentSession ? 'Abierta' : 'Cerrada'}</div><div className="stat-label">Estado</div></div>
@@ -104,8 +104,8 @@ export default function CajaPage() {
         <section className="fc-card" style={{ maxWidth: 520 }}>
           <WalletCards size={26} style={{ color: '#a78bfa', marginBottom: 12 }} />
           <h2 style={{ fontSize: 16, marginBottom: 10 }}>Abrir caja</h2>
-          <label className="fc-label">Saldo inicial</label>
-          <input className="fc-input" inputMode="decimal" value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} placeholder="0,00" />
+          <label className="fc-label" htmlFor="cash-opening-amount">Saldo inicial</label>
+          <input id="cash-opening-amount" className="fc-input" inputMode="decimal" value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} placeholder="0,00" />
           <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!isOwner || openMutation.isPending} onClick={() => openMutation.mutate()}>
             <Unlock size={14} /> {openMutation.isPending ? 'Abriendo...' : 'Abrir caja'}
           </button>
@@ -118,21 +118,21 @@ export default function CajaPage() {
               <button className={`btn ${move.type === 'CASH_IN' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMove((current) => ({ ...current, type: 'CASH_IN' }))}><ArrowUpCircle size={14} /> Ingreso</button>
               <button className={`btn ${move.type === 'CASH_OUT' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMove((current) => ({ ...current, type: 'CASH_OUT' }))}><ArrowDownCircle size={14} /> Egreso</button>
             </div>
-            <label className="fc-label">Importe</label>
-            <input className="fc-input" inputMode="decimal" value={move.amount} onChange={(event) => setMove((current) => ({ ...current, amount: event.target.value }))} placeholder="0,00" />
-            <label className="fc-label" style={{ marginTop: 10 }}>Concepto</label>
-            <input className="fc-input" value={move.description} onChange={(event) => setMove((current) => ({ ...current, description: event.target.value }))} placeholder={move.type === 'CASH_OUT' ? 'Pago, retiro, gasto...' : 'Ingreso manual'} />
-            <label className="fc-label" style={{ marginTop: 10 }}>Referencia</label>
-            <input className="fc-input" value={move.reference} onChange={(event) => setMove((current) => ({ ...current, reference: event.target.value }))} placeholder="Opcional" />
+            <label className="fc-label" htmlFor="cash-movement-amount">Importe</label>
+            <input id="cash-movement-amount" className="fc-input" inputMode="decimal" value={move.amount} onChange={(event) => setMove((current) => ({ ...current, amount: event.target.value }))} placeholder="0,00" />
+            <label className="fc-label" htmlFor="cash-movement-description" style={{ marginTop: 10 }}>Concepto</label>
+            <input id="cash-movement-description" className="fc-input" value={move.description} onChange={(event) => setMove((current) => ({ ...current, description: event.target.value }))} placeholder={move.type === 'CASH_OUT' ? 'Pago, retiro, gasto...' : 'Ingreso manual'} />
+            <label className="fc-label" htmlFor="cash-movement-reference" style={{ marginTop: 10 }}>Referencia</label>
+            <input id="cash-movement-reference" className="fc-input" value={move.reference} onChange={(event) => setMove((current) => ({ ...current, reference: event.target.value }))} placeholder="Opcional" />
             <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!isOwner || !move.amount || moveMutation.isPending} onClick={() => moveMutation.mutate()}>
               Registrar
             </button>
 
             <div style={{ borderTop: '1px solid var(--fc-border)', marginTop: 18, paddingTop: 16 }}>
               <h2 style={{ fontSize: 16, marginBottom: 10 }}>Cerrar caja</h2>
-              <label className="fc-label">Dinero contado</label>
-              <input className="fc-input" inputMode="decimal" value={countedAmount} onChange={(event) => setCountedAmount(event.target.value)} placeholder={String(currentSession.expectedAmount || 0)} />
-              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!isOwner || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
+              <label className="fc-label" htmlFor="cash-counted-amount">Dinero contado</label>
+              <input id="cash-counted-amount" className="fc-input" inputMode="decimal" value={countedAmount} onChange={(event) => setCountedAmount(event.target.value)} placeholder={String(currentSession.expectedAmount || 0)} />
+              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!isOwner || !countedAmount || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
                 <Lock size={14} /> {closeMutation.isPending ? 'Cerrando...' : 'Cerrar caja'}
               </button>
             </div>

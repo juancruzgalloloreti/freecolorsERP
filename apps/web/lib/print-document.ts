@@ -15,7 +15,7 @@ type PrintableDocument = {
   type?: string
   status?: string
   number?: number | string | null
-  puntoDeVenta?: number | string | null
+  puntoDeVenta?: number | string | { number?: number | string | null } | null
   date?: string | Date
   customerName?: string | null
   customerCuit?: string | null
@@ -68,8 +68,11 @@ function text(value: unknown) {
 
 function documentNumber(document: PrintableDocument) {
   if (!document.number) return 'Borrador'
-  if (!document.puntoDeVenta) return String(document.number).padStart(8, '0')
-  return `${String(document.puntoDeVenta).padStart(4, '0')}-${String(document.number).padStart(8, '0')}`
+  const puntoDeVenta = typeof document.puntoDeVenta === 'object'
+    ? document.puntoDeVenta?.number
+    : document.puntoDeVenta
+  if (!puntoDeVenta) return String(document.number).padStart(8, '0')
+  return `${String(puntoDeVenta).padStart(4, '0')}-${String(document.number).padStart(8, '0')}`
 }
 
 function documentLabel(type?: string) {

@@ -1,0 +1,326 @@
+[
+  {
+    "text": "(46) Cuenta Corriente",
+    "control_type": "Window",
+    "auto_id": "frmAdmConsCC",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      -8,
+      -8,
+      1448,
+      868
+    ]
+  },
+  {
+    "text": "Ordenar",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      838,
+      31,
+      1000,
+      120
+    ]
+  },
+  {
+    "text": "x Fecha Contable",
+    "control_type": "RadioButton",
+    "auto_id": "rbOrdenaFCont",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      852,
+      46,
+      960,
+      63
+    ]
+  },
+  {
+    "text": "x Fecha Vencimiento",
+    "control_type": "RadioButton",
+    "auto_id": "rbOrdenaFVto",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      852,
+      92,
+      976,
+      109
+    ]
+  },
+  {
+    "text": "x Fecha Comprobante",
+    "control_type": "RadioButton",
+    "auto_id": "rbOrdenaFComp",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      852,
+      68,
+      981,
+      85
+    ]
+  },
+  {
+    "text": "Fechas",
+    "control_type": "Group",
+    "auto_id": "GroupBox3",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      440,
+      31,
+      827,
+      120
+    ]
+  },
+  {
+    "text": "Saldos Vencidos a Hoy",
+    "control_type": "RadioButton",
+    "auto_id": "optVencidosHoy",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      448,
+      91,
+      583,
+      108
+    ]
+  },
+  {
+    "text": "Migración",
+    "control_type": "Button",
+    "auto_id": "cmdMigracion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      732,
+      47,
+      808,
+      75
+    ]
+  },
+  {
+    "text": "Ficha completa",
+    "control_type": "RadioButton",
+    "auto_id": "optFichaCompleta",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      448,
+      69,
+      545,
+      86
+    ]
+  },
+  {
+    "text": "Solo saldos pendientes",
+    "control_type": "RadioButton",
+    "auto_id": "optSoloSaldosPendientes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      448,
+      47,
+      582,
+      64
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      732,
+      79,
+      796,
+      107
+    ]
+  },
+  {
+    "text": "Cuenta Corriente",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      8,
+      31,
+      434,
+      120
+    ]
+  },
+  {
+    "text": "UN",
+    "control_type": "Button",
+    "auto_id": "cmdVerUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      382,
+      43,
+      428,
+      71
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "tCodCC",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      64,
+      48,
+      119,
+      68
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdBuscarCC",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      126,
+      46,
+      154,
+      69
+    ]
+  },
+  {
+    "text": "Clientes",
+    "control_type": "Text",
+    "auto_id": "lDefCC",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      69,
+      76,
+      113,
+      89
+    ]
+  },
+  {
+    "text": "Nombre:",
+    "control_type": "Text",
+    "auto_id": "Label8",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      16,
+      76,
+      63,
+      89
+    ]
+  },
+  {
+    "text": "Indicador giratorio",
+    "control_type": "Spinner",
+    "auto_id": "tDefCC",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      16,
+      50,
+      58,
+      70
+    ]
+  },
+  {
+    "text": "NumericUpDown",
+    "control_type": "Spinner",
+    "auto_id": "788536",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      41,
+      51,
+      57,
+      69
+    ]
+  },
+  {
+    "text": "Subir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      41,
+      51,
+      57,
+      60
+    ]
+  },
+  {
+    "text": "Bajar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      41,
+      60,
+      57,
+      69
+    ]
+  },
+  {
+    "text": "Indicador giratorio",
+    "control_type": "Edit",
+    "auto_id": "1639976",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      18,
+      52,
+      40,
+      68
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1299,
+      8,
+      1346,
+      22
+    ]
+  },
+  {
+    "text": "Restaurar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1346,
+      8,
+      1392,
+      22
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1392,
+      8,
+      1448,
+      22
+    ]
+  }
+]

@@ -11,6 +11,7 @@ import {
   LegacyWindow,
 } from '@/components/legacy/legacy-ui'
 import { priceListsApi, productsApi, stockApi } from '@/lib/api'
+import { corePriceLists } from '@/lib/price-list-rules'
 
 type ProductHit = {
   id: string
@@ -56,7 +57,7 @@ export default function LegacyProductLookupPage() {
   const { data: depositsRaw } = useQuery({ queryKey: ['legacy-lookup-deposits'], queryFn: stockApi.deposits })
   const { data: priceListsRaw } = useQuery({ queryKey: ['legacy-lookup-price-lists'], queryFn: priceListsApi.list })
   const deposits = asArray<OptionRow>(depositsRaw)
-  const priceLists = asArray<OptionRow>(priceListsRaw)
+  const priceLists = corePriceLists(asArray<OptionRow>(priceListsRaw))
   const effectiveDepositId = depositId || deposits.find((item) => item.isDefault)?.id || deposits[0]?.id || ''
   const effectivePriceListId = priceListId || priceLists.find((item) => item.isDefault)?.id || priceLists[0]?.id || ''
   const queryText = [scanner, code, equivalence, origin, description, classification].filter(Boolean).join(' ')

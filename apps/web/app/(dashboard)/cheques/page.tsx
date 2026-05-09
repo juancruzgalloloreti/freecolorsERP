@@ -6,6 +6,8 @@ import { Ban, CheckCircle2, Landmark, Plus, RefreshCw, Save, Send, X } from 'luc
 import { checksApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
+type CheckAction = 'deposit' | 'clear' | 'bounce' | 'endorse' | 'cancel'
+
 type CheckRow = {
   id: string
   number: string
@@ -41,6 +43,8 @@ export default function ChequesPage() {
   const [status, setStatus] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [pendingAction, setPendingAction] = useState<{ check: CheckRow; fn: CheckAction } | null>(null)
+  const [actionForm, setActionForm] = useState({ endorsedTo: '', reason: '' })
   const [form, setForm] = useState({
     number: '',
     bank: '',
@@ -76,20 +80,64 @@ export default function ChequesPage() {
   })
 
   const action = useMutation({
-    mutationFn: ({ id, fn }: { id: string; fn: 'deposit' | 'clear' | 'bounce' | 'endorse' | 'cancel' }) => {
+    mutationFn: ({ id, fn, endorsedTo, reason }: { id: string; fn: CheckAction; endorsedTo?: string; reason?: string }) => {
       if (fn === 'deposit') return checksApi.deposit(id)
       if (fn === 'clear') return checksApi.clear(id)
-      if (fn === 'bounce') return checksApi.bounce(id, { reason: 'Registrado desde gestión de cheques' })
-      if (fn === 'endorse') return checksApi.endorse(id, { endorsedTo: 'Proveedor / tercero' })
+      if (fn === 'bounce') return checksApi.bounce(id, { reason })
+      if (fn === 'endorse') return checksApi.endorse(id, { endorsedTo })
       return checksApi.cancel(id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['checks'] })
       qc.invalidateQueries({ queryKey: ['checks-summary'] })
+      setPendingAction(null)
+      setActionForm({ endorsedTo: '', reason: '' })
       setMessage('Cheque actualizado.')
     },
     onError: (error) => setMessage(apiMessage(error, 'No se pudo actualizar el cheque')),
   })
+
+  function openAction(check: CheckRow, fn: CheckAction) {
+    setPendingAction({ check, fn })
+    setActionForm({ endorsedTo: check.endorsedTo || '', reason: check.rejectionReason || '' })
+    setMessage(null)
+  }
+
+  function closeAction() {
+    if (action.isPending) return
+    setPendingAction(null)
+    setActionForm({ endorsedTo: '', reason: '' })
+  }
+
+  function submitAction() {
+    if (!pendingAction) return
+    action.mutate({
+      id: pendingAction.check.id,
+      fn: pendingAction.fn,
+      endorsedTo: actionForm.endorsedTo.trim(),
+      reason: actionForm.reason.trim(),
+    })
+  }
+
+  const actionTitle: Record<CheckAction, string> = {
+    deposit: 'Depositar cheque',
+    clear: 'Acreditar cheque',
+    bounce: 'Rechazar cheque',
+    endorse: 'Endosar cheque',
+    cancel: 'Cancelar cheque',
+  }
+  const actionConfirm: Record<CheckAction, string> = {
+    deposit: 'Depositar',
+    clear: 'Acreditar',
+    bounce: 'Rechazar',
+    endorse: 'Endosar',
+    cancel: 'Cancelar cheque',
+  }
+  const actionDisabled = Boolean(
+    action.isPending ||
+    (pendingAction?.fn === 'endorse' && !actionForm.endorsedTo.trim()) ||
+    (pendingAction?.fn === 'bounce' && !actionForm.reason.trim()),
+  )
 
   return (
     <div>
@@ -128,15 +176,21 @@ export default function ChequesPage() {
                     <td>{check.accountOwner}</td>
                     <td>{new Date(check.dueDate).toLocaleDateString('es-AR')}</td>
                     <td className="money-cell strong">{ARS.format(Number(check.amount || 0))}</td>
-                    <td>{statusLabels[check.status]}</td>
+                    <td>
+                      <div style={{ display: 'grid', gap: 3 }}>
+                        <span>{statusLabels[check.status]}</span>
+                        {check.endorsedTo && <small>Endosado a {check.endorsedTo}</small>}
+                        {check.rejectionReason && <small>Motivo: {check.rejectionReason}</small>}
+                      </div>
+                    </td>
                     <td>
                       {canManage && (
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" title="Depositar" onClick={() => action.mutate({ id: check.id, fn: 'deposit' })}><Landmark size={13} /></button>}
-                          {check.status === 'DEPOSITED' && <button className="btn btn-icon btn-secondary btn-sm" title="Acreditar" onClick={() => action.mutate({ id: check.id, fn: 'clear' })}><CheckCircle2 size={13} /></button>}
-                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" title="Endosar" onClick={() => action.mutate({ id: check.id, fn: 'endorse' })}><Send size={13} /></button>}
-                          {!['CLEARED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-danger btn-sm" title="Rechazar" onClick={() => action.mutate({ id: check.id, fn: 'bounce' })}><Ban size={13} /></button>}
-                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" title="Cancelar" onClick={() => action.mutate({ id: check.id, fn: 'cancel' })}><RefreshCw size={13} /></button>}
+                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Depositar cheque ${check.number}`} title="Depositar" onClick={() => openAction(check, 'deposit')}><Landmark size={13} /></button>}
+                          {check.status === 'DEPOSITED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Acreditar cheque ${check.number}`} title="Acreditar" onClick={() => openAction(check, 'clear')}><CheckCircle2 size={13} /></button>}
+                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Endosar cheque ${check.number}`} title="Endosar" onClick={() => openAction(check, 'endorse')}><Send size={13} /></button>}
+                          {!['CLEARED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-danger btn-sm" aria-label={`Rechazar cheque ${check.number}`} title="Rechazar" onClick={() => openAction(check, 'bounce')}><Ban size={13} /></button>}
+                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Cancelar cheque ${check.number}`} title="Cancelar" onClick={() => openAction(check, 'cancel')}><RefreshCw size={13} /></button>}
                         </div>
                       )}
                     </td>
@@ -192,6 +246,43 @@ export default function ChequesPage() {
                 <button className="btn btn-secondary" disabled={createMutation.isPending} onClick={() => setCreating(false)}>Cancelar</button>
                 <button className="btn btn-primary" disabled={createMutation.isPending || !form.number.trim() || !form.bank.trim() || !form.accountOwner.trim() || Number(String(form.amount).replace(',', '.')) <= 0} onClick={() => createMutation.mutate()}>
                   <Save size={14} /> {createMutation.isPending ? 'Guardando...' : 'Guardar cheque'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingAction && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="check-action-title">
+          <div className="modal-box" style={{ maxWidth: 520 }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 id="check-action-title" style={{ fontSize: 15, fontWeight: 600 }}>{actionTitle[pendingAction.fn]}</h3>
+                <small className="muted">{pendingAction.check.bank} · {pendingAction.check.number} · {ARS.format(Number(pendingAction.check.amount || 0))}</small>
+              </div>
+              <button className="btn btn-icon btn-secondary" disabled={action.isPending} onClick={closeAction} aria-label="Cerrar acción de cheque"><X size={14} /></button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'grid', gap: 12 }}>
+              {pendingAction.fn === 'endorse' && (
+                <label>
+                  <span className="fc-label">Destinatario *</span>
+                  <input className="fc-input" autoFocus value={actionForm.endorsedTo} onChange={(event) => setActionForm((current) => ({ ...current, endorsedTo: event.target.value }))} />
+                </label>
+              )}
+              {pendingAction.fn === 'bounce' && (
+                <label>
+                  <span className="fc-label">Motivo *</span>
+                  <textarea className="fc-input" autoFocus rows={3} value={actionForm.reason} onChange={(event) => setActionForm((current) => ({ ...current, reason: event.target.value }))} />
+                </label>
+              )}
+              {pendingAction.fn === 'deposit' && <p className="page-subtitle">El cheque pasará a estado depositado y quedará listo para acreditarlo cuando impacte en banco.</p>}
+              {pendingAction.fn === 'clear' && <p className="page-subtitle">El cheque se marcará como acreditado y saldrá del pendiente de cartera.</p>}
+              {pendingAction.fn === 'cancel' && <p className="page-subtitle">Usá esta acción para anular cheques cargados por error antes de acreditarlos o rechazarlos.</p>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--fc-border)', paddingTop: 14 }}>
+                <button className="btn btn-secondary" disabled={action.isPending} onClick={closeAction}>Cerrar</button>
+                <button className={pendingAction.fn === 'bounce' || pendingAction.fn === 'cancel' ? 'btn btn-danger' : 'btn btn-primary'} disabled={actionDisabled} onClick={submitAction}>
+                  {action.isPending ? 'Guardando...' : actionConfirm[pendingAction.fn]}
                 </button>
               </div>
             </div>

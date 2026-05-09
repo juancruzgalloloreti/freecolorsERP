@@ -1,0 +1,662 @@
+[
+  {
+    "text": "(123) Consulta cartera de valores",
+    "control_type": "Window",
+    "auto_id": "frmAdmConsValores",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      221,
+      163,
+      1219,
+      697
+    ]
+  },
+  {
+    "text": "Incluir Cheques Electronicos (99)",
+    "control_type": "CheckBox",
+    "auto_id": "cbIncluir99",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      807,
+      232,
+      988,
+      249
+    ]
+  },
+  {
+    "text": "Seleccionar Cajas",
+    "control_type": "CheckBox",
+    "auto_id": "chkCajas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      807,
+      203,
+      918,
+      220
+    ]
+  },
+  {
+    "text": "Excel",
+    "control_type": "Button",
+    "auto_id": "cmdExcel",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1131,
+      266,
+      1201,
+      292
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox3",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      613,
+      257,
+      935,
+      320
+    ]
+  },
+  {
+    "text": "Contabilización de la entrada",
+    "control_type": "RadioButton",
+    "auto_id": "rbcontabilizacion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      618,
+      271,
+      779,
+      288
+    ]
+  },
+  {
+    "text": "Fecha de pago de valor",
+    "control_type": "RadioButton",
+    "auto_id": "rbFechadePago",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      618,
+      294,
+      756,
+      311
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaDesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      759,
+      294,
+      839,
+      314
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFechaHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      845,
+      294,
+      925,
+      314
+    ]
+  },
+  {
+    "text": "Amplia Cheque",
+    "control_type": "Button",
+    "auto_id": "cmdAmpliaImputacion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      945,
+      294,
+      1061,
+      320
+    ]
+  },
+  {
+    "text": "Ampliar Comprobante",
+    "control_type": "Button",
+    "auto_id": "cmdAmpliarComprobante",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1067,
+      294,
+      1202,
+      320
+    ]
+  },
+  {
+    "text": "0.00",
+    "control_type": "Text",
+    "auto_id": "lTotal",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      301,
+      327,
+      329,
+      340
+    ]
+  },
+  {
+    "text": "TOTAL:",
+    "control_type": "Text",
+    "auto_id": "Label4",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      250,
+      327,
+      295,
+      340
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "Lvwcartera",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      348,
+      1205,
+      678
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      243,
+      350,
+      1203,
+      374
+    ]
+  },
+  {
+    "text": "F. Cont.",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      243,
+      350,
+      318,
+      374
+    ]
+  },
+  {
+    "text": "F. Pago",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      318,
+      350,
+      392,
+      374
+    ]
+  },
+  {
+    "text": "Razón social",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      392,
+      350,
+      535,
+      374
+    ]
+  },
+  {
+    "text": "Número",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      535,
+      350,
+      648,
+      374
+    ]
+  },
+  {
+    "text": "Importe",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      648,
+      350,
+      741,
+      374
+    ]
+  },
+  {
+    "text": "Acumulado",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 14",
+    "class": "",
+    "rect": [
+      741,
+      350,
+      862,
+      374
+    ]
+  },
+  {
+    "text": "Titular",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      862,
+      350,
+      988,
+      374
+    ]
+  },
+  {
+    "text": "Banco",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 6",
+    "class": "",
+    "rect": [
+      988,
+      350,
+      1074,
+      374
+    ]
+  },
+  {
+    "text": "Nº interno",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 7",
+    "class": "",
+    "rect": [
+      1074,
+      350,
+      1162,
+      374
+    ]
+  },
+  {
+    "text": "Cartera",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 8",
+    "class": "",
+    "rect": [
+      1162,
+      350,
+      1243,
+      374
+    ]
+  },
+  {
+    "text": "No a la orden",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 9",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Titular 1",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 10",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Titular 2",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 11",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Titular 3",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 12",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "F.Aplicación",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 13",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Nombre Valor",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 15",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "Button1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1038,
+      266,
+      1125,
+      292
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      613,
+      196,
+      793,
+      256
+    ]
+  },
+  {
+    "text": "Todos",
+    "control_type": "RadioButton",
+    "auto_id": "rbTodos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      619,
+      232,
+      674,
+      249
+    ]
+  },
+  {
+    "text": "Sólo en cartera",
+    "control_type": "RadioButton",
+    "auto_id": "rbSolocartera",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      619,
+      210,
+      716,
+      227
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      945,
+      266,
+      1032,
+      292
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      196,
+      607,
+      320
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "Text",
+    "auto_id": "LnkEmpresas",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      542,
+      216,
+      595,
+      229
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "Hyperlink",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      542,
+      216,
+      588,
+      229
+    ]
+  },
+  {
+    "text": "Rango de importes",
+    "control_type": "CheckBox",
+    "auto_id": "rbRangoImportes",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      256,
+      262,
+      371,
+      279
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "TxtRazonSocial",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      371,
+      213,
+      537,
+      233
+    ]
+  },
+  {
+    "text": "Un nro de Cheque",
+    "control_type": "CheckBox",
+    "auto_id": "rbNroValor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      256,
+      240,
+      369,
+      257
+    ]
+  },
+  {
+    "text": "Razón social:",
+    "control_type": "Text",
+    "auto_id": "Label5",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      272,
+      216,
+      343,
+      229
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "ComboBox",
+    "auto_id": "cboBancos",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      371,
+      286,
+      577,
+      307
+    ]
+  },
+  {
+    "text": "Empresas",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      374,
+      289,
+      557,
+      304
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      561,
+      287,
+      576,
+      306
+    ]
+  },
+  {
+    "text": "Un banco",
+    "control_type": "CheckBox",
+    "auto_id": "chkBanco",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      256,
+      286,
+      329,
+      303
+    ]
+  },
+  {
+    "text": "Razón social:",
+    "control_type": "Edit",
+    "auto_id": "txtImporteHasta",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      457,
+      263,
+      537,
+      283
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtImporteDesde",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      371,
+      263,
+      451,
+      283
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtNroValor",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      371,
+      239,
+      451,
+      259
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      229,
+      171,
+      251,
+      193
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      229,
+      171,
+      251,
+      193
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1072,
+      164,
+      1119,
+      194
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1119,
+      164,
+      1165,
+      194
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1165,
+      164,
+      1212,
+      194
+    ]
+  }
+]

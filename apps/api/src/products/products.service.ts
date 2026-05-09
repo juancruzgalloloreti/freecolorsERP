@@ -101,11 +101,12 @@ export class ProductsService {
       }),
       this.prisma.priceList.findMany({
         where: { tenantId, isActive: true },
-        orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+        orderBy: { name: 'asc' },
         select: { id: true, name: true, isDefault: true },
       }),
     ]);
-    const defaultList = priceLists.find((list) => list.isDefault) || priceLists[0];
+    const orderedPriceLists = this.sortPriceLists(priceLists);
+    const defaultList = orderedPriceLists.find((list) => list.isDefault) || orderedPriceLists[0];
     const priceListId = query.priceListId || defaultList?.id;
     const coefficients = await this.activePriceCoefficients(tenantId, productIds, products.map((product) => product.categoryId).filter((id): id is string => Boolean(id)));
     const stockMap = new Map<string, number>();
@@ -117,13 +118,23 @@ export class ProductsService {
     });
 
     return products.map((product) => {
-      const formula = this.formulaPriceForProduct(product, priceLists, priceListId);
+      const formula = this.formulaPriceForProduct(product, orderedPriceLists, priceListId);
       const basePrice = formula.price;
       const coefficient = this.bestCoefficientForProduct(coefficients, product.id, product.categoryId);
       const price = this.roundMoney(basePrice * coefficient.multiplier);
       const appliedNames = [formula.name, coefficient.name].filter(Boolean);
       const stockBySelectedDeposit = query.depositId ? stockMap.get(`${product.id}:${query.depositId}`) ?? 0 : undefined;
       const stockTotal = totalStockMap.get(product.id) ?? 0;
+      const pricesByList = Object.fromEntries(
+        orderedPriceLists
+          .map((list) => {
+            const code = this.priceListCode(list.name);
+            if (!code) return null;
+            const listFormula = this.formulaPriceForProduct(product, orderedPriceLists, list.id);
+            return [code, this.roundMoney(listFormula.price * coefficient.multiplier)];
+          })
+          .filter((entry): entry is [string, number] => Boolean(entry)),
+      );
       return {
         id: product.id,
         code: product.code,
@@ -144,6 +155,7 @@ export class ProductsService {
         brandName: product.brand?.name ?? null,
         categoryName: product.category?.name ?? null,
         price,
+        pricesByList,
         basePrice,
         appliedCoefficient: this.roundMoney(formula.multiplier * coefficient.multiplier),
         appliedCoefficientName: appliedNames.join(' + '),
@@ -266,7 +278,7 @@ export class ProductsService {
         include: { brand: true, category: true, priceListItems: true },
         orderBy: { name: 'asc' },
       }),
-      this.prisma.priceList.findMany({ where: { tenantId, isActive: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] }),
+      this.prisma.priceList.findMany({ where: { tenantId, isActive: true }, orderBy: { name: 'asc' } }),
       this.prisma.stockMovement.groupBy({
         by: ['productId'],
         where: { tenantId },
@@ -304,8 +316,9 @@ export class ProductsService {
       'Estanteria',
       'Clasificaciones',
     ];
-    const defaultList = priceLists[0];
-    const fourthList = priceLists[3];
+    const orderedPriceLists = this.sortPriceLists(priceLists);
+    const defaultList = this.listByCode(orderedPriceLists, 'LP1') || orderedPriceLists[0];
+    const fourthList = this.listByCode(orderedPriceLists, 'LP4') || orderedPriceLists[3];
     const lines = [headers.map((h) => this.csvCell(h)).join(';')];
 
     products.forEach((product) => {
@@ -358,7 +371,7 @@ export class ProductsService {
     try {
       await this.prisma.$transaction(async (tx) => {
         await this.ensureAguilaPriceLists(tx, tenantId);
-        const priceLists = await tx.priceList.findMany({ where: { tenantId, isActive: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }] });
+        const priceLists = this.sortPriceLists(await tx.priceList.findMany({ where: { tenantId, isActive: true }, orderBy: { name: 'asc' } }));
         const allowedPriceListIds = new Set(priceLists.map((list) => list.id));
         const defaultDeposit = await tx.deposit.findFirst({
           where: { tenantId, isActive: true },
@@ -774,6 +787,16 @@ export class ProductsService {
       return ['CR', 'cr', 'Costo Reposición', 'Costo Reposicion', 'Costo reposicion', 'Costo de reposición', 'Costo de reposicion', 'Costo Rep.', 'Costo Rep', 'H'];
     }
     return ['CU', 'cu', 'Costo Ultima Compra', 'Costo última compra', 'Costo Ult.Cp.', 'Costo Ult Cp', 'Ultima Compra', 'Última Compra', 'U', 'J'];
+  }
+
+  private sortPriceLists<T extends { name: string }>(priceLists: T[]): T[] {
+    const order = ['LP1', 'LP2', 'LP3', 'LP4', 'LP5', 'CR', 'CU'];
+    return [...priceLists].sort((a, b) => {
+      const ai = order.indexOf(this.priceListCode(a.name) || '');
+      const bi = order.indexOf(this.priceListCode(b.name) || '');
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.name.localeCompare(b.name, 'es');
+    });
   }
 
   private formulaPriceForProduct(product: ProductForFormula, priceLists: PriceListForFormula[], priceListId?: string | null): { price: number; multiplier: number; name: string } {

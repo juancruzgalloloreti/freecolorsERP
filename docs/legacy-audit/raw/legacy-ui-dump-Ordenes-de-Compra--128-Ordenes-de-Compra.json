@@ -1,0 +1,758 @@
+[
+  {
+    "text": "(128) Ordenes de Compra",
+    "control_type": "Window",
+    "auto_id": "frmOCEncabezados",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      -8,
+      -8,
+      1448,
+      868
+    ]
+  },
+  {
+    "text": "GroupBox5",
+    "control_type": "Group",
+    "auto_id": "GroupBox5",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      1116,
+      29,
+      1278,
+      130
+    ]
+  },
+  {
+    "text": "Corrige OCp/Sin/Rm",
+    "control_type": "Button",
+    "auto_id": "cmdBuscaSinMov",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1125,
+      71,
+      1272,
+      98
+    ]
+  },
+  {
+    "text": "Recalcula Estados",
+    "control_type": "Button",
+    "auto_id": "cmdRecalculaEstados",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1125,
+      42,
+      1272,
+      69
+    ]
+  },
+  {
+    "text": "Verificar Recepción",
+    "control_type": "Group",
+    "auto_id": "GroupBox4",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      513,
+      26,
+      671,
+      85
+    ]
+  },
+  {
+    "text": "Todas",
+    "control_type": "RadioButton",
+    "auto_id": "rbRecTodas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      603,
+      61,
+      658,
+      78
+    ]
+  },
+  {
+    "text": "Pendientes",
+    "control_type": "RadioButton",
+    "auto_id": "rbRecNO",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      519,
+      61,
+      597,
+      78
+    ]
+  },
+  {
+    "text": "Recibidas / Verificadas",
+    "control_type": "RadioButton",
+    "auto_id": "rbRecSI",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      519,
+      42,
+      654,
+      59
+    ]
+  },
+  {
+    "text": "Autorización",
+    "control_type": "Group",
+    "auto_id": "GroupBox2",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      137,
+      26,
+      393,
+      88
+    ]
+  },
+  {
+    "text": "Anuladas",
+    "control_type": "RadioButton",
+    "auto_id": "rbAnuladas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      229,
+      65,
+      298,
+      82
+    ]
+  },
+  {
+    "text": "Recibidas",
+    "control_type": "RadioButton",
+    "auto_id": "rbRecibidas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      143,
+      65,
+      215,
+      82
+    ]
+  },
+  {
+    "text": "Todas",
+    "control_type": "RadioButton",
+    "auto_id": "rbAutTodas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      315,
+      65,
+      370,
+      82
+    ]
+  },
+  {
+    "text": "Pendientes",
+    "control_type": "RadioButton",
+    "auto_id": "rbAutNO",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      229,
+      42,
+      307,
+      59
+    ]
+  },
+  {
+    "text": "Autorizadas",
+    "control_type": "RadioButton",
+    "auto_id": "rbAutSi",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      143,
+      42,
+      223,
+      59
+    ]
+  },
+  {
+    "text": "Usuarios",
+    "control_type": "Button",
+    "auto_id": "cmdFiltrarXUsuario",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      677,
+      57,
+      773,
+      80
+    ]
+  },
+  {
+    "text": "Nombre:",
+    "control_type": "Text",
+    "auto_id": "lUnProveedor",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      813,
+      98,
+      1084,
+      116
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdBuscarProveedor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      779,
+      91,
+      807,
+      114
+    ]
+  },
+  {
+    "text": "Un Proveedor",
+    "control_type": "CheckBox",
+    "auto_id": "cbUnProveedor",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      681,
+      91,
+      773,
+      108
+    ]
+  },
+  {
+    "text": "Número:",
+    "control_type": "Edit",
+    "auto_id": "tNumero",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      431,
+      49,
+      487,
+      69
+    ]
+  },
+  {
+    "text": "Número:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      428,
+      33,
+      475,
+      46
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Group",
+    "auto_id": "GroupBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      2,
+      130,
+      1439,
+      848
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "tstHerramientas",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      5,
+      146,
+      1436,
+      173
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      7,
+      146,
+      12,
+      173
+    ]
+  },
+  {
+    "text": "Nueva",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      14,
+      147,
+      79,
+      171
+    ]
+  },
+  {
+    "text": "Modificar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      79,
+      147,
+      161,
+      171
+    ]
+  },
+  {
+    "text": "Anular",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      161,
+      147,
+      227,
+      171
+    ]
+  },
+  {
+    "text": "Consultar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      227,
+      147,
+      309,
+      171
+    ]
+  },
+  {
+    "text": "Autorizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      315,
+      147,
+      394,
+      171
+    ]
+  },
+  {
+    "text": "Observaciones",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      394,
+      147,
+      502,
+      171
+    ]
+  },
+  {
+    "text": "Excel",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      502,
+      147,
+      560,
+      171
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      560,
+      147,
+      649,
+      171
+    ]
+  },
+  {
+    "text": "Depurar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      649,
+      147,
+      702,
+      171
+    ]
+  },
+  {
+    "text": "Cancelar Pendiente",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      702,
+      147,
+      835,
+      171
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwOCEnc",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      12,
+      174,
+      1433,
+      835
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      14,
+      176,
+      1431,
+      200
+    ]
+  },
+  {
+    "text": "Número",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      14,
+      176,
+      75,
+      200
+    ]
+  },
+  {
+    "text": "Revision",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      75,
+      176,
+      152,
+      200
+    ]
+  },
+  {
+    "text": "Fecha",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      152,
+      176,
+      222,
+      200
+    ]
+  },
+  {
+    "text": "Estado",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      222,
+      176,
+      328,
+      200
+    ]
+  },
+  {
+    "text": "Proveedor",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 4",
+    "class": "",
+    "rect": [
+      328,
+      176,
+      433,
+      200
+    ]
+  },
+  {
+    "text": "Descripción",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 5",
+    "class": "",
+    "rect": [
+      433,
+      176,
+      795,
+      200
+    ]
+  },
+  {
+    "text": "Unidad de Negocios",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 6",
+    "class": "",
+    "rect": [
+      795,
+      176,
+      848,
+      200
+    ]
+  },
+  {
+    "text": "Mda",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 7",
+    "class": "",
+    "rect": [
+      848,
+      176,
+      891,
+      200
+    ]
+  },
+  {
+    "text": "Total",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 8",
+    "class": "",
+    "rect": [
+      891,
+      176,
+      971,
+      200
+    ]
+  },
+  {
+    "text": "Pend.Fact.",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 9",
+    "class": "",
+    "rect": [
+      971,
+      176,
+      1049,
+      200
+    ]
+  },
+  {
+    "text": "Pend.Recibir",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 10",
+    "class": "",
+    "rect": [
+      1049,
+      176,
+      1134,
+      200
+    ]
+  },
+  {
+    "text": "Genero",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 11",
+    "class": "",
+    "rect": [
+      1134,
+      176,
+      1194,
+      200
+    ]
+  },
+  {
+    "text": "Autorizo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 12",
+    "class": "",
+    "rect": [
+      1194,
+      176,
+      1254,
+      200
+    ]
+  },
+  {
+    "text": "Numero OT",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 13",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cod Gasto",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 14",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Descripción Gasto",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 15",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Unid.De Neg.",
+    "control_type": "Button",
+    "auto_id": "cmdVerUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      677,
+      26,
+      773,
+      49
+    ]
+  },
+  {
+    "text": "Buscar",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      513,
+      91,
+      587,
+      114
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "gEmpresa",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      785,
+      26,
+      1110,
+      89
+    ]
+  },
+  {
+    "text": "Ninguno",
+    "control_type": "RadioButton",
+    "auto_id": "rbNinguno",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      999,
+      33,
+      1064,
+      50
+    ]
+  },
+  {
+    "text": "Una Cta.Contable",
+    "control_type": "RadioButton",
+    "auto_id": "rbCuenta",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      870,
+      32,
+      979,
+      49
+    ]
+  },
+  {
+    "text": "Una Obra",
+    "control_type": "RadioButton",
+    "auto_id": "rbObra",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      793,
+      33,
+      864,
+      50
+    ]
+  },
+  {
+    "text": "Rango de Fechas",
+    "control_type": "CheckBox",
+    "auto_id": "cbRangoFechas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      12,
+      35,
+      123,
+      52
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      22,
+      22
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1299,
+      8,
+      1346,
+      22
+    ]
+  },
+  {
+    "text": "Restaurar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1346,
+      8,
+      1392,
+      22
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1392,
+      8,
+      1448,
+      22
+    ]
+  }
+]

@@ -1,0 +1,506 @@
+[
+  {
+    "text": "(79) Resúmen por Cta.Cte.",
+    "control_type": "Window",
+    "auto_id": "frmAdmResumenPorCC",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      227,
+      191,
+      1213,
+      669
+    ]
+  },
+  {
+    "text": "Mostrar Solo las Cuentas con Saldo",
+    "control_type": "CheckBox",
+    "auto_id": "cbSoloConSaldo",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      887,
+      256,
+      1081,
+      273
+    ]
+  },
+  {
+    "text": "Migracion",
+    "control_type": "Button",
+    "auto_id": "cmdMigracion",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1113,
+      234,
+      1193,
+      257
+    ]
+  },
+  {
+    "text": "Imprimir",
+    "control_type": "Button",
+    "auto_id": "cmdImprimir",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      651,
+      330,
+      753,
+      353
+    ]
+  },
+  {
+    "text": "Seleccionar cuales",
+    "control_type": "Button",
+    "auto_id": "cmdSeleccionarDefCC",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      659,
+      224,
+      787,
+      247
+    ]
+  },
+  {
+    "text": "Varios Grupos de Cuenta Corriente por Empresa",
+    "control_type": "RadioButton",
+    "auto_id": "rbVariosDefCC",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      403,
+      227,
+      653,
+      244
+    ]
+  },
+  {
+    "text": "0.00",
+    "control_type": "Text",
+    "auto_id": "lTotal",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1117,
+      639,
+      1145,
+      652
+    ]
+  },
+  {
+    "text": "Total:",
+    "control_type": "Text",
+    "auto_id": "Label1",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      1077,
+      639,
+      1111,
+      652
+    ]
+  },
+  {
+    "text": "Buscar Resumen",
+    "control_type": "Button",
+    "auto_id": "cmdBuscar",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      424,
+      330,
+      548,
+      353
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwCCUna",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      247,
+      357,
+      1198,
+      620
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      249,
+      359,
+      1196,
+      383
+    ]
+  },
+  {
+    "text": "Código",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      249,
+      359,
+      328,
+      383
+    ]
+  },
+  {
+    "text": "Nombre",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      328,
+      359,
+      583,
+      383
+    ]
+  },
+  {
+    "text": "Saldo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      583,
+      359,
+      659,
+      383
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwCuentaContableTodas",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      247,
+      357,
+      1198,
+      620
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      249,
+      359,
+      1196,
+      383
+    ]
+  },
+  {
+    "text": "Código",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      249,
+      359,
+      328,
+      383
+    ]
+  },
+  {
+    "text": "Nombre",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      328,
+      359,
+      540,
+      383
+    ]
+  },
+  {
+    "text": "Saldo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      540,
+      359,
+      616,
+      383
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "List",
+    "auto_id": "lvwDefCtaCte",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      247,
+      357,
+      1198,
+      620
+    ]
+  },
+  {
+    "text": "Control de encabezado",
+    "control_type": "Header",
+    "auto_id": "Header",
+    "class": "SysHeader32",
+    "rect": [
+      249,
+      359,
+      1196,
+      383
+    ]
+  },
+  {
+    "text": "Código",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 0",
+    "class": "",
+    "rect": [
+      249,
+      359,
+      328,
+      383
+    ]
+  },
+  {
+    "text": "Nombre",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 1",
+    "class": "",
+    "rect": [
+      328,
+      359,
+      540,
+      383
+    ]
+  },
+  {
+    "text": "Saldo",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 2",
+    "class": "",
+    "rect": [
+      540,
+      359,
+      616,
+      383
+    ]
+  },
+  {
+    "text": "CUIT",
+    "control_type": "HeaderItem",
+    "auto_id": "HeaderItem 3",
+    "class": "",
+    "rect": [
+      616,
+      359,
+      714,
+      383
+    ]
+  },
+  {
+    "text": "Exportar a Excel",
+    "control_type": "Button",
+    "auto_id": "cmdExportarAExcel",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      759,
+      330,
+      874,
+      353
+    ]
+  },
+  {
+    "text": "Saldos por cuenta contable (Una Definicion de CC)",
+    "control_type": "RadioButton",
+    "auto_id": "rbCuentaContableUna",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      403,
+      304,
+      669,
+      321
+    ]
+  },
+  {
+    "text": "Saldos por cuenta contable (Todas las cuentas)",
+    "control_type": "RadioButton",
+    "auto_id": "rbCuentaContableTodas",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      403,
+      281,
+      654,
+      298
+    ]
+  },
+  {
+    "text": "Saldos por Definicion de Cta. Cte.",
+    "control_type": "RadioButton",
+    "auto_id": "rbDefCtaCte",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      403,
+      255,
+      587,
+      272
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtFecha",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      320,
+      228,
+      389,
+      248
+    ]
+  },
+  {
+    "text": "Saldos al:",
+    "control_type": "ComboBox",
+    "auto_id": "cboCC",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      687,
+      303,
+      861,
+      324
+    ]
+  },
+  {
+    "text": "Saldos al:",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      690,
+      306,
+      841,
+      321
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      845,
+      304,
+      860,
+      323
+    ]
+  },
+  {
+    "text": "Clientes",
+    "control_type": "ComboBox",
+    "auto_id": "cboDefCtaCte",
+    "class": "WindowsForms10.COMBOBOX.app.0.141b42a_r8_ad1",
+    "rect": [
+      605,
+      254,
+      861,
+      275
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "1001",
+    "class": "Edit",
+    "rect": [
+      608,
+      257,
+      841,
+      272
+    ]
+  },
+  {
+    "text": "Open",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      845,
+      255,
+      860,
+      274
+    ]
+  },
+  {
+    "text": "Saldos al:",
+    "control_type": "Text",
+    "auto_id": "Label2",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      247,
+      231,
+      300,
+      244
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      235,
+      199,
+      257,
+      221
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      235,
+      199,
+      257,
+      221
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1066,
+      192,
+      1113,
+      222
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1113,
+      192,
+      1159,
+      222
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1159,
+      192,
+      1206,
+      222
+    ]
+  }
+]

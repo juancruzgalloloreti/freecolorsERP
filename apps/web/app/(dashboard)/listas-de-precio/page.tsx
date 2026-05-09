@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
 import { Calculator, Play, Plus, Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { CORE_PRICE_LIST_CODES, isAutomaticPriceList, isCorePriceList, priceListCode } from '@/lib/price-list-rules'
 
 interface PriceList {
   id: string
@@ -76,8 +77,6 @@ const DEFAULT_FORMULAS: PriceFormula[] = [
   },
 ]
 
-const REQUIRED_LIST_LABELS = ['LP1', 'LP2', 'LP3', 'LP4', 'LP5', 'CR', 'CU']
-
 function parseNumber(value: string, fallback: number) {
   const parsed = Number(String(value || '').replace(',', '.'))
   return Number.isFinite(parsed) ? parsed : fallback
@@ -127,6 +126,8 @@ export default function ListasDePrecioPage() {
     () => Array.isArray(rawLists) ? rawLists : (rawLists as { data?: PriceList[] } | undefined)?.data || [],
     [rawLists]
   )
+  const coreLists = useMemo(() => lists.filter(isCorePriceList), [lists])
+  const optionalLists = useMemo(() => lists.filter((list) => !isCorePriceList(list)), [lists])
   const coefficients: PriceCoefficient[] = useMemo(
     () => Array.isArray(rawCoefficients) ? rawCoefficients : (rawCoefficients as { data?: PriceCoefficient[] } | undefined)?.data || [],
     [rawCoefficients]
@@ -209,14 +210,14 @@ export default function ListasDePrecioPage() {
     onError: (error) => setMessage(apiMessage(error, 'No se pudo eliminar el coeficiente')),
   })
 
-  const defaultList = lists.find((list) => list.isDefault) || lists[0]
-  const activeCount = lists.filter((list) => list.isActive !== false).length
-  const formulaBackedCount = lists.filter((list) => priceListCode(list.name)).length
+  const defaultList = coreLists.find((list) => list.isDefault) || coreLists[0]
+  const activeCount = coreLists.filter((list) => list.isActive !== false).length
+  const formulaBackedCount = coreLists.filter((list) => isAutomaticPriceList(list.name)).length
 
   const hydratedFormulas = useMemo(() => {
-    if (lists.length === 0) return formulas
-    const findByPrefix = (prefix: string) => lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
-      || lists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
+    if (coreLists.length === 0) return formulas
+    const findByPrefix = (prefix: string) => coreLists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
+      || coreLists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
     const lp1 = findByPrefix('LP1')
     const lp2 = findByPrefix('LP2')
     const lp3 = findByPrefix('LP3')
@@ -238,15 +239,10 @@ export default function ListasDePrecioPage() {
         targetListId: formula.targetListId || target.targetListId || '',
       }
     })
-  }, [formulas, lists])
+  }, [formulas, coreLists])
 
   function listName(id: string) {
-    return lists.find((list) => list.id === id)?.name || 'Seleccionar'
-  }
-
-  function priceListCode(name: string) {
-    const upper = name.toUpperCase()
-    return REQUIRED_LIST_LABELS.find((prefix) => upper.startsWith(`${prefix} `) || upper.startsWith(`${prefix} -`)) || null
+    return coreLists.find((list) => list.id === id)?.name || 'Seleccionar'
   }
 
   function priceListCalculation(name: string) {
@@ -262,7 +258,7 @@ export default function ListasDePrecioPage() {
   }
 
   function defaultTargetId() {
-    return lists.find((list) => list.id !== defaultList?.id)?.id || ''
+    return coreLists.find((list) => list.id !== defaultList?.id)?.id || ''
   }
 
   function createList() {
@@ -331,11 +327,7 @@ export default function ListasDePrecioPage() {
           <h1 className="page-title">Precios</h1>
           <p className="page-subtitle">Listas de venta, costos de referencia y reglas de actualización</p>
         </div>
-        {isOwner && (
-          <button className="btn btn-primary" onClick={() => { setCreating(true); setMessage(null) }}>
-            <Plus size={14} /> Nueva lista
-          </button>
-        )}
+        <span className="badge badge-green">Listas fijas</span>
       </div>
 
       {message && (
@@ -346,8 +338,9 @@ export default function ListasDePrecioPage() {
 
       <div className="price-summary">
         <div><span>Principal</span><strong>{defaultList?.name || 'Sin lista'}</strong></div>
-        <div><span>Activas</span><strong>{activeCount} de {lists.length}</strong></div>
-        <div><span>Reglas</span><strong>{formulaBackedCount} listas reconocidas</strong></div>
+        <div><span>Activas</span><strong>{activeCount} de {coreLists.length}</strong></div>
+        <div><span>Automáticas</span><strong>{formulaBackedCount} listas en vivo</strong></div>
+        <div><span>Flujo fijo</span><strong>{CORE_PRICE_LIST_CODES.join(', ')}</strong></div>
       </div>
 
       <div className="fc-card price-main-card">
@@ -360,7 +353,7 @@ export default function ListasDePrecioPage() {
 
         {isLoading ? (
           <div className="empty-state"><span className="spinner" /></div>
-        ) : lists.length === 0 ? (
+        ) : coreLists.length === 0 ? (
           <div className="empty-state"><p>No hay listas creadas.</p></div>
         ) : (
           <table className="fc-table">
@@ -369,21 +362,21 @@ export default function ListasDePrecioPage() {
                 <th>Lista</th>
                 <th>Uso</th>
                 <th>Cálculo</th>
-                <th style={{ textAlign: 'right' }}>Precios base</th>
+                <th style={{ textAlign: 'right' }}>Carga</th>
                 <th>Estado</th>
                 {isOwner && <th style={{ width: 54 }}></th>}
               </tr>
             </thead>
             <tbody>
-              {lists.map((list) => {
+              {coreLists.map((list) => {
                 const count = list.items?.filter((item) => Number(item.price || 0) > 0).length || 0
                 const isRequired = Boolean(priceListCode(list.name))
                 return (
                   <tr key={list.id}>
                     <td style={{ fontWeight: 700 }}>{list.name}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : 'Alternativa para cliente/documento'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : isAutomaticPriceList(list.name) ? 'Se calcula al buscar/facturar' : 'Alternativa para cliente/documento'}</td>
                     <td style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{priceListCalculation(list.name)}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{count}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{isAutomaticPriceList(list.name) ? 'Automática' : count}</td>
                     <td><span className={`badge ${list.isActive === false ? 'badge-red' : 'badge-green'}`}>{list.isActive === false ? 'Inactiva' : 'Activa'}</span></td>
                     {isOwner && (
                       <td>
@@ -402,11 +395,40 @@ export default function ListasDePrecioPage() {
         )}
       </div>
 
-      <div className="fc-card price-formulas-card">
+      {optionalLists.length > 0 && (
+        <details className="fc-card price-advanced" style={{ marginBottom: 12 }}>
+          <summary>
+            <span>Listas antiguas fuera del flujo fijo</span>
+            <small>{optionalLists.length}</small>
+          </summary>
+          <p className="price-advanced-help">Quedan separadas para limpiar datos heredados. No aparecen en Mostrador ni Productos.</p>
+          <div className="coefficient-list">
+            {optionalLists.map((list) => (
+              <div className="coefficient-row" key={list.id}>
+                <span className="badge">Heredada</span>
+                <strong>{list.name}</strong>
+                <span>Fuera de LP1-LP5/CR/CU</span>
+                <b>{list.isActive === false ? 'Inactiva' : 'Activa'}</b>
+                {isOwner && (
+                  <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingList(list)} title="Eliminar lista heredada">
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      <details className="fc-card price-formulas-card">
+        <summary>
+          <span>Recalcular precios guardados</span>
+          <small>Opcional</small>
+        </summary>
         <div className="price-section-head">
           <div>
-            <h2>Reglas de cálculo</h2>
-            <p>Usalas solo cuando quieras guardar/recalcular precios. El mostrador ya calcula las listas reconocidas.</p>
+            <h2>Reglas manuales</h2>
+            <p>Solo para grabar precios físicos en listas personalizadas. LP2-LP5 ya salen en vivo sin tocar este bloque.</p>
           </div>
           {isOwner && <button className="btn btn-secondary btn-sm" onClick={addFormula}><Plus size={13} /> Regla</button>}
         </div>
@@ -422,14 +444,14 @@ export default function ListasDePrecioPage() {
                 <span>Base</span>
                 <select className="fc-input" aria-label="Lista base" value={formula.baseListId || defaultList?.id || ''} onChange={(e) => updateFormula(formula.id, 'baseListId', e.target.value)} disabled={!isOwner}>
                   <option value="">Base</option>
-                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                  {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
                 </select>
               </label>
               <label className="formula-cell">
                 <span>Destino</span>
                 <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId()} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
                   <option value="">Destino</option>
-                  {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                  {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
                 </select>
               </label>
               <label className="formula-cell">
@@ -455,7 +477,7 @@ export default function ListasDePrecioPage() {
             </div>
           ))}
         </div>
-      </div>
+      </details>
 
       <details className="fc-card price-advanced">
         <summary>
@@ -572,7 +594,7 @@ export default function ListasDePrecioPage() {
       <style>{`
         .price-summary {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 8px;
           margin-bottom: 12px;
         }
@@ -687,6 +709,7 @@ export default function ListasDePrecioPage() {
         .formula-check { min-height: 38px; display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
         .formula-check input { width: 16px; height: 16px; accent-color: var(--accent-purple); }
         .formula-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .price-formulas-card > summary,
         .price-advanced summary {
           display: flex;
           align-items: center;
@@ -695,12 +718,15 @@ export default function ListasDePrecioPage() {
           list-style: none;
           font-weight: 750;
         }
+        .price-formulas-card > summary::-webkit-details-marker,
         .price-advanced summary::-webkit-details-marker { display: none; }
+        .price-formulas-card > summary small,
         .price-advanced summary small {
           color: var(--text-muted);
           font-size: 12px;
           font-weight: 650;
         }
+        .price-formulas-card[open] > summary,
         .price-advanced[open] summary {
           margin-bottom: 10px;
         }

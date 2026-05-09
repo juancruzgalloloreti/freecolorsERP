@@ -1,0 +1,1946 @@
+[
+  {
+    "text": "Registrar Llamada",
+    "control_type": "Button",
+    "auto_id": "cmdRegistroDeLlamados",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      1020,
+      176,
+      1149,
+      204
+    ]
+  },
+  {
+    "text": "Soporte",
+    "control_type": "Button",
+    "auto_id": "Button1",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      575,
+      178,
+      655,
+      206
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "Panel1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      584,
+      1204,
+      736
+    ]
+  },
+  {
+    "text": "Proyecto:STD",
+    "control_type": "Text",
+    "auto_id": "lProyecto",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      242,
+      678,
+      316,
+      691
+    ]
+  },
+  {
+    "text": "TICKETS Soporte",
+    "control_type": "Button",
+    "auto_id": "cmdTickets",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      933,
+      602,
+      1025,
+      724
+    ]
+  },
+  {
+    "text": "Versión: 4247",
+    "control_type": "Text",
+    "auto_id": "lVersion",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      650,
+      313,
+      663
+    ]
+  },
+  {
+    "text": "JUAMPY",
+    "control_type": "Text",
+    "auto_id": "lUsuario",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      619,
+      303,
+      635
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Pane",
+    "auto_id": "PictureBox1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      1042,
+      602,
+      1172,
+      719
+    ]
+  },
+  {
+    "text": "Pinturerias FreeColors",
+    "control_type": "Text",
+    "auto_id": "lEmpresa",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      241,
+      590,
+      407,
+      610
+    ]
+  },
+  {
+    "text": "Agenda",
+    "control_type": "Button",
+    "auto_id": "cmdAgenda",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      773,
+      176,
+      852,
+      204
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Button",
+    "auto_id": "cmdBorrarBuscador",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      543,
+      178,
+      571,
+      206
+    ]
+  },
+  {
+    "text": "Unid.De Neg.",
+    "control_type": "Button",
+    "auto_id": "cmdVerUN",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      671,
+      176,
+      767,
+      204
+    ]
+  },
+  {
+    "text": "Obtener CAE / Imp.Fiscal",
+    "control_type": "Button",
+    "auto_id": "cmdAvisos",
+    "class": "WindowsForms10.BUTTON.app.0.141b42a_r8_ad1",
+    "rect": [
+      858,
+      176,
+      1016,
+      204
+    ]
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "List",
+    "auto_id": "lvwAnclados",
+    "class": "WindowsForms10.SysListView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      673,
+      210,
+      1197,
+      579
+    ]
+  },
+  {
+    "text": "Carga de Operaciones",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      675,
+      212,
+      749,
+      277
+    ]
+  },
+  {
+    "text": "Consultar Productos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      750,
+      212,
+      824,
+      277
+    ]
+  },
+  {
+    "text": "Preparar Transferencia entre depósitos",
+    "control_type": "ListItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      825,
+      212,
+      899,
+      277
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Edit",
+    "auto_id": "txtBuscar",
+    "class": "WindowsForms10.EDIT.app.0.141b42a_r8_ad1",
+    "rect": [
+      315,
+      181,
+      537,
+      201
+    ]
+  },
+  {
+    "text": "Buscar (F3):",
+    "control_type": "Text",
+    "auto_id": "Label7",
+    "class": "WindowsForms10.STATIC.app.0.141b42a_r8_ad1",
+    "rect": [
+      246,
+      184,
+      310,
+      197
+    ]
+  },
+  {
+    "text": "",
+    "control_type": "Tree",
+    "auto_id": "tvwMenu",
+    "class": "WindowsForms10.SysTreeView32.app.0.141b42a_r8_ad1",
+    "rect": [
+      244,
+      242,
+      657,
+      579
+    ]
+  },
+  {
+    "text": "Vertical",
+    "control_type": "ScrollBar",
+    "auto_id": "NonClientVerticalScrollBar",
+    "class": "",
+    "rect": [
+      638,
+      244,
+      655,
+      577
+    ]
+  },
+  {
+    "text": "Línea arriba",
+    "control_type": "Button",
+    "auto_id": "UpButton",
+    "class": "",
+    "rect": [
+      638,
+      244,
+      655,
+      261
+    ]
+  },
+  {
+    "text": "Re Pág",
+    "control_type": "Button",
+    "auto_id": "UpPageButton",
+    "class": "",
+    "rect": [
+      638,
+      261,
+      655,
+      437
+    ]
+  },
+  {
+    "text": "Posición",
+    "control_type": "Thumb",
+    "auto_id": "ScrollbarThumb",
+    "class": "",
+    "rect": [
+      638,
+      437,
+      655,
+      486
+    ]
+  },
+  {
+    "text": "Av Pág",
+    "control_type": "Button",
+    "auto_id": "DownPageButton",
+    "class": "",
+    "rect": [
+      638,
+      486,
+      655,
+      560
+    ]
+  },
+  {
+    "text": "Línea abajo",
+    "control_type": "Button",
+    "auto_id": "DownButton",
+    "class": "",
+    "rect": [
+      638,
+      560,
+      655,
+      577
+    ]
+  },
+  {
+    "text": "Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Carga de Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "PreCarga de Factura de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Comprobantes Anulados",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Nota de Crédito por Bonificación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cierre y Apertura de Ejercicio",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Generar arvhivos PDF con Facturacion",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Autorizaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Devengamiento de Cuotas Pendientes",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Facturacion de Abonos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ajuste por Inflación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Nota de Credito por Descuentos Especiales",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Importar Asientos Contable desde Excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pre-Validar números de Serie",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Importar Google Sheets con Compras Contado",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Devolver / consumir Consignación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Actualizar Catálogo Web",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Importar Definición de Kits desde Excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Stock en Comodato",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Presupuesto de Productos en Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Imprimir Nota de Envío",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Días para Entrega Stock por Proveedor",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Preparar Transferencia entre depósitos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Mercadería en Tránsito",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Generar Archivo COT para informar",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Confirmar Transferencia en depósito en Tránsito",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Carga Rápida de Pedidos de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Materias Primas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Lista de Precios",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Actualizar Catálogo de Terceros",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Stock Comparativo a Partir de Lecturas Celular",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Reparaciones Rápidas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Porcentaje de Utilidad Sobre Costo Toma Excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Precio Especial Cliente Toma Excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Preparar Despachos (Entrega de Mercadería)",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Imprimir Etiqueta para Cajas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ubicaciones en Deposito",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Asignar Ubicación a Movimientos Pendientes",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Presupuesto y seguimiento de Productos específicos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Certificado QR",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Reparaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ordenes de Reparación",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Call Center",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Registro de Llamadas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Tabla de Resultados",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Definicion de Encuestas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Call Center",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consultas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Administración",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Un Cliente",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consultas Contables",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Mayor de una cuenta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Mayor rango de cuentas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Saldos por Cuenta Contable",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cuandros de Variacion Contable",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta errores de balanceo",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Libro Diario",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Balance Sumas y Saldos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen Contable por Definición de Comprobante",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Actividad por Sector",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Valores a Depositar a Una Fecha",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cupones de Tarjeta a Una Fecha",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Contabilidad de Valores",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Cuentas Corriente",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Una Cuenta Corriente",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resúmen por Cuentas Corriente",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Informe de Vencimientos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen de Saldos Para Reclamo",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Caja Diaria",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Cta.Cte. Pendiente a una fecha",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Cobranza por Vendedor",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Deuda en Cta.Cte.Agrupada por Antiguedad",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      244,
+      538,
+      260
+    ]
+  },
+  {
+    "text": "Consulta Valores a Depositar",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      260,
+      446,
+      276
+    ]
+  },
+  {
+    "text": "Consulta Cupones de Tarjeta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      276,
+      447,
+      292
+    ]
+  },
+  {
+    "text": "Consulta Cheques Propios Emitidos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      292,
+      476,
+      308
+    ]
+  },
+  {
+    "text": "Consulta Movimientos de Valores",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      308,
+      466,
+      324
+    ]
+  },
+  {
+    "text": "Consulta Resumen de Valores",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      324,
+      452,
+      340
+    ]
+  },
+  {
+    "text": "Conciliacion Bancaria",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      340,
+      412,
+      356
+    ]
+  },
+  {
+    "text": "Resumen de Compras (Proveedores)",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      356,
+      483,
+      372
+    ]
+  },
+  {
+    "text": "Consulta Comprobantes",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      372,
+      422,
+      388
+    ]
+  },
+  {
+    "text": "Consulta Operaciones",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      388,
+      414,
+      404
+    ]
+  },
+  {
+    "text": "Impuestos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      404,
+      358,
+      420
+    ]
+  },
+  {
+    "text": "Controla Numeración Comprobantes de Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      420,
+      550,
+      436
+    ]
+  },
+  {
+    "text": "Libro IVA Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      436,
+      408,
+      452
+    ]
+  },
+  {
+    "text": "Libro IVA Compras",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      452,
+      416,
+      468
+    ]
+  },
+  {
+    "text": "Exportar TXT ARBA y Ret.Gcias",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      468,
+      482,
+      484
+    ]
+  },
+  {
+    "text": "Exportar TXT CABA, Misiones y Tucumán",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      484,
+      526,
+      500
+    ]
+  },
+  {
+    "text": "TXT Retenciones IIBB Recibidas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      500,
+      486,
+      516
+    ]
+  },
+  {
+    "text": "Exportar TXT Despachos de Importacion",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      516,
+      522,
+      532
+    ]
+  },
+  {
+    "text": "Exportar SIFERE",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      532,
+      409,
+      548
+    ]
+  },
+  {
+    "text": "Resumen IVA Compras Y Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      325,
+      548,
+      484,
+      564
+    ]
+  },
+  {
+    "text": "Consulta Detalle de ventas c/cobranza",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      306,
+      564,
+      495,
+      577
+    ]
+  },
+  {
+    "text": "Consulta Mails Enviados",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Log del Sistema",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Detalle de Valores",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consultar Padrón",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen de Compras por Negocio o Proveedor",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Informe de Cobranza",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Ventas Resumen",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ventas Resumen por Producto y por Mes",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen X Clasif, detallando client.seleccionado",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ventas por Contabilidad",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Ventas de Stock",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consulta Detalle de Ventas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen de Ventas por Concepto Facturado",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen Ventas X Cliente Y X Concepto",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Resumen de ventas con objetivo mensual",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Consultas Definidas",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pedidos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pedidos de Compra",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pedidos de compra internos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Ordenes de Compra",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Confirmar Recepción",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Pedidos de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Importar Pedido de Venta desde excel",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Tomar pedidos Web",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Aprobar Pedidos de Venta",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Gestión de Colectas - Preparación de Pedidos",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "Administrar Pedidos Catalogo Web Aguila",
+    "control_type": "TreeItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "text": "ToolStrip1",
+    "control_type": "ToolBar",
+    "auto_id": "ToolStrip1",
+    "class": "WindowsForms10.Window.8.app.0.141b42a_r8_ad1",
+    "rect": [
+      236,
+      147,
+      1203,
+      174
+    ]
+  },
+  {
+    "text": "Control",
+    "control_type": "Thumb",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      238,
+      147,
+      243,
+      174
+    ]
+  },
+  {
+    "text": "Cambiar Clave Usuario",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      245,
+      148,
+      269,
+      172
+    ]
+  },
+  {
+    "text": "Email",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      269,
+      148,
+      341,
+      172
+    ]
+  },
+  {
+    "text": "Colores",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      341,
+      148,
+      412,
+      172
+    ]
+  },
+  {
+    "text": "Versiones Instaladas",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      412,
+      148,
+      547,
+      172
+    ]
+  },
+  {
+    "text": "Manual del sistema",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      547,
+      148,
+      680,
+      172
+    ]
+  },
+  {
+    "text": "Terminos y Condiciones",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      680,
+      148,
+      837,
+      172
+    ]
+  },
+  {
+    "text": "Ver Mensajes",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      837,
+      148,
+      936,
+      172
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuBar",
+    "auto_id": "MenuBar",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ]
+  },
+  {
+    "text": "Sistema",
+    "control_type": "MenuItem",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      236,
+      124,
+      258,
+      146
+    ]
+  },
+  {
+    "text": "Minimizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1064,
+      117,
+      1111,
+      147
+    ]
+  },
+  {
+    "text": "Maximizar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1111,
+      117,
+      1157,
+      147
+    ]
+  },
+  {
+    "text": "Cerrar",
+    "control_type": "Button",
+    "auto_id": "",
+    "class": "",
+    "rect": [
+      1157,
+      117,
+      1204,
+      147
+    ]
+  }
+]
