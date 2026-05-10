@@ -111,6 +111,7 @@ export function ConfirmDialog({
   return (
     <div className="entity-sheet-overlay">
       <div className="confirm-dialog" ref={dialogRef} role="alertdialog" aria-modal="true" tabIndex={-1}>
+        <button className="btn btn-icon btn-secondary confirm-dialog-close" type="button" aria-label="Cerrar dialogo" disabled={pending} onClick={onCancel}>×</button>
         <h2>{title}</h2>
         <p>{body}</p>
         <div className="action-bar">

@@ -33,12 +33,16 @@ Documentos guia:
 
 - El backend calcula totales; el frontend solo muestra o prepara datos de entrada.
 - Stock no puede quedar negativo salvo configuración explícita.
+- Presupuestos/borradores pueden superar stock con advertencia visible; facturas y remitos confirmados deben bloquearse si una línea supera stock disponible, salvo configuración explícita de stock negativo para OWNER.
 - Toda venta debe estar asociada a cliente operativo, medio de pago y comprobante.
 - Todo movimiento de stock debe tener motivo.
 - Toda operación crítica debe tener validación.
 - Caja, stock, ventas, comprobantes, pagos y permisos son módulos críticos.
 - Los errores deben mostrarse en español.
 - Las acciones destructivas requieren confirmación.
+- Los modales, sheets y diálogos operativos no se cierran por Escape ni por click afuera. Deben tener X superior visible; botones como Cancelar/Confirmar siguen siendo acciones explícitas.
+- Mostrador es la entrada única de venta/preparación: venta inmediata, presupuesto y borrador. Pedidos no debe duplicar carga de productos salvo que se redefina como seguimiento de pendientes.
+- Las listas de precio operativas son fijas: LP1, LP2, LP3, LP4, LP5, CR y CU. LP2-LP5 se regulan por fórmulas owner, se recalculan automáticamente al cambiar una fórmula válida y los precios guardados recalculados tienen prioridad sobre fórmulas por defecto.
 - Los cambios que afecten plata, stock o permisos requieren prueba funcional.
 - Las listas de precio operativas son fijas: LP1, LP2, LP3, LP4, LP5, CR y CU.
 

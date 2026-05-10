@@ -6,8 +6,7 @@ import { Package, FileText, Users, TrendingUp, AlertTriangle, ArrowRight } from 
 import Link from 'next/link'
 
 const QUICK_LINKS = [
-  { href: '/ventas', label: 'Abrir mostrador', desc: 'Vender, cobrar y emitir', color: '#7c3aed', dot: '#a78bfa' },
-  { href: '/pedidos', label: 'Pedidos', desc: 'Preparar y facturar después', color: '#14b8a6', dot: '#5eead4' },
+  { href: '/ventas', label: 'Abrir mostrador', desc: 'Vender, guardar borrador y emitir', color: '#7c3aed', dot: '#a78bfa' },
   { href: '/compras', label: 'Cargar compra', desc: 'Ordenes y recepciones', color: '#3b82f6', dot: '#60a5fa' },
   { href: '/productos', label: 'Productos', desc: 'Fichas, marcas y rubros', color: '#22c55e', dot: '#4ade80' },
   { href: '/stock', label: 'Existencias', desc: 'Saldos y movimientos', color: '#f59e0b', dot: '#fbbf24' },

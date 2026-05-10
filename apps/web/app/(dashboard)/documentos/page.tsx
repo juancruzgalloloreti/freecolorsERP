@@ -237,7 +237,7 @@ export default function DocumentosPage() {
 
       {error && <div className="counter-alert danger"><AlertTriangle size={15} /> {error}</div>}
 
-      <div className="documents-layout">
+      <div className={`documents-layout ${activeId ? 'has-detail' : ''}`}>
         <section className="history-panel">
           <div className="history-toolbar">
             <div className="search-wrap" style={{ marginBottom: 0, maxWidth: 'none', flex: '1 1 260px' }}>
@@ -323,8 +323,6 @@ export default function DocumentosPage() {
             </>
           )}
         </section>
-
-        {activeId && <button className="document-detail-backdrop" type="button" aria-label="Cerrar detalle" onClick={closeDetail} />}
 
         {activeId && <aside className="document-detail-panel" aria-label="Detalle de comprobante">
           <button className="btn btn-icon btn-secondary document-detail-close" type="button" aria-label="Cerrar detalle" onClick={closeDetail}>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
-import { Calculator, Play, Plus, Save, Trash2, X } from 'lucide-react'
+import { Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { CORE_PRICE_LIST_CODES, isAutomaticPriceList, isCorePriceList, priceListCode } from '@/lib/price-list-rules'
 
@@ -92,9 +92,7 @@ export default function ListasDePrecioPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const isOwner = user?.role === 'OWNER'
-  const [creating, setCreating] = useState(false)
   const [deletingList, setDeletingList] = useState<PriceList | null>(null)
-  const [form, setForm] = useState({ name: '', isDefault: false })
   const [coefficientForm, setCoefficientForm] = useState({ scope: 'CATEGORY', targetId: '', name: '', multiplier: '1.00', validFrom: '', validTo: '' })
   const [message, setMessage] = useState<string | null>(null)
   const [formulas, setFormulas] = useState<PriceFormula[]>(() => {
@@ -112,7 +110,7 @@ export default function ListasDePrecioPage() {
       return DEFAULT_FORMULAS
     }
   })
-  const [confirmingFormula, setConfirmingFormula] = useState<PriceFormula | null>(null)
+  const [formulaToAutoApply, setFormulaToAutoApply] = useState<string | null>(null)
 
   const { data: rawLists, isLoading } = useQuery({
     queryKey: ['price-lists'],
@@ -144,17 +142,6 @@ export default function ListasDePrecioPage() {
   useEffect(() => {
     window.localStorage.setItem(FORMULAS_KEY, JSON.stringify(formulas))
   }, [formulas])
-
-  const createMutation = useMutation({
-    mutationFn: priceListsApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['price-lists'] })
-      setCreating(false)
-      setForm({ name: '', isDefault: false })
-      setMessage('Lista creada. Ahora podés usarla como destino de una fórmula o cargar precios desde Productos.')
-    },
-    onError: (error) => setMessage(apiMessage(error, 'No se pudo crear la lista')),
-  })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => priceListsApi.remove(id),
@@ -211,6 +198,7 @@ export default function ListasDePrecioPage() {
   })
 
   const defaultList = coreLists.find((list) => list.isDefault) || coreLists[0]
+  const defaultTargetId = useMemo(() => coreLists.find((list) => list.id !== defaultList?.id)?.id || '', [coreLists, defaultList?.id])
   const activeCount = coreLists.filter((list) => list.isActive !== false).length
   const formulaBackedCount = coreLists.filter((list) => isAutomaticPriceList(list.name)).length
 
@@ -241,9 +229,26 @@ export default function ListasDePrecioPage() {
     })
   }, [formulas, coreLists])
 
-  function listName(id: string) {
-    return coreLists.find((list) => list.id === id)?.name || 'Seleccionar'
-  }
+  const fixedFormulas = hydratedFormulas.filter((formula) => formula.id.startsWith('legacy-'))
+
+  useEffect(() => {
+    if (!formulaToAutoApply || !isOwner) return
+    const formula = hydratedFormulas.find((item) => item.id === formulaToAutoApply)
+    if (!formula) return
+    const multiplier = Number(String(formula.multiplier || '').replace(',', '.'))
+    const rounding = Number(String(formula.rounding || '').replace(',', '.'))
+    const baseListId = formula.baseListId || defaultList?.id || ''
+    const targetListId = formula.targetListId || defaultTargetId
+    if (!baseListId || !targetListId || baseListId === targetListId) return
+    if (!Number.isFinite(multiplier) || multiplier <= 0) return
+    if (!Number.isFinite(rounding) || rounding < 0) return
+
+    const timer = window.setTimeout(() => {
+      recalculateMutation.mutate({ formula: { ...formula, baseListId, targetListId, onlyMissing: false } })
+      setFormulaToAutoApply(null)
+    }, 900)
+    return () => window.clearTimeout(timer)
+  }, [formulaToAutoApply, hydratedFormulas, isOwner, defaultList?.id, defaultTargetId, recalculateMutation])
 
   function priceListCalculation(name: string) {
     const code = priceListCode(name)
@@ -257,59 +262,12 @@ export default function ListasDePrecioPage() {
     return 'Precio propio opcional'
   }
 
-  function defaultTargetId() {
-    return coreLists.find((list) => list.id !== defaultList?.id)?.id || ''
-  }
-
-  function createList() {
-    if (!form.name.trim()) return
-    createMutation.mutate({ name: form.name.trim(), isDefault: form.isDefault, isActive: true })
-  }
-
   function updateFormula(id: string, key: keyof PriceFormula, value: string | boolean) {
     if (!isOwner) return
     setFormulas((current) => current.map((formula) => formula.id === id ? { ...formula, [key]: value } : formula))
-  }
-
-  function addFormula() {
-    if (!isOwner) return
-    setFormulas((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        name: `Regla ${current.length + 1}`,
-        baseListId: defaultList?.id || '',
-        targetListId: lists.find((list) => list.id !== defaultList?.id)?.id || '',
-        multiplier: '1.00',
-        rounding: '10',
-        onlyMissing: false,
-      },
-    ])
-  }
-
-  function removeFormula(id: string) {
-    if (!isOwner) return
-    setFormulas((current) => current.filter((formula) => formula.id !== id))
-  }
-
-  function applyFormula(formula: PriceFormula) {
-    const baseListId = formula.baseListId || defaultList?.id || ''
-    const targetListId = formula.targetListId || defaultTargetId()
-    if (!baseListId || !targetListId) {
-      setMessage('Elegí lista base y lista destino antes de aplicar la fórmula.')
-      return
+    if (['baseListId', 'targetListId', 'multiplier', 'rounding'].includes(key)) {
+      setFormulaToAutoApply(id)
     }
-    if (baseListId === targetListId) {
-      setMessage('La lista destino tiene que ser distinta de la lista base.')
-      return
-    }
-    setConfirmingFormula({ ...formula, baseListId, targetListId })
-  }
-
-  function confirmApplyFormula() {
-    if (!confirmingFormula) return
-    setConfirmingFormula(null)
-    recalculateMutation.mutate({ formula: confirmingFormula })
   }
 
   function saveCoefficient() {
@@ -325,7 +283,7 @@ export default function ListasDePrecioPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Precios</h1>
-          <p className="page-subtitle">Listas de venta, costos de referencia y reglas de actualización</p>
+          <p className="page-subtitle">Listas fijas, costos de referencia y formulas tipo Excel</p>
         </div>
         <span className="badge badge-green">Listas fijas</span>
       </div>
@@ -339,7 +297,7 @@ export default function ListasDePrecioPage() {
       <div className="price-summary">
         <div><span>Principal</span><strong>{defaultList?.name || 'Sin lista'}</strong></div>
         <div><span>Activas</span><strong>{activeCount} de {coreLists.length}</strong></div>
-        <div><span>Automáticas</span><strong>{formulaBackedCount} listas en vivo</strong></div>
+        <div><span>Fórmulas</span><strong>{formulaBackedCount} listas calculadas</strong></div>
         <div><span>Flujo fijo</span><strong>{CORE_PRICE_LIST_CODES.join(', ')}</strong></div>
       </div>
 
@@ -347,7 +305,7 @@ export default function ListasDePrecioPage() {
         <div className="price-section-head">
           <div>
             <h2>Listas</h2>
-            <p>Qué precio usa el mostrador y cómo se calcula cada lista.</p>
+            <p>Qué precio usa el mostrador y cómo se calcula cada lista fija.</p>
           </div>
         </div>
 
@@ -374,9 +332,9 @@ export default function ListasDePrecioPage() {
                 return (
                   <tr key={list.id}>
                     <td style={{ fontWeight: 700 }}>{list.name}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : isAutomaticPriceList(list.name) ? 'Se calcula al buscar/facturar' : 'Alternativa para cliente/documento'}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{list.isDefault ? 'Principal de mostrador' : isAutomaticPriceList(list.name) ? 'Formula fija regulada por owner' : 'Costo/base del flujo'}</td>
                     <td style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{priceListCalculation(list.name)}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{isAutomaticPriceList(list.name) ? 'Automática' : count}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{isAutomaticPriceList(list.name) ? count : count}</td>
                     <td><span className={`badge ${list.isActive === false ? 'badge-red' : 'badge-green'}`}>{list.isActive === false ? 'Inactiva' : 'Activa'}</span></td>
                     {isOwner && (
                       <td>
@@ -420,21 +378,20 @@ export default function ListasDePrecioPage() {
         </details>
       )}
 
-      <details className="fc-card price-formulas-card">
+      <details className="fc-card price-formulas-card" open>
         <summary>
-          <span>Recalcular precios guardados</span>
-          <small>Opcional</small>
+          <span>Fórmulas fijas de listas</span>
+          <small>Owner</small>
         </summary>
         <div className="price-section-head">
           <div>
-            <h2>Reglas manuales</h2>
-            <p>Solo para grabar precios físicos en listas personalizadas. LP2-LP5 ya salen en vivo sin tocar este bloque.</p>
+            <h2>Excel de precios</h2>
+            <p>El owner regula coeficiente y redondeo. Al cambiar una fórmula válida, se recalculan solos todos los productos de la lista destino.</p>
           </div>
-          {isOwner && <button className="btn btn-secondary btn-sm" onClick={addFormula}><Plus size={13} /> Regla</button>}
         </div>
 
         <div className="formula-list">
-          {hydratedFormulas.map((formula) => (
+          {fixedFormulas.map((formula) => (
             <div className="formula-row" key={formula.id}>
               <label className="formula-cell formula-title">
                 <span>Regla</span>
@@ -449,7 +406,7 @@ export default function ListasDePrecioPage() {
               </label>
               <label className="formula-cell">
                 <span>Destino</span>
-                <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId()} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
+                <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
                   <option value="">Destino</option>
                   {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
                 </select>
@@ -462,17 +419,8 @@ export default function ListasDePrecioPage() {
                 <span>Redondeo</span>
                 <input className="fc-input formula-number" aria-label="Redondeo" value={formula.rounding} onChange={(e) => updateFormula(formula.id, 'rounding', e.target.value)} readOnly={!isOwner} />
               </label>
-              <label className="formula-check">
-                <input type="checkbox" checked={formula.onlyMissing} onChange={(e) => updateFormula(formula.id, 'onlyMissing', e.target.checked)} disabled={!isOwner} />
-                <span>Solo faltantes</span>
-              </label>
               {isOwner && (
-                <div className="formula-actions">
-                  <button className="btn btn-secondary btn-sm" disabled={recalculateMutation.isPending} onClick={() => applyFormula(formula)} title={`Aplicar sobre ${listName(formula.targetListId || defaultTargetId())}`}>
-                    <Play size={13} /> Aplicar
-                  </button>
-                  <button className="btn btn-icon btn-secondary btn-sm" onClick={() => removeFormula(formula.id)} title="Eliminar regla"><Trash2 size={13} /></button>
-                </div>
+                <span className="formula-auto-state">{recalculateMutation.isPending && formulaToAutoApply === formula.id ? 'Recalculando...' : 'Auto'}</span>
               )}
             </div>
           ))}
@@ -521,36 +469,10 @@ export default function ListasDePrecioPage() {
         </div>
       </details>
 
-      {creating && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: 420 }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600 }}>Nueva lista de precio</h3>
-              <button className="btn btn-icon btn-secondary" disabled={createMutation.isPending} onClick={() => setCreating(false)}><X size={14} /></button>
-            </div>
-            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label className="fc-label">Nombre *</label>
-                <input className="fc-input" value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} placeholder="Ej: Obra, Mayorista, Contado" />
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm((current) => ({ ...current, isDefault: e.target.checked }))} style={{ width: 15, height: 15, accentColor: 'var(--accent-purple)' }} />
-                <span style={{ fontSize: 13 }}>Usar como lista principal</span>
-              </label>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--fc-border)', paddingTop: 14 }}>
-                <button className="btn btn-secondary" disabled={createMutation.isPending} onClick={() => setCreating(false)}>Cancelar</button>
-                <button className="btn btn-primary" disabled={!form.name.trim() || createMutation.isPending} onClick={createList}>
-                  <Save size={14} /> {createMutation.isPending ? 'Creando...' : 'Crear lista'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {deletingList && (
         <div className="modal-overlay">
           <div className="modal-box" style={{ maxWidth: 380 }}>
+            <button className="btn btn-icon btn-secondary modal-x-close" disabled={deleteMutation.isPending} onClick={() => setDeletingList(null)} aria-label="Cerrar"><X size={14} /></button>
             <div style={{ padding: '28px 24px' }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'grid', placeItems: 'center', marginBottom: 14 }}>
                 <Trash2 size={18} color="#f87171" />
@@ -561,29 +483,6 @@ export default function ListasDePrecioPage() {
                 <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingList(null)}>Cancelar</button>
                 <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingList.id)}>
                   {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmingFormula && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: 420 }}>
-            <div style={{ padding: '28px 24px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', display: 'grid', placeItems: 'center', marginBottom: 14 }}>
-                <Calculator size={18} color="#a78bfa" />
-              </div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>¿Aplicar fórmula?</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                Se van a recalcular los precios de <strong>{listName(confirmingFormula.targetListId)}</strong> basándose en <strong>{listName(confirmingFormula.baseListId)}</strong> con un multiplicador de <strong>x{confirmingFormula.multiplier}</strong>.
-                {confirmingFormula.onlyMissing && <span style={{ display: 'block', marginTop: 6 }}>Solo se actualizarán los productos que no tengan precio en la lista destino.</span>}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
-                <button className="btn btn-secondary" disabled={recalculateMutation.isPending} onClick={() => setConfirmingFormula(null)}>Cancelar</button>
-                <button className="btn btn-primary" disabled={recalculateMutation.isPending} onClick={confirmApplyFormula}>
-                  {recalculateMutation.isPending ? 'Aplicando...' : 'Aplicar fórmula'}
                 </button>
               </div>
             </div>
@@ -671,7 +570,7 @@ export default function ListasDePrecioPage() {
         .coefficient-row b { text-align: right; font-family: var(--font-mono); }
         .formula-row {
           display: grid;
-          grid-template-columns: minmax(210px, 1.15fr) minmax(180px, 1fr) minmax(180px, 1fr) 82px 92px 126px 130px;
+          grid-template-columns: minmax(210px, 1.15fr) minmax(180px, 1fr) minmax(180px, 1fr) 82px 92px 78px;
           gap: 8px;
           align-items: end;
           padding: 8px;
@@ -708,7 +607,19 @@ export default function ListasDePrecioPage() {
         .formula-check span { color: #aeb9cf; font-size: 12px; font-weight: 650; }
         .formula-check { min-height: 38px; display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
         .formula-check input { width: 16px; height: 16px; accent-color: var(--accent-purple); }
-        .formula-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .formula-auto-state {
+          min-height: 38px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(34,197,94,0.24);
+          border-radius: 8px;
+          color: #86efac;
+          background: rgba(34,197,94,0.08);
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
         .price-formulas-card > summary,
         .price-advanced summary {
           display: flex;
@@ -735,7 +646,6 @@ export default function ListasDePrecioPage() {
           .formula-row { grid-template-columns: 1fr 1fr; }
           .formula-title { grid-column: 1 / -1; }
           .coefficient-form, .coefficient-row { grid-template-columns: 1fr 1fr; }
-          .formula-actions { justify-content: flex-start; }
         }
         @media (max-width: 720px) {
           .formula-row { grid-template-columns: 1fr; }

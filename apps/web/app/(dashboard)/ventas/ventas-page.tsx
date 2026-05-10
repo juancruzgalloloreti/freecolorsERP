@@ -49,6 +49,7 @@ type ProductHit = {
   code: string
   barcode?: string | null
   barcodeAlt?: string | null
+  originCode?: string | null
   name: string
   unit: string
   brandName?: string | null
@@ -124,6 +125,7 @@ const DOC_TYPES: Array<{ value: DocumentType; label: string; short: string }> = 
   { value: 'INVOICE_A', label: 'Factura A interna', short: 'Fac A' },
   { value: 'INVOICE_C', label: 'Factura C interna', short: 'Fac C' },
 ]
+const STOCK_CONFIRMED_TYPES = new Set<DocumentType>(['INVOICE_A', 'INVOICE_B', 'INVOICE_C', 'REMITO'])
 
 const ARS = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -131,6 +133,11 @@ const ARS = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 })
 const COUNTER_PRICE_COLUMNS = ['LP1', 'LP2', 'LP3', 'LP4'] as const
+
+function formatCounterListPrice(product: ProductHit, code: (typeof COUNTER_PRICE_COLUMNS)[number]) {
+  const value = product.pricesByList?.[code]
+  return typeof value === 'number' && Number.isFinite(value) ? ARS.format(value) : '-'
+}
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Efectivo',
@@ -249,6 +256,7 @@ export default function VentasPage() {
   const [discountSheet, setDiscountSheet] = useState(false)
   const [paymentSheet, setPaymentSheet] = useState(false)
   const [cashSheet, setCashSheet] = useState(false)
+  const [productDetail, setProductDetail] = useState<ProductHit | null>(null)
   const [openingAmount, setOpeningAmount] = useState('')
   const [globalDiscount, setGlobalDiscount] = useState('')
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
@@ -312,6 +320,17 @@ export default function VentasPage() {
     }
   }, [globalDiscount, lines, roundTotal])
 
+  const stockOverages = useMemo(() => lines
+    .filter((line) => line.productId && Number(line.quantity || 0) > Number(line.stock || 0))
+    .map((line) => ({
+      productId: line.productId,
+      description: line.description,
+      requested: Number(line.quantity || 0),
+      available: Number(line.stock || 0),
+      unit: line.unit || 'un',
+    })), [lines])
+  const blocksStockConfirmation = STOCK_CONFIRMED_TYPES.has(docType) && stockOverages.length > 0
+
   const paymentSummary = useMemo(() => {
     const paid = payments.reduce((sum, payment) => sum + payment.amount, 0)
     const nonAccountPaid = payments
@@ -359,7 +378,7 @@ export default function VentasPage() {
   }, [canUseCounter, includeVat])
 
   useBarcodeScan(async (code) => {
-    if (!canUseCounter || productSheet || customerSheet || paymentSheet || cashSheet || discountSheet) return
+    if (!canUseCounter || productSheet || productDetail || customerSheet || paymentSheet || cashSheet || discountSheet) return
     setError(null)
     setMessage(null)
     const results = asArray<ProductHit>(await productsApi.search({
@@ -534,6 +553,7 @@ export default function VentasPage() {
     if (paymentSheet) setPaymentSheet(false)
     else if (discountSheet) setDiscountSheet(false)
     else if (cashSheet) setCashSheet(false)
+    else if (productDetail) setProductDetail(null)
     else if (productSheet) setProductSheet(false)
     else if (customerSheet) setCustomerSheet(false)
   }
@@ -583,6 +603,10 @@ export default function VentasPage() {
     mutationFn: async ({ action, type }: { action: 'draft' | 'confirm'; type: DocumentType }) => {
       if (!canUseCounter) throw new Error('Tu usuario es de solo lectura.')
       if (lines.length === 0) throw new Error('Agregá al menos un producto.')
+      if (action === 'confirm' && STOCK_CONFIRMED_TYPES.has(type) && stockOverages.length > 0) {
+        const first = stockOverages[0]
+        throw new Error(`Stock insuficiente para ${first.description}. Disponible: ${first.available.toLocaleString('es-AR')} ${first.unit}, solicitado: ${first.requested.toLocaleString('es-AR')} ${first.unit}.`)
+      }
       if (type.startsWith('INVOICE_') && !puntoDeVentaId && puntos.length === 0) throw new Error('Falta punto de venta.')
       const documentPayload = buildDocumentPayload(type)
       if (action !== 'confirm') return documentsApi.create(documentPayload)
@@ -759,6 +783,14 @@ export default function VentasPage() {
         </div>
       )}
       {error && <div className="counter-alert danger"><AlertTriangle size={15} /> {error}</div>}
+      {stockOverages.length > 0 && (
+        <div className={`counter-alert ${blocksStockConfirmation ? 'danger' : 'warning'}`}>
+          <AlertTriangle size={15} />
+          {blocksStockConfirmation
+            ? `No podés confirmar ${docType === 'REMITO' ? 'remito' : 'factura'} con stock insuficiente: ${stockOverages[0].description} tiene ${stockOverages[0].available.toLocaleString('es-AR')} ${stockOverages[0].unit} y pediste ${stockOverages[0].requested.toLocaleString('es-AR')}.`
+            : `Presupuesto con cantidad mayor al stock: ${stockOverages[0].description} tiene ${stockOverages[0].available.toLocaleString('es-AR')} ${stockOverages[0].unit} y pediste ${stockOverages[0].requested.toLocaleString('es-AR')}.`}
+        </div>
+      )}
       <button type="button" data-escape-action="true" onClick={closeTopSheet} hidden />
       <button type="button" data-undo-line-action="true" onClick={undoLastLine} hidden />
 
@@ -923,31 +955,95 @@ export default function VentasPage() {
                   <div className="product-result muted">
                     Sin resultados. {isOwner ? 'Podés crear el producto sin salir del mostrador.' : 'Pedile al owner que lo cargue.'}
                   </div>
-                ) : hits.map((product) => (
-                  <button className="product-result" key={product.id} type="button" onClick={() => addLine(product)}>
-                    <span>
-                      <strong>{product.code}</strong> {product.name}
-                      <small>{[product.brandName, product.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
-                    </span>
-                    <span className="result-numbers">
-                      <b>{ARS.format(product.price || 0)}</b>
-                      {product.appliedCoefficientName && product.appliedCoefficientName !== 'LP1' && (
-                        <small>
-                          {product.appliedCoefficient ? `x${Number(product.appliedCoefficient).toLocaleString('es-AR')} ` : ''}
-                          {product.appliedCoefficientName}
-                        </small>
-                      )}
-                      <small>Stock {Number(product.stock || 0).toLocaleString('es-AR')}</small>
-                      {product.pricesByList && (
-                        <small className="result-price-strip">
-                          {COUNTER_PRICE_COLUMNS.map((code) => (
-                            <span key={code}>{code} {ARS.format(product.pricesByList?.[code] || 0)}</span>
+                ) : (
+                  <>
+                    <div className="counter-product-table-wrap">
+                      <table className="fc-table counter-product-table" aria-label="Resultados de productos">
+                        <thead>
+                          <tr>
+                            <th>Código</th>
+                            <th>Origen</th>
+                            <th>Producto</th>
+                            <th style={{ textAlign: 'right' }}>Stock</th>
+                            {COUNTER_PRICE_COLUMNS.map((code) => (
+                              <th key={code} style={{ textAlign: 'right' }}>{code}</th>
+                            ))}
+                            <th style={{ textAlign: 'right' }}>Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {hits.map((product) => (
+                            <tr key={product.id} onDoubleClick={() => addLine(product)} title="Doble click para agregar">
+                              <td className="counter-product-code">{product.code}</td>
+                              <td className="counter-product-code">{product.originCode || product.barcodeAlt || '-'}</td>
+                              <td>
+                                <strong className="counter-product-name">{product.name}</strong>
+                                <small className="counter-product-meta">
+                                  {[product.brandName, product.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}
+                                </small>
+                              </td>
+                              <td className="counter-product-stock">{Number(product.stock || 0).toLocaleString('es-AR')}</td>
+                              {COUNTER_PRICE_COLUMNS.map((code) => (
+                                <td className="counter-product-price" key={code}>{formatCounterListPrice(product, code)}</td>
+                              ))}
+                              <td className="counter-product-action">
+                                <div className="counter-product-actions">
+                                  <button
+                                    className="btn btn-secondary btn-sm"
+                                    type="button"
+                                    onClick={() => setProductDetail(product)}
+                                    aria-label={`Ver detalle de ${product.name}`}
+                                  >
+                                    Ver
+                                  </button>
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    type="button"
+                                    onClick={() => addLine(product)}
+                                    aria-label={`Agregar ${product.name}`}
+                                  >
+                                    Agregar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
                           ))}
-                        </small>
-                      )}
-                    </span>
-                  </button>
-                ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="counter-product-mobile-results">
+                      {hits.map((product) => (
+                        <div className="product-result" key={product.id}>
+                          <span>
+                            <strong>{product.code}</strong> {product.name}
+                            <small>{[product.originCode || product.barcodeAlt ? `Origen ${product.originCode || product.barcodeAlt}` : '', product.brandName, product.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
+                          </span>
+                          <span className="result-numbers">
+                            <b>{ARS.format(product.price || 0)}</b>
+                            {product.appliedCoefficientName && product.appliedCoefficientName !== 'LP1' && (
+                              <small>
+                                {product.appliedCoefficient ? `x${Number(product.appliedCoefficient).toLocaleString('es-AR')} ` : ''}
+                                {product.appliedCoefficientName}
+                              </small>
+                            )}
+                            <small>Stock {Number(product.stock || 0).toLocaleString('es-AR')}</small>
+                            {product.pricesByList && (
+                              <small className="result-price-strip">
+                                {COUNTER_PRICE_COLUMNS.map((code) => (
+                                  <span key={code}>{code} {formatCounterListPrice(product, code)}</span>
+                                ))}
+                              </small>
+                            )}
+                          </span>
+                          <span className="counter-mobile-product-actions">
+                            <button className="btn btn-secondary btn-sm" type="button" onClick={() => setProductDetail(product)} aria-label={`Ver detalle de ${product.name}`}>Ver</button>
+                            <button className="btn btn-primary btn-sm" type="button" onClick={() => addLine(product)} aria-label={`Agregar ${product.name}`}>Agregar</button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -996,7 +1092,10 @@ export default function VentasPage() {
                             ) : (
                               <textarea className="fc-input line-description" value={line.description} onChange={(event) => updateLine(index, { description: event.target.value })} disabled={sensitiveLocked} rows={2} />
                             )}
-                            <small className="line-meta">Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
+                            <small className={`line-meta ${line.quantity > line.stock ? 'line-meta-danger' : ''}`}>
+                              Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}
+                              {line.quantity > line.stock ? ` · excede por ${(line.quantity - line.stock).toLocaleString('es-AR')} ${line.unit}` : ''}
+                            </small>
                           </td>
                           <td><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></td>
                           <td>{budgetMode ? <span className="readonly-number">{ARS.format(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
@@ -1020,7 +1119,10 @@ export default function VentasPage() {
                         </div>
                         <button className="btn btn-icon btn-secondary btn-sm" type="button" aria-label={`Quitar ${line.description}`} onClick={() => removeLine(index)} disabled={!canUseCounter}><X size={13} /></button>
                       </header>
-                      <small>Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
+                      <small className={line.quantity > line.stock ? 'line-meta-danger' : ''}>
+                        Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}
+                        {line.quantity > line.stock ? ` · excede por ${(line.quantity - line.stock).toLocaleString('es-AR')} ${line.unit}` : ''}
+                      </small>
                       <div className="mobile-line-grid">
                         <label><span>Cant.</span><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></label>
                         <label><span>Precio</span>{budgetMode ? <b>{ARS.format(line.unitPrice)}</b> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</label>
@@ -1078,7 +1180,7 @@ export default function VentasPage() {
               <button className="btn btn-secondary" type="button" onClick={() => documentMutation.mutate({ action: 'draft', type: 'BUDGET' })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
                 <FileText size={14} /> Guardar
               </button>
-              <button className="btn btn-primary" type="button" data-confirm-action="true" onClick={() => documentMutation.mutate({ action: 'confirm', type: docType })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
+              <button className="btn btn-primary" type="button" data-confirm-action="true" onClick={() => documentMutation.mutate({ action: 'confirm', type: docType })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter || blocksStockConfirmation} title={blocksStockConfirmation ? 'No se puede confirmar con stock insuficiente' : undefined}>
                 <Check size={14} /> {documentMutation.isPending ? 'Confirmando...' : 'Confirmar'}
               </button>
             </div>
@@ -1096,6 +1198,58 @@ export default function VentasPage() {
           </div>
         </section>
       </div>
+
+      <EntitySheet
+        open={Boolean(productDetail)}
+        title="Detalle de producto"
+        onClose={() => setProductDetail(null)}
+        footer={productDetail && (
+          <>
+            <button className="btn btn-secondary" type="button" onClick={() => setProductDetail(null)}>Cerrar</button>
+            <button
+              className="btn btn-primary"
+              type="button"
+              disabled={!canUseCounter}
+              onClick={() => {
+                addLine(productDetail)
+                setProductDetail(null)
+              }}
+            >
+              Agregar al comprobante
+            </button>
+          </>
+        )}
+      >
+        {productDetail && (
+          <div className="counter-product-detail">
+            <div className="counter-product-detail-head">
+              <div>
+                <strong>{productDetail.name}</strong>
+                <span>{[productDetail.brandName, productDetail.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</span>
+              </div>
+              <span className={`badge ${Number(productDetail.stock || 0) > 0 ? 'badge-green' : 'badge-yellow'}`}>
+                Stock {Number(productDetail.stock || 0).toLocaleString('es-AR')}
+              </span>
+            </div>
+            <div className="detail-kv">
+              <div><span>Código</span><strong>{productDetail.code}</strong></div>
+              <div><span>Origen</span><strong>{productDetail.originCode || productDetail.barcodeAlt || '-'}</strong></div>
+              <div><span>Barras</span><strong>{productDetail.barcode || '-'}</strong></div>
+              <div><span>Unidad</span><strong>{productDetail.unit || 'un'}</strong></div>
+              <div><span>Stock total</span><strong>{Number(productDetail.stockTotal || 0).toLocaleString('es-AR')}</strong></div>
+              <div><span>Precio activo</span><strong>{ARS.format(productDetail.price || 0)}</strong></div>
+            </div>
+            <div className="counter-product-price-grid" aria-label="Precios por lista">
+              {COUNTER_PRICE_COLUMNS.map((code) => (
+                <div key={code}>
+                  <span>{code}</span>
+                  <strong>{formatCounterListPrice(productDetail, code)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </EntitySheet>
 
       <EntitySheet
         open={customerSheet}

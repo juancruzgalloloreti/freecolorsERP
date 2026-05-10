@@ -140,6 +140,7 @@ export class ProductsService {
         code: product.code,
         barcode: product.barcode,
         barcodeAlt: product.barcodeAlt,
+        originCode: this.extractAguilaOriginCode(product.notes),
         name: product.name,
         description: product.description,
         unit: product.unit,
@@ -802,6 +803,7 @@ export class ProductsService {
   private formulaPriceForProduct(product: ProductForFormula, priceLists: PriceListForFormula[], priceListId?: string | null): { price: number; multiplier: number; name: string } {
     const selected = priceLists.find((list) => list.id === priceListId) || priceLists.find((list) => list.isDefault) || priceLists[0];
     const selectedCode = selected ? this.priceListCode(selected.name) : 'LP1';
+    const direct = this.directListPrice(product, selected);
     const lp1 = this.directListPrice(product, this.listByCode(priceLists, 'LP1')) ?? this.directListPrice(product, selected) ?? 0;
     const cr = this.directListPrice(product, this.listByCode(priceLists, 'CR'))
       ?? this.moneyValue(product.replacementCost)
@@ -813,14 +815,12 @@ export class ProductsService {
       ?? this.moneyValue(product.averageCost)
       ?? 0;
 
-    if (selectedCode === 'LP2') return { price: this.roundMoney(lp1 * 0.6), multiplier: 0.6, name: 'LP2 = LP1 x 0.60' };
-    if (selectedCode === 'LP3') return { price: this.roundMoney(lp1 * 0.8), multiplier: 0.8, name: 'LP3 = LP1 x 0.80' };
-    if (selectedCode === 'LP4') return { price: this.roundMoney(cr * 1.2), multiplier: 1.2, name: 'LP4 = CR x 1.20' };
-    if (selectedCode === 'LP5') return { price: this.roundMoney(cr), multiplier: 1, name: 'LP5 = CR' };
+    if (selectedCode === 'LP2') return { price: this.roundMoney(direct ?? lp1 * 0.6), multiplier: direct === null ? 0.6 : 1, name: direct === null ? 'LP2 = LP1 x 0.60' : 'LP2 guardada' };
+    if (selectedCode === 'LP3') return { price: this.roundMoney(direct ?? lp1 * 0.8), multiplier: direct === null ? 0.8 : 1, name: direct === null ? 'LP3 = LP1 x 0.80' : 'LP3 guardada' };
+    if (selectedCode === 'LP4') return { price: this.roundMoney(direct ?? cr * 1.2), multiplier: direct === null ? 1.2 : 1, name: direct === null ? 'LP4 = CR x 1.20' : 'LP4 guardada' };
+    if (selectedCode === 'LP5') return { price: this.roundMoney(direct ?? cr), multiplier: 1, name: direct === null ? 'LP5 = CR' : 'LP5 guardada' };
     if (selectedCode === 'CR') return { price: this.roundMoney(cr), multiplier: 1, name: 'CR' };
     if (selectedCode === 'CU') return { price: this.roundMoney(cu), multiplier: 1, name: 'CU' };
-
-    const direct = this.directListPrice(product, selected);
     return { price: this.roundMoney(direct ?? lp1), multiplier: 1, name: selectedCode === 'LP1' ? 'LP1' : '' };
   }
 
@@ -941,6 +941,11 @@ export class ProductsService {
       .map((term) => term.trim())
       .filter(Boolean);
     return [...new Set(terms)].slice(0, 8);
+  }
+
+  private extractAguilaOriginCode(notes?: string | null): string | null {
+    const match = String(notes || '').match(/Codigo origen:\s*([^\r\n]+)/i);
+    return match?.[1]?.trim() || null;
   }
 
   private priceForExport(items: { priceListId: string; price: unknown }[], priceListId?: string): number {

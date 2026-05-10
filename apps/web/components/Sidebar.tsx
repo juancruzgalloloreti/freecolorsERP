@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   Home, Package, Layers3, FileText, Users, Truck,
   CreditCard, Tag, BarChart3, LogOut, ReceiptText, ShoppingCart, WalletCards,
-  Landmark, CheckSquare, ClipboardList, UserCog,
+  Landmark, CheckSquare, UserCog,
 } from 'lucide-react'
 
 const NAV_GROUPS = [
@@ -16,7 +16,6 @@ const NAV_GROUPS = [
     items: [
       { href: '/dashboard', label: 'Inicio', icon: Home, permissions: [] },
       { href: '/ventas', label: 'Mostrador', icon: ReceiptText, permissions: ['sale.view', 'sale.create'] },
-      { href: '/pedidos', label: 'Pedidos', icon: ClipboardList, permissions: ['document.create'] },
       { href: '/compras', label: 'Compras', icon: ShoppingCart, permissions: ['purchase.view', 'purchase.create'] },
       { href: '/documentos', label: 'Comprobantes', icon: FileText, permissions: ['document.create'] },
     ],

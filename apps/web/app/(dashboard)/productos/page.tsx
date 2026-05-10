@@ -120,6 +120,7 @@ function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
   const lp1 = directPrice(lists, product.id, 'LP1') || direct
   const cr = directPrice(lists, product.id, 'CR') || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
   const cu = directPrice(lists, product.id, 'CU') || moneyValue(product.lastPurchaseCost) || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
+  if (direct > 0) return Math.round(direct * 100) / 100
   if (code === 'LP2') return Math.round(lp1 * 0.6 * 100) / 100
   if (code === 'LP3') return Math.round(lp1 * 0.8 * 100) / 100
   if (code === 'LP4') return Math.round(cr * 1.2 * 100) / 100

@@ -1,8 +1,8 @@
 # BLOCK_A_STARTED.md - Inicio Bloque A Mostrador + Consulta Productos
 
-Ultima actualizacion: 2026-05-08
+Ultima actualizacion: 2026-05-10
 
-Estado: iniciado en modo diagnostico. No se implemento cambio productivo grande para no dejar un modulo critico a medias.
+Estado: iniciado con primer cambio productivo minimo aplicado. El modulo sigue siendo critico, asi que se avanzo solo sobre busqueda/consulta de productos sin tocar caja, totales, confirmacion ni stock movement.
 
 ## Modulo afectado
 
@@ -42,27 +42,31 @@ El frontend ya tiene base:
 - Tiene pago, descuento, IVA, impresion de ultimo documento y ultimos documentos.
 - Tiene datos fiscales/entrega sin obligar siempre a crear cliente permanente.
 - Inicio aplicado: los resultados de busqueda del mostrador muestran una tira compacta LP1-LP4 cuando el backend devuelve `pricesByList`.
+- Aplicado 2026-05-10: en escritorio, la busqueda del mostrador muestra una grilla operativa con `Codigo`, `Origen`, `Producto`, `Stock`, `LP1`, `LP2`, `LP3`, `LP4` y accion `Agregar`.
+- Aplicado 2026-05-10: en mobile se conserva card densa tocable, con precio principal, stock y tira LP1-LP4.
+- Aplicado 2026-05-10: el backend expone `originCode` extrayendo `Codigo origen:` desde `notes` de import Aguila; si no existe, la UI usa `barcodeAlt` como referencia secundaria.
+- Aplicado 2026-05-10: la busqueda del mostrador separa accion rapida `Agregar` de accion secundaria `Ver`, que abre un sheet minimalista con codigo, origen, barras, unidad, stock total, precio activo y LP1-LP4.
 
 Brecha contra legacy:
-- La busqueda actual de mostrador muestra resultados tipo lista/card, no grilla operativa tipo Excel.
-- Ya muestra LP1-LP4 en formato compacto, pero todavia falta grilla operativa con `Codigo`, `Cod.Origen`, `Nombre`, `Stock` y listas como columnas.
+- La busqueda actual de mostrador ya tiene grilla operativa web en PC con `Origen`.
 - No hay un modo claro `Consulta Productos` embebido/minimalista dentro del mostrador.
 - Acciones secundarias legacy aun no estan traducidas a `Mas acciones`/drawer.
+- La barra sticky de totales puede quedar muy cerca de la tabla al final del viewport; revisar pulido visual cuando se trabaje el layout completo del mostrador.
 
 ## Primer cambio recomendado
 
-Implementar en `apps/web/app/(dashboard)/ventas/ventas-page.tsx` un modo de resultados minimalista tipo tabla:
+Primer cambio implementado en `apps/web/app/(dashboard)/ventas/ventas-page.tsx`:
 
 Visible en PC:
 - Codigo.
 - Nombre.
 - Stock.
-- Precio lista activa.
+- LP1-LP4.
 - Boton principal `Agregar`.
-- Menu `Mas` o acciones compactas despues.
 
-Siguiente paso:
-- Convertir la tira LP1-LP4 en columnas compactas de una tabla PC.
+Siguiente paso recomendado:
+- Convertir acciones secundarias de consulta de producto a `Mas acciones`/drawer, solo lectura primero.
+- Evaluar si conviene crear columna real `originCode` en DB mas adelante; por ahora no se migro para evitar riesgo.
 
 No hacer manana al inicio:
 - No tocar confirmacion de venta.
@@ -74,24 +78,36 @@ No hacer manana al inicio:
 ## Plan minimo para manana
 
 FASE 1 - Confirmar API:
-- API base lista: `products.search` devuelve `pricesByList`.
-- Verificar si la UI debe mostrar LP1-LP4 siempre o solo lista activa + expandible.
+- Hecho: `products.search` devuelve `pricesByList`.
 
 FASE 2 - UI minimal:
-- Reemplazar resultados de busqueda por tabla compacta en PC.
-- Mantener cards actuales o mejorarlas para mobile.
-- Agregar CTA `Agregar`.
-- Mantener Enter para agregar primera coincidencia.
+- Hecho: tabla compacta PC.
+- Hecho: cards mobile densas.
+- Hecho: CTA `Agregar`.
+- Hecho: Enter para agregar primera coincidencia se mantiene.
 
 FASE 3 - Acciones secundarias:
-- Crear `Mas acciones` visual sin implementar acciones peligrosas.
+- Hecho: primer sheet de lectura `Ver detalle de producto`.
+- Siguiente: convertir el resto de acciones secundarias legacy a `Mas acciones`/drawer sin implementar acciones peligrosas.
 - Solo incluir acciones de lectura: copiar codigo, ver stock/movimientos si ya hay ruta/datos.
 
 FASE 4 - Verificacion:
-- `pnpm --filter web lint`
-- `pnpm --filter web build`
-- `pnpm --filter @erp/api build` si se toca backend.
-- Browser/Playwright: buscar producto, cambiar deposito/lista, agregar item, confirmar que carrito no se pierde.
+- Hecho: `pnpm --filter web lint`.
+- Hecho: `pnpm --filter web build`.
+- Hecho: `pnpm --filter @erp/api build`.
+- Hecho con agent-browser: login owner, abrir `/ventas`, buscar `producto`, confirmar grilla PC con LP1-LP4.
+- Hecho con agent-browser mobile: viewport 390x844, buscar `producto`, confirmar cards densas con LP1-LP4.
+- Hecho con agent-browser: confirmar encabezado PC `Codigo`, `Origen`, `Producto`, `Stock`, `LP1`, `LP2`, `LP3`, `LP4`, `Accion`.
+- Hecho con agent-browser: `Agregar` desde grilla PC suma el producto al comprobante.
+- Hecho con agent-browser: `Ver` abre detalle de producto y `Agregar al comprobante` suma al comprobante.
+- Hecho con agent-browser mobile: `Ver` abre detalle como sheet sin romper la card compacta.
+
+Evidencia visual:
+- `docs/legacy-audit/mostrador-product-table-check.png`
+- `docs/legacy-audit/mostrador-product-table-origin-check.png`
+- `docs/legacy-audit/mostrador-product-mobile-check.png`
+- `docs/legacy-audit/mostrador-product-detail-sheet-check.png`
+- `docs/legacy-audit/mostrador-product-detail-mobile-open-check.png`
 
 ## Criterio UX
 
