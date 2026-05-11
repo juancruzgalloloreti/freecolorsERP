@@ -414,6 +414,7 @@ export class ProductsService {
           const description = this.optionalValue(raw, this.aguilaAliases(raw, ['description', 'descripcion', 'Descripcion', 'Descripción', 'Descripción del producto', 'Descripcion del producto'], ['F']));
           const equivalenceCode = this.optionalValue(raw, this.aguilaAliases(raw, ['Equivalencia', 'equivalencia', 'Código Equivalencia', 'Codigo Equivalencia', 'codigo equivalencia'], ['C']));
           const originCode = this.optionalValue(raw, this.aguilaAliases(raw, ['Código en origen', 'Codigo en origen', 'codigo en origen', 'Codigo en Origen'], ['D', 'P']));
+          const supplierName = this.optionalValue(raw, ['Proveedor', 'proveedor', 'Supplier', 'supplier']);
           const purchaseUnitCoefficient = this.parseMoney(this.pick(raw, this.aguilaAliases(raw, ['Coeficiente de conversión para compras', 'Coeficiente conversion compras', 'Coeficiente Conversión', 'Coeficiente Compra'], ['M'])));
           const taxRate = this.deriveTaxRate(raw);
           const replacementCost = this.parseMoney(this.pick(raw, ['Costo reposición', 'Costo Reposicion', 'Costo reposicion', 'H']));
@@ -424,6 +425,7 @@ export class ProductsService {
             equivalenceCode ? `Codigo equivalencia: ${equivalenceCode}` : '',
             originCode ? `Codigo origen: ${originCode}` : '',
             options.supplierId ? `Proveedor asociado: ${options.supplierId}` : '',
+            !options.supplierId && supplierName ? `Proveedor legacy: ${supplierName}` : '',
           ].filter(Boolean).join('\n') || undefined;
 
           const brand = brandName
@@ -505,6 +507,31 @@ export class ProductsService {
                 },
               });
           await this.syncPrices(tx, tenantId, product.id, this.extractPrices(raw, priceLists), allowedPriceListIds);
+          if (supplierName) {
+            const supplier = await tx.supplier.upsert({
+              where: { tenantId_name: { tenantId, name: supplierName } },
+              update: { isActive: true },
+              create: { tenantId, name: supplierName, isActive: true },
+            });
+            await tx.supplierProduct.upsert({
+              where: { supplierId_productId: { supplierId: supplier.id, productId: product.id } },
+              update: {
+                supplierCode: originCode ?? code,
+                supplierName: name,
+                lastCost: lastPurchaseCost ?? replacementCost ?? averageCost,
+                isPreferred: true,
+              },
+              create: {
+                tenantId,
+                supplierId: supplier.id,
+                productId: product.id,
+                supplierCode: originCode ?? code,
+                supplierName: name,
+                lastCost: lastPurchaseCost ?? replacementCost ?? averageCost,
+                isPreferred: true,
+              },
+            });
+          }
           const stock = this.parseMoney(this.pick(raw, ['stock', 'Stock', 'STOCK']));
           if (stock !== null && defaultDeposit) {
             const currentStock = await tx.stockMovement.aggregate({
@@ -761,15 +788,25 @@ export class ProductsService {
         );
       }
       if (code === 'LP4' || index === 3) {
-        candidates.push('Precio Lista 4 sin iva', 'Precio lista 4 sin iva', 'Lista 4 sin iva');
+        candidates.push('Precio Lista 4 con iva', 'Precio lista 4 con iva', 'Lista 4 con iva', 'Precio Lista 4 sin iva', 'Precio lista 4 sin iva', 'Lista 4 sin iva');
       }
       const value = this.pick(raw, candidates);
       let price = this.parseMoney(value);
-      if ((code === 'LP1' || index === 0) && price !== null) {
+      if (code === 'LP1' || index === 0) {
         const explicitGross = this.pick(raw, ['Precio lista con iva', 'Precio lista c/iva', 'Precio Lista con IVA']);
         const explicitNet = this.pick(raw, ['Precio lista sin iva', 'Precio lista 1 sin IVA', 'Precio de venta lista 1 sin IVA', 'G']);
-        const onlyGross = (explicitNet === undefined || explicitNet === null || String(explicitNet).trim() === '') && explicitGross !== undefined && explicitGross !== null && String(explicitGross).trim() !== '';
-        if (onlyGross && ivaRate > 0) price = this.roundMoney(price / (1 + ivaRate / 100));
+        const grossPrice = this.parseMoney(explicitGross);
+        const netPrice = this.parseMoney(explicitNet);
+        if (grossPrice !== null) price = grossPrice;
+        else if (netPrice !== null && ivaRate > 0) price = this.roundMoney(netPrice * (1 + ivaRate / 100));
+      }
+      if (code === 'LP4' || index === 3) {
+        const explicitGross = this.pick(raw, ['Precio Lista 4 con iva', 'Precio lista 4 con iva', 'Lista 4 con iva']);
+        const explicitNet = this.pick(raw, ['Precio Lista 4 sin iva', 'Precio lista 4 sin iva', 'Lista 4 sin iva']);
+        const grossPrice = this.parseMoney(explicitGross);
+        const netPrice = this.parseMoney(explicitNet);
+        if (grossPrice !== null) price = grossPrice;
+        else if (netPrice !== null && ivaRate > 0) price = this.roundMoney(netPrice * (1 + ivaRate / 100));
       }
       if (price !== null) prices[list.id] = price;
     });
