@@ -103,6 +103,9 @@ export class CashService {
     const expectedAmount = await this.recalculateExpected(session.id);
     const countedAmount = this.toMoney(data.countedAmount);
     const difference = this.roundMoney(countedAmount - expectedAmount);
+    if (Math.abs(difference) > 0.01 && !String(data.note || '').trim()) {
+      throw new BadRequestException('El cierre con diferencia requiere observaciones');
+    }
     const closed = await this.prisma.cashSession.update({
       where: { id: session.id },
       data: {
@@ -135,7 +138,7 @@ export class CashService {
       select: { id: true },
     });
     if (!session) {
-      throw new BadRequestException('Abrí una caja antes de confirmar ventas de contado');
+      throw new BadRequestException('No hay caja abierta. Abrí caja antes de confirmar una venta en efectivo.');
     }
 
     await tx.cashMovement.create({

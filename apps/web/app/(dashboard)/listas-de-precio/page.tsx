@@ -12,7 +12,12 @@ interface PriceList {
   name: string
   isDefault?: boolean
   isActive?: boolean
-  items?: { price: number | string }[]
+  formulaBaseCode?: string | null
+  formulaOperation?: string | null
+  formulaCoefficient?: string | number | null
+  formulaRoundingMode?: string | null
+  formulaRoundingValue?: string | number | null
+  items?: { price: number | string; isManualOverride?: boolean }[]
 }
 
 interface PriceFormula {
@@ -88,6 +93,10 @@ function apiMessage(error: unknown, fallback: string) {
   return Array.isArray(message) ? message.join(', ') : message
 }
 
+function pricedItemsCount(list?: PriceList) {
+  return list?.items?.filter((item) => Number(item.price || 0) > 0).length || 0
+}
+
 export default function ListasDePrecioPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
@@ -111,6 +120,7 @@ export default function ListasDePrecioPage() {
     }
   })
   const [formulaToAutoApply, setFormulaToAutoApply] = useState<string | null>(null)
+  const [formulaAwaitingOverrideChoice, setFormulaAwaitingOverrideChoice] = useState<string | null>(null)
 
   const { data: rawLists, isLoading } = useQuery({
     queryKey: ['price-lists'],
@@ -154,17 +164,21 @@ export default function ListasDePrecioPage() {
   })
 
   const recalculateMutation = useMutation({
-    mutationFn: ({ formula }: { formula: PriceFormula }) => {
+    mutationFn: ({ formula, includeManualOverrides = false }: { formula: PriceFormula; includeManualOverrides?: boolean }) => {
       const multiplier = parseNumber(formula.multiplier, 1)
       return priceListsApi.recalculate(formula.targetListId, {
         basePriceListId: formula.baseListId,
-        percentage: (multiplier - 1) * 100,
+        operation: 'multiply',
+        multiplier,
+        roundingMode: 'nearest',
         rounding: parseNumber(formula.rounding, 0),
         onlyMissing: formula.onlyMissing,
+        includeManualOverrides,
       })
     },
     onSuccess: (result: { updated?: number; skipped?: number; total?: number }) => {
       qc.invalidateQueries({ queryKey: ['price-lists'] })
+      setFormulaAwaitingOverrideChoice(null)
       setMessage(`Fórmula aplicada: ${result.updated || 0} precios actualizados, ${result.skipped || 0} omitidos.`)
     },
     onError: (error) => setMessage(apiMessage(error, 'No se pudo aplicar la fórmula')),
@@ -201,6 +215,29 @@ export default function ListasDePrecioPage() {
   const defaultTargetId = useMemo(() => coreLists.find((list) => list.id !== defaultList?.id)?.id || '', [coreLists, defaultList?.id])
   const activeCount = coreLists.filter((list) => list.isActive !== false).length
   const formulaBackedCount = coreLists.filter((list) => isAutomaticPriceList(list.name)).length
+  const formulaWarnings = useMemo(() => {
+    const byCode = new Map<string, PriceList>()
+    coreLists.forEach((list) => {
+      const code = priceListCode(list.name)
+      if (code) byCode.set(code, list)
+    })
+    return coreLists
+      .filter((list) => isAutomaticPriceList(list.name))
+      .map((list) => {
+        const targetCode = priceListCode(list.name)
+        const baseCode = list.formulaBaseCode || (targetCode === 'LP2' || targetCode === 'LP3' ? 'LP1' : targetCode === 'LP4' || targetCode === 'LP5' ? 'CR' : null)
+        const baseList = baseCode ? byCode.get(baseCode) : undefined
+        const baseCount = pricedItemsCount(baseList)
+        if (!baseCode || baseCount > 0) {
+          if (baseCode === 'CR' && baseCount > 0 && baseCount < pricedItemsCount(byCode.get('LP1'))) {
+            return `${targetCode} depende de ${baseCode}, pero ${baseCode} solo tiene ${baseCount} precios cargados. Recalculá con cuidado: solo esos productos tendrán precio.`
+          }
+          return null
+        }
+        return `${targetCode} depende de ${baseCode}, pero ${baseCode} no tiene precios cargados. No recalcules hasta cargar la base.`
+      })
+      .filter((warning): warning is string => Boolean(warning))
+  }, [coreLists])
 
   const hydratedFormulas = useMemo(() => {
     if (coreLists.length === 0) return formulas
@@ -221,15 +258,27 @@ export default function ListasDePrecioPage() {
     return formulas.map((formula) => {
       const target = targets[formula.id]
       if (!target) return formula
+      const targetList = coreLists.find((list) => list.id === target.targetListId)
+      const savedBase = targetList?.formulaBaseCode
+        ? coreLists.find((list) => priceListCode(list.name) === targetList.formulaBaseCode)?.id
+        : ''
       return {
         ...formula,
-        baseListId: formula.baseListId || target.baseListId || '',
+        baseListId: formula.baseListId || savedBase || target.baseListId || '',
         targetListId: formula.targetListId || target.targetListId || '',
+        multiplier: targetList?.formulaCoefficient != null ? String(targetList.formulaCoefficient) : formula.multiplier,
+        rounding: targetList?.formulaRoundingValue != null ? String(targetList.formulaRoundingValue) : formula.rounding,
       }
     })
   }, [formulas, coreLists])
 
   const fixedFormulas = hydratedFormulas.filter((formula) => formula.id.startsWith('legacy-'))
+
+  function manualOverridesCountForFormula(formula: PriceFormula) {
+    const target = coreLists.find((list) => list.id === (formula.targetListId || defaultTargetId))
+    if (priceListCode(target?.name || '') !== 'LP4') return 0
+    return target?.items?.filter((item) => item.isManualOverride && Number(item.price || 0) > 0).length || 0
+  }
 
   useEffect(() => {
     if (!formulaToAutoApply || !isOwner) return
@@ -264,10 +313,28 @@ export default function ListasDePrecioPage() {
 
   function updateFormula(id: string, key: keyof PriceFormula, value: string | boolean) {
     if (!isOwner) return
+    const currentFormula = hydratedFormulas.find((formula) => formula.id === id)
+    const nextFormula = currentFormula ? { ...currentFormula, [key]: value } : null
     setFormulas((current) => current.map((formula) => formula.id === id ? { ...formula, [key]: value } : formula))
     if (['baseListId', 'targetListId', 'multiplier', 'rounding'].includes(key)) {
+      if (nextFormula && manualOverridesCountForFormula(nextFormula) > 0) {
+        setFormulaToAutoApply(null)
+        setFormulaAwaitingOverrideChoice(id)
+        return
+      }
+      setFormulaAwaitingOverrideChoice(null)
       setFormulaToAutoApply(id)
     }
+  }
+
+  function applyFormula(formula: PriceFormula, includeManualOverrides: boolean) {
+    const baseListId = formula.baseListId || defaultList?.id || ''
+    const targetListId = formula.targetListId || defaultTargetId
+    if (!baseListId || !targetListId || baseListId === targetListId) {
+      setMessage('Elegí una base y un destino distintos para recalcular.')
+      return
+    }
+    recalculateMutation.mutate({ formula: { ...formula, baseListId, targetListId, onlyMissing: false }, includeManualOverrides })
   }
 
   function saveCoefficient() {
@@ -291,6 +358,11 @@ export default function ListasDePrecioPage() {
       {message && (
         <div style={{ marginBottom: 12, padding: '10px 12px', border: '1px solid rgba(59,130,246,0.24)', borderRadius: 8, color: '#bfdbfe', background: 'rgba(59,130,246,0.08)', fontSize: 13 }}>
           {message}
+        </div>
+      )}
+      {formulaWarnings.length > 0 && (
+        <div style={{ marginBottom: 12, padding: '10px 12px', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, color: '#fde68a', background: 'rgba(245,158,11,0.08)', fontSize: 13, display: 'grid', gap: 4 }}>
+          {formulaWarnings.map((warning) => <span key={warning}>{warning}</span>)}
         </div>
       )}
 
@@ -391,39 +463,50 @@ export default function ListasDePrecioPage() {
         </div>
 
         <div className="formula-list">
-          {fixedFormulas.map((formula) => (
-            <div className="formula-row" key={formula.id}>
-              <label className="formula-cell formula-title">
-                <span>Regla</span>
-                <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
-              </label>
-              <label className="formula-cell">
-                <span>Base</span>
-                <select className="fc-input" aria-label="Lista base" value={formula.baseListId || defaultList?.id || ''} onChange={(e) => updateFormula(formula.id, 'baseListId', e.target.value)} disabled={!isOwner}>
-                  <option value="">Base</option>
-                  {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
-                </select>
-              </label>
-              <label className="formula-cell">
-                <span>Destino</span>
-                <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
-                  <option value="">Destino</option>
-                  {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
-                </select>
-              </label>
-              <label className="formula-cell">
-                <span>Coef.</span>
-                <input className="fc-input formula-number" aria-label="Multiplicador" value={formula.multiplier} onChange={(e) => updateFormula(formula.id, 'multiplier', e.target.value)} readOnly={!isOwner} />
-              </label>
-              <label className="formula-cell">
-                <span>Redondeo</span>
-                <input className="fc-input formula-number" aria-label="Redondeo" value={formula.rounding} onChange={(e) => updateFormula(formula.id, 'rounding', e.target.value)} readOnly={!isOwner} />
-              </label>
-              {isOwner && (
-                <span className="formula-auto-state">{recalculateMutation.isPending && formulaToAutoApply === formula.id ? 'Recalculando...' : 'Auto'}</span>
-              )}
-            </div>
-          ))}
+          {fixedFormulas.map((formula) => {
+            const manualOverridesCount = manualOverridesCountForFormula(formula)
+            const needsOverrideChoice = isOwner && formulaAwaitingOverrideChoice === formula.id && manualOverridesCount > 0
+            return (
+              <div className={`formula-row ${needsOverrideChoice ? 'formula-row-warning' : ''}`} key={formula.id}>
+                <label className="formula-cell formula-title">
+                  <span>Regla</span>
+                  <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
+                </label>
+                <label className="formula-cell">
+                  <span>Base</span>
+                  <select className="fc-input" aria-label="Lista base" value={formula.baseListId || defaultList?.id || ''} onChange={(e) => updateFormula(formula.id, 'baseListId', e.target.value)} disabled={!isOwner}>
+                    <option value="">Base</option>
+                    {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                  </select>
+                </label>
+                <label className="formula-cell">
+                  <span>Destino</span>
+                  <select className="fc-input" aria-label="Lista destino" value={formula.targetListId || defaultTargetId} onChange={(e) => updateFormula(formula.id, 'targetListId', e.target.value)} disabled={!isOwner}>
+                    <option value="">Destino</option>
+                    {coreLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+                  </select>
+                </label>
+                <label className="formula-cell">
+                  <span>Coef.</span>
+                  <input className="fc-input formula-number" aria-label="Multiplicador" value={formula.multiplier} onChange={(e) => updateFormula(formula.id, 'multiplier', e.target.value)} readOnly={!isOwner} />
+                </label>
+                <label className="formula-cell">
+                  <span>Redondeo</span>
+                  <input className="fc-input formula-number" aria-label="Redondeo" value={formula.rounding} onChange={(e) => updateFormula(formula.id, 'rounding', e.target.value)} readOnly={!isOwner} />
+                </label>
+                {isOwner && !needsOverrideChoice && (
+                  <span className="formula-auto-state">{recalculateMutation.isPending && formulaToAutoApply === formula.id ? 'Recalculando...' : 'Auto'}</span>
+                )}
+                {needsOverrideChoice && (
+                  <div className="formula-override-choice">
+                    <span>{manualOverridesCount} precios manuales en LP4</span>
+                    <button className="btn btn-secondary btn-sm" disabled={recalculateMutation.isPending} onClick={() => applyFormula(formula, false)}>Preservar manuales</button>
+                    <button className="btn btn-danger btn-sm" disabled={recalculateMutation.isPending} onClick={() => applyFormula(formula, true)}>Recalcular todo</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </details>
 
@@ -578,6 +661,10 @@ export default function ListasDePrecioPage() {
           border-radius: 8px;
           background: rgba(255,255,255,0.025);
         }
+        .formula-row-warning {
+          border-color: rgba(245,158,11,0.3);
+          background: rgba(245,158,11,0.055);
+        }
         .formula-cell {
           display: flex;
           min-width: 0;
@@ -619,6 +706,18 @@ export default function ListasDePrecioPage() {
           font-size: 12px;
           font-weight: 800;
           white-space: nowrap;
+        }
+        .formula-override-choice {
+          grid-column: 1 / -1;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          min-width: 0;
+          padding-top: 2px;
+          color: #fde68a;
+          font-size: 12px;
+          font-weight: 750;
         }
         .price-formulas-card > summary,
         .price-advanced summary {

@@ -31,7 +31,16 @@ type DocumentItemInput = {
 
 const INTERNAL_SEQUENCE_SCOPE = 'INTERNAL';
 
-type PriceListForFormula = { id: string; name: string; isDefault?: boolean | null };
+type PriceListForFormula = {
+  id: string;
+  name: string;
+  isDefault?: boolean | null;
+  formulaBaseCode?: string | null;
+  formulaOperation?: string | null;
+  formulaCoefficient?: unknown;
+  formulaRoundingMode?: string | null;
+  formulaRoundingValue?: unknown;
+};
 type ProductPriceForFormula = {
   id: string;
   categoryId: string | null;
@@ -101,9 +110,11 @@ export class DocumentsService {
     if (query.type) where.type = query.type;
     if (query.status) where.status = query.status;
     if (query.dateFrom || query.dateTo) {
+      const dateTo = query.dateTo ? new Date(query.dateTo) : null;
+      if (dateTo) dateTo.setHours(23, 59, 59, 999);
       where.date = {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
-        ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+        ...(dateTo ? { lte: dateTo } : {}),
       };
     }
 
@@ -170,7 +181,7 @@ export class DocumentsService {
   async update(tenantId: string, role: string, id: string, data: DocumentWriteData): Promise<any> {
     assertPermission(role, 'documents.create');
     return this.prisma.$transaction(async (tx) => {
-      const current = await tx.document.findFirst({ where: { id, tenantId }, select: { id: true, status: true, createdById: true } });
+      const current = await tx.document.findFirst({ where: { id, tenantId }, select: { id: true, status: true, createdById: true, type: true, customerId: true, notes: true } });
       if (!current) throw new NotFoundException('Documento inexistente');
       if (current.status !== DocumentStatus.DRAFT) {
         throw new BadRequestException('Solo se pueden editar documentos en borrador');
@@ -179,6 +190,10 @@ export class DocumentsService {
       const computed = this.computeItems(data.items ?? []);
       await this.assertPricesAllowed(tx, tenantId, role, data.priceListId, computed);
       const totals = this.computeTotals(computed, data.roundTotal);
+      const effectiveType = data.type ?? current.type;
+      const effectiveCustomerId = data.customerId === undefined ? current.customerId : data.customerId || null;
+      const effectiveNotes = data.notes === undefined ? current.notes : data.notes || null;
+      const customerSnapshot = await this.buildCustomerSnapshot(tx, tenantId, effectiveType, effectiveCustomerId, effectiveNotes);
       await tx.documentItem.deleteMany({ where: { documentId: id } });
       const updated = await tx.document.update({
         where: { id },
@@ -190,6 +205,7 @@ export class DocumentsService {
           date: data.date ? new Date(data.date) : undefined,
           dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null,
           notes: data.notes === undefined ? undefined : data.notes || null,
+          ...customerSnapshot,
           subtotal: totals.subtotal,
           taxAmount: totals.taxAmount,
           total: totals.total,
@@ -252,6 +268,7 @@ export class DocumentsService {
   async cancel(tenantId: string, userId: string, role: string, id: string, payload: { reason?: string } = {}): Promise<any> {
     assertPermission(role, 'documents.cancel');
     if (!payload.reason?.trim()) throw new BadRequestException('La anulacion requiere motivo');
+    if (payload.reason.trim().length < 10) throw new BadRequestException('El motivo de anulacion debe tener al menos 10 caracteres');
     await this.prisma.$transaction(async (tx) => {
       const document = await tx.document.findFirst({
         where: { id, tenantId },
@@ -399,6 +416,7 @@ export class DocumentsService {
     if (computed.length === 0) {
       throw new BadRequestException('El documento necesita al menos un item');
     }
+    const customerSnapshot = await this.buildCustomerSnapshot(tx, tenantId, type, data.customerId || null, data.notes || null);
     const document = await tx.document.create({
       data: {
         tenantId,
@@ -411,6 +429,7 @@ export class DocumentsService {
         date: data.date ? new Date(data.date) : new Date(),
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         notes: data.notes || null,
+        ...customerSnapshot,
         subtotal: totals.subtotal,
         taxAmount: totals.taxAmount,
         total: totals.total,
@@ -419,6 +438,55 @@ export class DocumentsService {
       include: { items: true, customer: true, supplier: true, puntoDeVenta: true, createdBy: true, payments: true },
     });
     return this.toDetailDto(document);
+  }
+
+  private async buildCustomerSnapshot(tx: any, tenantId: string, type: DocumentType, customerId?: string | null, notes?: string | null): Promise<Record<string, string | null | undefined>> {
+    const deliveryAddressSnapshot = this.extractDeliveryAddress(notes);
+    const isCustomerDocument = Boolean(customerId) || CUSTOMER_CHARGE_TYPES.has(type) || STOCK_DOCUMENT_TYPES.has(type) || type === DocumentType.BUDGET;
+    if (!isCustomerDocument) return {};
+
+    if (!customerId) {
+      return {
+        customerNameSnapshot: 'Consumidor final',
+        customerCuitSnapshot: null,
+        customerPhoneSnapshot: null,
+        customerAddressSnapshot: null,
+        customerCitySnapshot: null,
+        customerProvinceSnapshot: null,
+        customerIvaConditionSnapshot: IvaCondition.CONSUMIDOR_FINAL,
+        deliveryAddressSnapshot,
+      };
+    }
+
+    const customer = await tx.customer.findFirst({
+      where: { id: customerId, tenantId },
+      select: {
+        name: true,
+        cuit: true,
+        phone: true,
+        address: true,
+        city: true,
+        province: true,
+        ivaCondition: true,
+      },
+    });
+    if (!customer) throw new BadRequestException('El cliente seleccionado no existe');
+
+    return {
+      customerNameSnapshot: customer.name ?? null,
+      customerCuitSnapshot: customer.cuit ?? null,
+      customerPhoneSnapshot: customer.phone ?? null,
+      customerAddressSnapshot: customer.address ?? null,
+      customerCitySnapshot: customer.city ?? null,
+      customerProvinceSnapshot: customer.province ?? null,
+      customerIvaConditionSnapshot: customer.ivaCondition ?? null,
+      deliveryAddressSnapshot: deliveryAddressSnapshot ?? customer.address ?? null,
+    };
+  }
+
+  private extractDeliveryAddress(notes?: string | null): string | null {
+    const match = String(notes || '').match(/(?:^|\n)Entrega:\s*(.+)/);
+    return match?.[1]?.trim() || null;
   }
 
   private computeItems(items: DocumentItemInput[]): Array<{
@@ -836,8 +904,8 @@ export class DocumentsService {
       number: d.number,
       puntoDeVenta: d.puntoDeVenta?.number ?? null,
       puntoDeVentaId: d.puntoDeVentaId,
-      customerName: d.customer?.name ?? null,
-      customerCuit: d.customer?.cuit ?? null,
+      customerName: d.customerNameSnapshot ?? d.customer?.name ?? null,
+      customerCuit: d.customerCuitSnapshot ?? d.customer?.cuit ?? null,
       supplierName: d.supplier?.name ?? null,
       date: d.date,
       total: Number(d.total),
@@ -853,6 +921,16 @@ export class DocumentsService {
   private toDetailDto(d: any): any {
     return {
       ...this.toListDto({ ...d, payments: d.payments ?? [], items: d.items ?? [] }),
+      customerSnapshot: {
+        name: d.customerNameSnapshot ?? d.customer?.name ?? null,
+        cuit: d.customerCuitSnapshot ?? d.customer?.cuit ?? null,
+        phone: d.customerPhoneSnapshot ?? d.customer?.phone ?? null,
+        address: d.customerAddressSnapshot ?? d.customer?.address ?? null,
+        city: d.customerCitySnapshot ?? d.customer?.city ?? null,
+        province: d.customerProvinceSnapshot ?? d.customer?.province ?? null,
+        ivaCondition: d.customerIvaConditionSnapshot ?? d.customer?.ivaCondition ?? null,
+        deliveryAddress: d.deliveryAddressSnapshot ?? null,
+      },
       customer: d.customer,
       supplier: d.supplier,
       puntoDeVenta: d.puntoDeVenta,
@@ -929,7 +1007,16 @@ export class DocumentsService {
     const priceLists = await tx.priceList.findMany({
       where: { tenantId, isActive: true },
       orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
-      select: { id: true, name: true, isDefault: true },
+      select: {
+        id: true,
+        name: true,
+        isDefault: true,
+        formulaBaseCode: true,
+        formulaOperation: true,
+        formulaCoefficient: true,
+        formulaRoundingMode: true,
+        formulaRoundingValue: true,
+      },
     });
     const defaultList = priceLists.find((list: PriceListForFormula) => list.isDefault) || priceLists[0];
     const effectivePriceListId = priceListId || defaultList?.id;
@@ -963,24 +1050,62 @@ export class DocumentsService {
   private formulaPriceForProduct(product: ProductPriceForFormula, priceLists: PriceListForFormula[], priceListId?: string | null): number {
     const selected = priceLists.find((list) => list.id === priceListId) || priceLists.find((list) => list.isDefault) || priceLists[0];
     const selectedCode = selected ? this.priceListCode(selected.name) : 'LP1';
-    const lp1 = this.directListPrice(product, this.listByCode(priceLists, 'LP1')) ?? this.directListPrice(product, selected) ?? 0;
-    const cr = this.directListPrice(product, this.listByCode(priceLists, 'CR'))
-      ?? this.moneyValue(product.replacementCost)
-      ?? this.moneyValue(product.averageCost)
-      ?? 0;
-    const cu = this.directListPrice(product, this.listByCode(priceLists, 'CU'))
-      ?? this.moneyValue(product.lastPurchaseCost)
-      ?? this.moneyValue(product.replacementCost)
-      ?? this.moneyValue(product.averageCost)
-      ?? 0;
+    const direct = this.directListPrice(product, selected);
+    const lp1 = this.basePriceByCode(product, priceLists, 'LP1') ?? direct ?? 0;
 
-    if (selectedCode === 'LP2') return this.roundMoney(lp1 * 0.6);
-    if (selectedCode === 'LP3') return this.roundMoney(lp1 * 0.8);
-    if (selectedCode === 'LP4') return this.roundMoney(cr * 1.2);
-    if (selectedCode === 'LP5') return this.roundMoney(cr);
-    if (selectedCode === 'CR') return this.roundMoney(cr);
-    if (selectedCode === 'CU') return this.roundMoney(cu);
-    return this.roundMoney(this.directListPrice(product, selected) ?? lp1);
+    if (direct !== null) return this.roundMoney(direct);
+    if (selectedCode === 'CR') return this.roundMoney(this.basePriceByCode(product, priceLists, 'CR') ?? 0);
+    if (selectedCode === 'CU') return this.roundMoney(this.basePriceByCode(product, priceLists, 'CU') ?? 0);
+
+    const fallback = this.defaultFormulaForCode(selectedCode);
+    const baseCode = selected?.formulaBaseCode || fallback?.baseCode;
+    if (!baseCode) return this.roundMoney(lp1);
+
+    const basePrice = this.basePriceByCode(product, priceLists, baseCode) ?? 0;
+    return this.calculateFormulaPrice(
+      basePrice,
+      selected?.formulaOperation || fallback?.operation || 'multiply',
+      this.moneyValue(selected?.formulaCoefficient) ?? fallback?.coefficient ?? 1,
+      selected?.formulaRoundingMode || fallback?.roundingMode || 'nearest',
+      this.moneyValue(selected?.formulaRoundingValue) ?? fallback?.rounding ?? 0,
+    );
+  }
+
+  private basePriceByCode(product: ProductPriceForFormula, priceLists: PriceListForFormula[], code: string): number | null {
+    const normalizedCode = this.priceListCode(code) || code;
+    if (normalizedCode === 'CR') {
+      return this.directListPrice(product, this.listByCode(priceLists, 'CR'))
+        ?? this.moneyValue(product.replacementCost)
+        ?? this.moneyValue(product.averageCost);
+    }
+    if (normalizedCode === 'CU') {
+      return this.directListPrice(product, this.listByCode(priceLists, 'CU'))
+        ?? this.moneyValue(product.lastPurchaseCost)
+        ?? this.moneyValue(product.replacementCost)
+        ?? this.moneyValue(product.averageCost);
+    }
+    return this.directListPrice(product, this.listByCode(priceLists, normalizedCode));
+  }
+
+  private calculateFormulaPrice(basePrice: number, operation: string, coefficient: number, roundingMode: string, rounding: number): number {
+    let calculated = basePrice;
+    if (operation === 'add') calculated = basePrice + coefficient;
+    else if (operation === 'subtract') calculated = Math.max(basePrice - coefficient, 0);
+    else calculated = basePrice * coefficient;
+    if (rounding > 0) {
+      if (roundingMode === 'up') calculated = Math.ceil(calculated / rounding) * rounding;
+      else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding;
+      else calculated = Math.round(calculated / rounding) * rounding;
+    }
+    return Number(calculated.toFixed(4));
+  }
+
+  private defaultFormulaForCode(code: string | null) {
+    if (code === 'LP2') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.6, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP3') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.8, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP4') return { baseCode: 'CR', operation: 'multiply', coefficient: 1.2, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP5') return { baseCode: 'CR', operation: 'multiply', coefficient: 1, roundingMode: 'nearest', rounding: 10 };
+    return null;
   }
 
   private listByCode(priceLists: PriceListForFormula[], code: string): PriceListForFormula | undefined {

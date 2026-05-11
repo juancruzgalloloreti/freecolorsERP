@@ -20,7 +20,7 @@ export class PriceListsService {
   async updateItem(tenantId: string, role: string, priceListId: string, productId: string, price: number): Promise<any> {
     this.assertManager(role);
     const [priceList, product] = await Promise.all([
-      this.prisma.priceList.findFirst({ where: { id: priceListId, tenantId }, select: { id: true } }),
+      this.prisma.priceList.findFirst({ where: { id: priceListId, tenantId }, select: { id: true, name: true } }),
       this.prisma.product.findFirst({ where: { id: productId, tenantId }, select: { id: true } }),
     ]);
     if (!priceList || !product) {
@@ -28,21 +28,24 @@ export class PriceListsService {
     }
     return this.prisma.priceListItem.upsert({
       where: { priceListId_productId: { priceListId, productId } },
-      update: { price },
-      create: { priceListId, productId, price },
+      update: { price, isManualOverride: this.priceListCode(priceList.name) === 'LP4' },
+      create: { priceListId, productId, price, isManualOverride: this.priceListCode(priceList.name) === 'LP4' },
     });
   }
 
   async recalculateFromBase(tenantId: string, priceListId: string, role: string, data: any): Promise<any> {
     this.assertManager(role);
     const basePriceListId = String(data.basePriceListId || '');
-    const percentage = Number(data.percentage || 0);
+    const multiplier = this.parsePositiveNumber(data.multiplier ?? (1 + Number(data.percentage || 0) / 100), 'coeficiente');
     const rounding = Number(data.rounding || 0);
+    const operation = String(data.operation || 'multiply');
+    const roundingMode = String(data.roundingMode || 'nearest');
     const onlyMissing = Boolean(data.onlyMissing);
+    const includeManualOverrides = Boolean(data.includeManualOverrides);
 
     const [targetList, baseList] = await Promise.all([
-      this.prisma.priceList.findFirst({ where: { id: priceListId, tenantId }, select: { id: true } }),
-      this.prisma.priceList.findFirst({ where: { id: basePriceListId, tenantId }, select: { id: true } }),
+      this.prisma.priceList.findFirst({ where: { id: priceListId, tenantId }, select: { id: true, name: true } }),
+      this.prisma.priceList.findFirst({ where: { id: basePriceListId, tenantId }, select: { id: true, name: true } }),
     ]);
     if (!targetList || !baseList) {
       throw new NotFoundException('Lista base o destino inexistente');
@@ -57,33 +60,67 @@ export class PriceListsService {
     let skipped = 0;
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.priceList.update({
+        where: { id: targetList.id },
+        data: {
+          formulaBaseCode: this.priceListCode(baseList.name),
+          formulaOperation: operation,
+          formulaCoefficient: multiplier,
+          formulaRoundingMode: roundingMode,
+          formulaRoundingValue: rounding > 0 ? rounding : null,
+        },
+      });
+
       for (const item of baseItems) {
         const current = onlyMissing
           ? await tx.priceListItem.findUnique({
               where: { priceListId_productId: { priceListId, productId: item.productId } },
-              select: { id: true },
+              select: { id: true, isManualOverride: true },
             })
-          : null;
+          : this.priceListCode(targetList.name) === 'LP4' && !includeManualOverrides
+            ? await tx.priceListItem.findUnique({
+                where: { priceListId_productId: { priceListId, productId: item.productId } },
+                select: { id: true, isManualOverride: true },
+              })
+            : null;
 
-        if (current) {
+        if (current && (onlyMissing || current.isManualOverride)) {
           skipped += 1;
           continue;
         }
 
-        const basePrice = Number(item.price || 0);
-        const calculated = basePrice * (1 + percentage / 100);
-        const price = rounding > 0 ? Math.round(calculated / rounding) * rounding : calculated;
+        const price = this.calculateFormulaPrice(Number(item.price || 0), operation, multiplier, roundingMode, rounding);
 
         await tx.priceListItem.upsert({
           where: { priceListId_productId: { priceListId, productId: item.productId } },
-          update: { price },
-          create: { priceListId, productId: item.productId, price },
+          update: { price, isManualOverride: false },
+          create: { priceListId, productId: item.productId, price, isManualOverride: false },
         });
         updated += 1;
       }
     });
 
     return { updated, skipped, total: baseItems.length };
+  }
+
+  async updateFormula(tenantId: string, role: string, priceListId: string, data: any): Promise<any> {
+    this.assertManager(role);
+    const baseCode = this.priceListCode(String(data.baseCode || ''));
+    if (!baseCode) throw new BadRequestException('Elegí una lista base válida');
+    const list = await this.prisma.priceList.findFirst({ where: { id: priceListId, tenantId }, select: { id: true } });
+    if (!list) throw new NotFoundException('Lista inexistente');
+    const multiplier = this.parsePositiveNumber(data.multiplier, 'coeficiente');
+    const rounding = Number(data.roundingValue || 0);
+    return this.prisma.priceList.update({
+      where: { id: priceListId },
+      data: {
+        formulaBaseCode: baseCode,
+        formulaOperation: String(data.operation || 'multiply'),
+        formulaCoefficient: multiplier,
+        formulaRoundingMode: String(data.roundingMode || 'nearest'),
+        formulaRoundingValue: Number.isFinite(rounding) && rounding > 0 ? rounding : null,
+      },
+    });
   }
 
   coefficients(tenantId: string): any {
@@ -184,6 +221,19 @@ export class PriceListsService {
     return parsed;
   }
 
+  private calculateFormulaPrice(basePrice: number, operation: string, coefficient: number, roundingMode: string, rounding: number): number {
+    let calculated = basePrice;
+    if (operation === 'add') calculated = basePrice + coefficient;
+    else if (operation === 'subtract') calculated = Math.max(basePrice - coefficient, 0);
+    else calculated = basePrice * coefficient;
+    if (rounding > 0) {
+      if (roundingMode === 'up') calculated = Math.ceil(calculated / rounding) * rounding;
+      else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding;
+      else calculated = Math.round(calculated / rounding) * rounding;
+    }
+    return Number(calculated.toFixed(4));
+  }
+
   private priceListCode(name: string): string | null {
     const normalized = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     if (normalized.startsWith('lp1')) return 'LP1';
@@ -209,10 +259,10 @@ export class PriceListsService {
   private async ensureRequiredLists(tenantId: string): Promise<void> {
     const required = [
       { name: 'LP1 - Lista Precios 1', isDefault: true },
-      { name: 'LP2 - Lista Precios 2', isDefault: false },
-      { name: 'LP3 - Lista Precios 3', isDefault: false },
-      { name: 'LP4 - Lista Precios 4', isDefault: false },
-      { name: 'LP5 - Lista Precios 5', isDefault: false },
+      { name: 'LP2 - Lista Precios 2', isDefault: false, formulaBaseCode: 'LP1', formulaCoefficient: 0.6 },
+      { name: 'LP3 - Lista Precios 3', isDefault: false, formulaBaseCode: 'LP1', formulaCoefficient: 0.8 },
+      { name: 'LP4 - Lista Precios 4', isDefault: false, formulaBaseCode: 'CR', formulaCoefficient: 1.2 },
+      { name: 'LP5 - Lista Precios 5', isDefault: false, formulaBaseCode: 'CR', formulaCoefficient: 1 },
       { name: 'CR - Costo Reposición', isDefault: false },
       { name: 'CU - Costo Ultima Compra', isDefault: false },
     ];
@@ -227,7 +277,26 @@ export class PriceListsService {
       for (const list of required) {
         if (!names.has(list.name)) {
           await tx.priceList.create({
-            data: { tenantId, name: list.name, isDefault: false, isActive: true },
+            data: {
+              tenantId,
+              name: list.name,
+              isDefault: false,
+              isActive: true,
+              formulaBaseCode: list.formulaBaseCode,
+              formulaCoefficient: list.formulaCoefficient,
+              formulaRoundingMode: list.formulaBaseCode ? 'nearest' : undefined,
+              formulaRoundingValue: list.formulaBaseCode ? 10 : undefined,
+            },
+          });
+        } else if (list.formulaBaseCode) {
+          await tx.priceList.updateMany({
+            where: { tenantId, name: list.name, formulaBaseCode: null },
+            data: {
+              formulaBaseCode: list.formulaBaseCode,
+              formulaCoefficient: list.formulaCoefficient,
+              formulaRoundingMode: 'nearest',
+              formulaRoundingValue: 10,
+            },
           });
         }
       }

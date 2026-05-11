@@ -17,6 +17,11 @@ export class PriceListsController {
     return this.service.recalculateFromBase(req.user.tenantId, priceListId, req.user.role, body);
   }
 
+  @Patch(':priceListId/formula')
+  updateFormula(@Req() req: any, @Param('priceListId') priceListId: string, @Body() body: any) {
+    return this.service.updateFormula(req.user.tenantId, req.user.role, priceListId, body);
+  }
+
   @Get('coefficients')
   coefficients(@Req() req: any) {
     return this.service.coefficients(req.user.tenantId);

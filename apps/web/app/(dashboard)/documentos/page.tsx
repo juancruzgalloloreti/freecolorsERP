@@ -44,6 +44,7 @@ type DocumentRow = {
 type Detail = DocumentRow & {
   dueDate?: string | null
   customer?: { name?: string; cuit?: string; phone?: string; address?: string; city?: string; province?: string; ivaCondition?: string } | null
+  customerSnapshot?: { name?: string | null; cuit?: string | null; phone?: string | null; address?: string | null; city?: string | null; province?: string | null; ivaCondition?: string | null; deliveryAddress?: string | null } | null
   payments?: { id: string; method: string; amount: number; notes?: string | null }[]
   ccEntries?: { id: string; type: string; amount: number; description: string }[]
   stockMovements?: { id: string; type: string; quantity: number; productName?: string; depositName?: string }[]
@@ -160,19 +161,37 @@ export default function DocumentosPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<'all' | DocumentStatus>('all')
   const [type, setType] = useState<'all' | DocumentType>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [amountMin, setAmountMin] = useState('')
+  const [amountMax, setAmountMax] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<'confirm' | 'cancel' | 'convert-a' | 'convert-b' | 'convert-c' | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const { data: rowsRaw, isLoading } = useQuery({
-    queryKey: ['documents-history', search, status, type],
+    queryKey: ['documents-history', search, status, type, dateFrom, dateTo],
     queryFn: () => documentsApi.list({
       search: search || undefined,
       status: status === 'all' ? undefined : status,
       type: type === 'all' ? undefined : type,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
     }),
   })
   const rows = asArray<DocumentRow>(rowsRaw)
+  const filteredRows = useMemo(() => {
+    const min = amountMin ? Number(amountMin.replace(',', '.')) : null
+    const max = amountMax ? Number(amountMax.replace(',', '.')) : null
+    return rows.filter((row) => {
+      const total = Number(row.total || 0)
+      if (min !== null && Number.isFinite(min) && total < min) return false
+      if (max !== null && Number.isFinite(max) && total > max) return false
+      return true
+    })
+  }, [amountMax, amountMin, rows])
+  const activeFilterCount = [search, status !== 'all' ? status : '', type !== 'all' ? type : '', dateFrom, dateTo, amountMin, amountMax].filter(Boolean).length
 
   const activeId = selectedId || selectedParam || null
 
@@ -184,11 +203,21 @@ export default function DocumentosPage() {
   const selected = detail as Detail | undefined
 
   const totals = useMemo(() => ({
-    documents: rows.length,
-    confirmed: rows.filter((row) => row.status === 'CONFIRMED').length,
-    drafts: rows.filter((row) => row.status === 'DRAFT').length,
-    revenue: rows.filter((row) => row.status === 'CONFIRMED').reduce((sum, row) => sum + Number(row.total || 0), 0),
-  }), [rows])
+    documents: filteredRows.length,
+    confirmed: filteredRows.filter((row) => row.status === 'CONFIRMED').length,
+    drafts: filteredRows.filter((row) => row.status === 'DRAFT').length,
+    revenue: filteredRows.filter((row) => row.status === 'CONFIRMED').reduce((sum, row) => sum + Number(row.total || 0), 0),
+  }), [filteredRows])
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatus('all')
+    setType('all')
+    setDateFrom('')
+    setDateTo('')
+    setAmountMin('')
+    setAmountMax('')
+  }
 
   const closeDetail = () => {
     setSelectedId(null)
@@ -199,7 +228,7 @@ export default function DocumentosPage() {
     mutationFn: async (action: 'confirm' | 'cancel' | 'convert-a' | 'convert-b' | 'convert-c') => {
       if (!activeId) throw new Error('Seleccioná un documento')
       if (action === 'confirm') return documentsApi.confirm(activeId, { paymentMode: 'CASH' })
-      if (action === 'cancel') return documentsApi.cancel(activeId, { reason: 'Anulado desde historial' })
+      if (action === 'cancel') return documentsApi.cancel(activeId, { reason: cancelReason.trim() })
       const targetType = action === 'convert-a' ? 'INVOICE_A' : action === 'convert-c' ? 'INVOICE_C' : 'INVOICE_B'
       return documentsApi.convert(activeId, { type: targetType })
     },
@@ -213,6 +242,7 @@ export default function DocumentosPage() {
       qc.invalidateQueries({ queryKey: ['current-account'] })
       if (doc?.id) setSelectedId(doc.id)
       setPendingAction(null)
+      setCancelReason('')
       setError(null)
     },
     onError: (mutationError: unknown) => {
@@ -259,6 +289,27 @@ export default function DocumentosPage() {
               <option value="INVOICE_C">Factura C</option>
             </select>
           </div>
+          <div className="history-toolbar" style={{ marginTop: 10 }}>
+            <label className="fc-label" style={{ flex: '1 1 140px' }}>
+              Desde
+              <input className="fc-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            </label>
+            <label className="fc-label" style={{ flex: '1 1 140px' }}>
+              Hasta
+              <input className="fc-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            </label>
+            <label className="fc-label" style={{ flex: '1 1 130px' }}>
+              Mínimo
+              <input className="fc-input" inputMode="decimal" value={amountMin} onChange={(event) => setAmountMin(event.target.value)} placeholder="0,00" />
+            </label>
+            <label className="fc-label" style={{ flex: '1 1 130px' }}>
+              Máximo
+              <input className="fc-input" inputMode="decimal" value={amountMax} onChange={(event) => setAmountMax(event.target.value)} placeholder="Sin tope" />
+            </label>
+            <button className="btn btn-secondary" type="button" disabled={activeFilterCount === 0} onClick={clearFilters}>
+              Limpiar filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
+          </div>
 
           <div className="stats-strip">
             <div><span>Total</span><strong>{totals.documents}</strong></div>
@@ -269,7 +320,7 @@ export default function DocumentosPage() {
 
           {isLoading ? (
             <div className="empty-state"><span className="spinner" /></div>
-          ) : rows.length === 0 ? (
+          ) : filteredRows.length === 0 ? (
             <div className="empty-state"><p>No hay documentos para los filtros actuales.</p></div>
           ) : (
             <>
@@ -287,7 +338,7 @@ export default function DocumentosPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row) => (
+                    {filteredRows.map((row) => (
                         <tr key={row.id} onClick={() => setSelectedId(row.id)} style={{ cursor: 'pointer', background: activeId === row.id ? 'rgba(124,58,237,0.12)' : undefined }}>
                         <td>{DATE.format(new Date(row.date))}</td>
                         <td>{TYPE_LABEL[row.type] ?? row.type}</td>
@@ -306,7 +357,7 @@ export default function DocumentosPage() {
               </div>
 
               <div className="document-mobile-cards">
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <button className="document-card" key={row.id} type="button" onClick={() => setSelectedId(row.id)}>
                     <header>
                       <div>
@@ -343,8 +394,8 @@ export default function DocumentosPage() {
               </div>
 
               <div className="detail-kv">
-                <div><span>Cliente</span><strong>{selected.customerName || 'Consumidor final'}</strong></div>
-                <div><span>CUIT</span><strong>{selected.customer?.cuit || selected.customerCuit || 'Sin CUIT'}</strong></div>
+                <div><span>Cliente</span><strong>{selected.customerSnapshot?.name || selected.customerName || 'Consumidor final'}</strong></div>
+                <div><span>CUIT</span><strong>{selected.customerSnapshot?.cuit || selected.customerCuit || 'Sin CUIT'}</strong></div>
                 <div><span>Fecha</span><strong>{DATE.format(new Date(selected.date))}</strong></div>
                 <div><span>Vencimiento</span><strong>{selected.dueDate ? DATE.format(new Date(selected.dueDate)) : '-'}</strong></div>
                 <div><span>Total</span><strong>{ARS.format(Number(selected.total || 0))}</strong></div>
@@ -352,9 +403,14 @@ export default function DocumentosPage() {
               </div>
 
               <div className="document-customer-strip">
-                <div><span>Telefono</span><strong>{selected.customer?.phone || '-'}</strong></div>
-                <div><span>Direccion</span><strong>{[selected.customer?.address, selected.customer?.city, selected.customer?.province].filter(Boolean).join(', ') || '-'}</strong></div>
-                <div><span>Condicion IVA</span><strong>{selected.customer?.ivaCondition || '-'}</strong></div>
+                <div><span>Telefono</span><strong>{selected.customerSnapshot?.phone || selected.customer?.phone || '-'}</strong></div>
+                <div><span>Direccion</span><strong>{[
+                  selected.customerSnapshot?.address || selected.customer?.address,
+                  selected.customerSnapshot?.city || selected.customer?.city,
+                  selected.customerSnapshot?.province || selected.customer?.province,
+                ].filter(Boolean).join(', ') || '-'}</strong></div>
+                <div><span>Condicion IVA</span><strong>{selected.customerSnapshot?.ivaCondition || selected.customer?.ivaCondition || '-'}</strong></div>
+                <div><span>Entrega</span><strong>{selected.customerSnapshot?.deliveryAddress || '-'}</strong></div>
               </div>
 
               <div className="detail-actions">
@@ -477,16 +533,46 @@ export default function DocumentosPage() {
         onCancel={() => setPendingAction(null)}
         onConfirm={() => actionMutation.mutate('confirm')}
       />
-      <ConfirmDialog
-        open={pendingAction === 'cancel'}
-        title="Anular documento"
-        body="Si el documento estaba confirmado, se registrarán movimientos inversos auditables."
-        danger
-        confirmLabel="Anular"
-        pending={actionMutation.isPending}
-        onCancel={() => setPendingAction(null)}
-        onConfirm={() => actionMutation.mutate('cancel')}
-      />
+      {pendingAction === 'cancel' && (
+        <div className="entity-sheet-overlay">
+          <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cancel-document-title" tabIndex={-1}>
+            <button
+              className="btn btn-icon btn-secondary confirm-dialog-close"
+              type="button"
+              aria-label="Cerrar dialogo"
+              disabled={actionMutation.isPending}
+              onClick={() => {
+                setPendingAction(null)
+                setCancelReason('')
+              }}
+            >
+              ×
+            </button>
+            <h2 id="cancel-document-title">Anular documento</h2>
+            <p>Si el documento estaba confirmado, se registrarán movimientos inversos auditables.</p>
+            <label className="fc-label" htmlFor="cancel-document-reason">Motivo obligatorio</label>
+            <textarea
+              id="cancel-document-reason"
+              className="fc-input"
+              autoFocus
+              rows={3}
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              placeholder="Ej: error de carga, cliente desistió, comprobante duplicado..."
+            />
+            <div className="action-bar">
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={cancelReason.trim().length < 10 || actionMutation.isPending}
+                onClick={() => actionMutation.mutate('cancel')}
+              >
+                {actionMutation.isPending ? 'Anulando...' : 'Anular'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         open={pendingAction === 'convert-a' || pendingAction === 'convert-b' || pendingAction === 'convert-c'}
         title="Convertir presupuesto"

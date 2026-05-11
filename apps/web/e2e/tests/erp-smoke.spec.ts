@@ -77,6 +77,22 @@ async function apiPost<T>(page: Page, path: string, body: Record<string, unknown
   }, { path, body }) as Promise<T>;
 }
 
+async function apiPatch<T>(page: Page, path: string, body: Record<string, unknown>): Promise<T> {
+  return page.evaluate(async ({ path, body }) => {
+    const token = document.cookie.split('; ').find((row) => row.startsWith('access_token='))?.split('=')[1];
+    const res = await fetch(`/api/v1${path}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${decodeURIComponent(token)}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }, { path, body }) as Promise<T>;
+}
+
 async function apiGet<T>(page: Page, path: string): Promise<T> {
   return page.evaluate(async ({ path }) => {
     const token = document.cookie.split('; ').find((row) => row.startsWith('access_token='))?.split('=')[1];
@@ -233,6 +249,45 @@ test.describe('ERP Smoke & Console Audit', () => {
     expect(errors).toEqual([]);
   });
 
+  test('document keeps customer fiscal snapshot after customer edit', async ({ page }) => {
+    await login(page);
+    const suffix = Date.now().toString().slice(-8);
+    const customer = await apiPost<{ id: string }>(page, '/customers', {
+      name: `Cliente snapshot ${suffix}`,
+      cuit: `27${suffix}`,
+      phone: `11${suffix}`,
+      address: `Domicilio original ${suffix}`,
+      city: 'Ituzaingo',
+      province: 'Buenos Aires',
+      ivaCondition: 'CONSUMIDOR_FINAL',
+    });
+    const document = await apiPost<{ id: string; customerName: string; customerSnapshot?: { address?: string } }>(page, '/documents', {
+      type: 'BUDGET',
+      customerId: customer.id,
+      notes: `Entrega: Entrega original ${suffix}`,
+      items: [{
+        description: `Item snapshot ${suffix}`,
+        quantity: 1,
+        unitPrice: 1000,
+        taxRate: 21,
+      }],
+    });
+
+    await apiPatch(page, `/customers/${customer.id}`, {
+      name: `Cliente editado ${suffix}`,
+      address: `Domicilio editado ${suffix}`,
+    });
+
+    const detail = await apiGet<{ customerName: string; customerSnapshot?: { name?: string; address?: string; deliveryAddress?: string } }>(page, `/documents/${document.id}`);
+    expect(detail.customerName).toBe(`Cliente snapshot ${suffix}`);
+    expect(detail.customerSnapshot?.name).toBe(`Cliente snapshot ${suffix}`);
+    expect(detail.customerSnapshot?.address).toBe(`Domicilio original ${suffix}`);
+    expect(detail.customerSnapshot?.deliveryAddress).toBe(`Entrega original ${suffix}`);
+
+    const errors = [...consoleErrors, ...networkErrors];
+    expect(errors).toEqual([]);
+  });
+
   test('counter confirms invoice B with open cash and records cash movement', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
@@ -272,6 +327,62 @@ test.describe('ERP Smoke & Console Audit', () => {
     await expect(page.getByText(/abierta/i).first()).toBeVisible();
     await expect(page.getByText(/SALE_PAYMENT/i).first()).toBeVisible();
     await expect(page.getByText(/2\.500,00/).first()).toBeVisible();
+
+    const errors = [...consoleErrors, ...networkErrors];
+    expect(errors).toEqual([]);
+  });
+
+  test('full commercial flow: sale, payment, cash, stock and document', async ({ page }) => {
+    test.setTimeout(90_000);
+    await login(page);
+    const existingCash = await apiGet<{ expectedAmount?: number } | null>(page, '/cash/current');
+    if (existingCash) {
+      await apiPost(page, '/cash/close', { countedAmount: existingCash.expectedAmount ?? 0, note: 'Cierre previo flujo completo E2E' });
+    }
+
+    await page.goto('/ventas');
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.getByLabel(/documento/i).selectOption('INVOICE_B');
+    await page.getByLabel(/punto de venta/i).selectOption({ index: 1 });
+
+    await page.getByRole('button', { name: /abrir caja/i }).click();
+    await expect(page.getByRole('heading', { name: /^abrir caja$/i })).toBeVisible();
+    await page.getByRole('button', { name: /^abrir caja$/i }).last().click();
+    await expect(page.getByText(/caja abierta correctamente/i)).toBeVisible();
+
+    const { code, productName } = await addQuickCounterProduct(page, 'FLOW');
+    await page.getByRole('button', { name: /^cobrar$/i }).click();
+    await page.getByRole('button', { name: /agregar pago/i }).click();
+    await page.getByRole('button', { name: /^aceptar$/i }).click();
+    await page.getByRole('button', { name: /^confirmar$/i }).click();
+    await expect(page.getByRole('link', { name: /ver comprobante/i })).toBeVisible({ timeout: 30000 });
+    await page.getByRole('link', { name: /ver comprobante/i }).click();
+    await page.waitForURL(/\/documentos\?selected=/, { timeout: 15000 });
+    const documentId = new URL(page.url()).searchParams.get('selected');
+    expect(documentId).toBeTruthy();
+    await expect(page.getByText(productName).first()).toBeVisible();
+    await expect(page.locator('.document-detail-panel .badge-green', { hasText: 'Confirmado' })).toBeVisible();
+
+    const document = await apiGet<{ status: string; total: number; payments?: Array<{ amount: number; method: string }>; stockMovements?: Array<{ quantity: number }> }>(page, `/documents/${documentId}`);
+    expect(document.status).toBe('CONFIRMED');
+    expect(Number(document.total)).toBe(2500);
+    expect(document.payments?.some((payment) => payment.method === 'CASH' && Number(payment.amount) === 2500)).toBeTruthy();
+    expect(document.stockMovements?.some((movement) => Number(movement.quantity) === -1)).toBeTruthy();
+
+    const stockRows = await apiGet<Array<{ productCode: string; qty: number; quantity: number }>>(page, `/stock?search=${encodeURIComponent(code)}`);
+    const stockRow = stockRows.find((row) => row.productCode === code);
+    expect(Number(stockRow?.qty ?? stockRow?.quantity ?? 0)).toBe(9);
+
+    const cash = await apiGet<{ expectedAmount?: number; movements?: Array<{ documentId?: string; amount: number; type: string }> }>(page, '/cash/current');
+    expect(Number(cash.expectedAmount ?? 0)).toBe(2500);
+    expect((cash.movements ?? []).some((movement) => movement.documentId === documentId && movement.type === 'SALE_PAYMENT' && Number(movement.amount) === 2500)).toBeTruthy();
+
+    await page.goto('/caja');
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await expect(page.getByText(/resumen diario/i)).toBeVisible();
+    await page.getByLabel(/dinero contado/i).fill(String(cash.expectedAmount ?? 2500));
+    await page.getByRole('button', { name: /cerrar caja/i }).click();
+    await expect(page.getByText(/caja cerrada/i)).toBeVisible({ timeout: 15000 });
 
     const errors = [...consoleErrors, ...networkErrors];
     expect(errors).toEqual([]);
@@ -399,6 +510,7 @@ test.describe('ERP Smoke & Console Audit', () => {
 
     await page.getByRole('button', { name: /^anular$/i }).click();
     await expect(page.getByRole('heading', { name: /^anular documento$/i })).toBeVisible();
+    await page.getByLabel(/motivo obligatorio/i).fill('Anulacion E2E con reversa completa');
     await page.getByRole('button', { name: /^anular$/i }).last().click();
     await expect(page.locator('.document-detail-panel .badge-red', { hasText: 'Anulado' })).toBeVisible({ timeout: 30000 });
     await expect(page.locator('.document-detail-panel').getByText(/\[object Object\]/)).toHaveCount(0);

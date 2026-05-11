@@ -34,6 +34,12 @@ function money(value: unknown) {
   return ARS.format(Number(value || 0))
 }
 
+function parseMoney(value: unknown) {
+  if (value === undefined || value === null || value === '') return 0
+  const parsed = Number(String(value).replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function apiMessage(error: unknown, fallback: string) {
   const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
   const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || fallback
@@ -47,17 +53,36 @@ export default function CajaPage() {
   const [openingAmount, setOpeningAmount] = useState('')
   const [move, setMove] = useState({ type: 'CASH_IN', amount: '', description: '', reference: '' })
   const [countedAmount, setCountedAmount] = useState('')
+  const [closingNote, setClosingNote] = useState('')
   const [message, setMessage] = useState<string | null>(null)
 
   const { data: current, isLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
   const { data: sessionsRaw } = useQuery({ queryKey: ['cash-sessions'], queryFn: cashApi.sessions })
   const currentSession = current as CashSession | null
   const sessions: CashSession[] = Array.isArray(sessionsRaw) ? sessionsRaw : []
-  const movements = useMemo(() => currentSession?.movements ?? [], [currentSession?.movements])
+  const inspectedSession = currentSession ?? sessions[0] ?? null
+  const movements = useMemo(() => inspectedSession?.movements ?? [], [inspectedSession?.movements])
   const totals = useMemo(() => ({
     income: movements.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0),
     outcome: Math.abs(movements.filter((item) => Number(item.amount) < 0).reduce((sum, item) => sum + Number(item.amount), 0)),
   }), [movements])
+  const dailyBreakdown = useMemo(() => {
+    const byType = new Map<string, number>()
+    const byMethod = new Map<string, number>()
+    for (const movement of movements) {
+      byType.set(movement.type, (byType.get(movement.type) ?? 0) + Number(movement.amount || 0))
+      byMethod.set(movement.method, (byMethod.get(movement.method) ?? 0) + Number(movement.amount || 0))
+    }
+    return {
+      byType: Array.from(byType, ([label, amount]) => ({ label, amount })).sort((a, b) => a.label.localeCompare(b.label)),
+      byMethod: Array.from(byMethod, ([label, amount]) => ({ label, amount })).sort((a, b) => a.label.localeCompare(b.label)),
+    }
+  }, [movements])
+  const closeDifference = currentSession && countedAmount
+    ? parseMoney(countedAmount) - Number(currentSession.expectedAmount || 0)
+    : 0
+  const closeHasDifference = Math.abs(closeDifference) > 0.01
+  const closeNeedsNote = closeHasDifference && !closingNote.trim()
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['cash-current'] })
@@ -77,8 +102,8 @@ export default function CajaPage() {
   })
 
   const closeMutation = useMutation({
-    mutationFn: () => cashApi.close({ countedAmount, note: 'Cierre desde Caja' }),
-    onSuccess: () => { refresh(); setCountedAmount(''); setMessage('Caja cerrada.') },
+    mutationFn: () => cashApi.close({ countedAmount, note: closingNote.trim() }),
+    onSuccess: () => { refresh(); setCountedAmount(''); setClosingNote(''); setMessage('Caja cerrada.') },
     onError: (error) => setMessage(apiMessage(error, 'No se pudo cerrar caja')),
   })
 
@@ -95,10 +120,50 @@ export default function CajaPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 14 }}>
         <div className="stat-card"><div className="stat-value">{isLoading ? '...' : currentSession ? 'Abierta' : 'Cerrada'}</div><div className="stat-label">Estado</div></div>
-        <div className="stat-card"><div className="stat-value">{money(currentSession?.expectedAmount)}</div><div className="stat-label">Saldo esperado</div></div>
+        <div className="stat-card"><div className="stat-value">{money(inspectedSession?.expectedAmount)}</div><div className="stat-label">Saldo esperado</div></div>
         <div className="stat-card"><div className="stat-value">{money(totals.income)}</div><div className="stat-label">Entradas</div></div>
         <div className="stat-card"><div className="stat-value">{money(totals.outcome)}</div><div className="stat-label">Salidas</div></div>
       </div>
+
+      {inspectedSession && (
+        <section className="fc-card" style={{ marginBottom: 14 }}>
+          <div className="page-header" style={{ marginBottom: 12 }}>
+            <div>
+              <h2 style={{ fontSize: 16, margin: 0 }}>Resumen diario</h2>
+              <p className="page-subtitle" style={{ marginTop: 4 }}>
+                {currentSession ? 'Caja abierta' : 'Última caja cerrada'} · {new Date(inspectedSession.openedAt).toLocaleString('es-AR')}
+              </p>
+            </div>
+            <span className={`badge ${inspectedSession.status === 'OPEN' ? 'badge-green' : 'badge-yellow'}`}>{inspectedSession.status === 'OPEN' ? 'Abierta' : 'Cerrada'}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+            <div className="stat-card"><div className="stat-value">{money(inspectedSession.openingAmount)}</div><div className="stat-label">Apertura</div></div>
+            <div className="stat-card"><div className="stat-value">{money(inspectedSession.expectedAmount)}</div><div className="stat-label">Esperado</div></div>
+            <div className="stat-card"><div className="stat-value">{inspectedSession.countedAmount == null ? '-' : money(inspectedSession.countedAmount)}</div><div className="stat-label">Contado</div></div>
+            <div className="stat-card"><div className="stat-value">{inspectedSession.difference == null ? '-' : money(inspectedSession.difference)}</div><div className="stat-label">Diferencia</div></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginTop: 12 }}>
+            <div>
+              <h3 className="fc-label">Por tipo</h3>
+              {dailyBreakdown.byType.length === 0 ? <p className="page-subtitle">Sin movimientos.</p> : dailyBreakdown.byType.map((item) => (
+                <div className="detail-line" key={item.label}>
+                  <div><strong>{item.label}</strong></div>
+                  <b>{money(item.amount)}</b>
+                </div>
+              ))}
+            </div>
+            <div>
+              <h3 className="fc-label">Por método</h3>
+              {dailyBreakdown.byMethod.length === 0 ? <p className="page-subtitle">Sin movimientos.</p> : dailyBreakdown.byMethod.map((item) => (
+                <div className="detail-line" key={item.label}>
+                  <div><strong>{item.label}</strong></div>
+                  <b>{money(item.amount)}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {!currentSession ? (
         <section className="fc-card" style={{ maxWidth: 520 }}>
@@ -132,14 +197,32 @@ export default function CajaPage() {
               <h2 style={{ fontSize: 16, marginBottom: 10 }}>Cerrar caja</h2>
               <label className="fc-label" htmlFor="cash-counted-amount">Dinero contado</label>
               <input id="cash-counted-amount" className="fc-input" inputMode="decimal" value={countedAmount} onChange={(event) => setCountedAmount(event.target.value)} placeholder={String(currentSession.expectedAmount || 0)} />
-              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!isOwner || !countedAmount || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
+              {countedAmount && (
+                <div className={`counter-alert ${closeHasDifference ? 'warning' : 'success'}`} style={{ marginTop: 10 }}>
+                  Diferencia de arqueo: {money(closeDifference)}
+                </div>
+              )}
+              {closeHasDifference && (
+                <>
+                  <label className="fc-label" htmlFor="cash-closing-note" style={{ marginTop: 10 }}>Observación obligatoria</label>
+                  <textarea
+                    id="cash-closing-note"
+                    className="fc-input"
+                    value={closingNote}
+                    onChange={(event) => setClosingNote(event.target.value)}
+                    placeholder="Ej: falta vuelto, pago mal registrado, retiro pendiente..."
+                    rows={3}
+                  />
+                </>
+              )}
+              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!isOwner || !countedAmount || closeNeedsNote || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
                 <Lock size={14} /> {closeMutation.isPending ? 'Cerrando...' : 'Cerrar caja'}
               </button>
             </div>
           </section>
 
           <section className="fc-card" style={{ overflow: 'hidden' }}>
-            <h2 style={{ fontSize: 16, marginBottom: 12 }}>Movimientos de hoy</h2>
+            <h2 style={{ fontSize: 16, marginBottom: 12 }}>{currentSession ? 'Movimientos de hoy' : 'Movimientos de la última caja'}</h2>
             {movements.length === 0 ? (
               <div className="empty-state"><p>Sin movimientos todavía.</p></div>
             ) : (

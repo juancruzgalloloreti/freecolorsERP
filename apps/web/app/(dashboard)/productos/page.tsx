@@ -23,6 +23,11 @@ interface Product {
 interface PriceList {
   id: string
   name: string
+  formulaBaseCode?: string | null
+  formulaOperation?: string | null
+  formulaCoefficient?: number | string | null
+  formulaRoundingMode?: string | null
+  formulaRoundingValue?: number | string | null
   items?: { productId: string; price: number | string }[]
 }
 
@@ -117,25 +122,64 @@ function directPrice(lists: PriceList[], productId: string, code: string) {
 function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
   const code = priceListCode(list.name)
   const direct = priceOf(list, product.id)
-  const lp1 = directPrice(lists, product.id, 'LP1') || direct
   const cr = directPrice(lists, product.id, 'CR') || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
   const cu = directPrice(lists, product.id, 'CU') || moneyValue(product.lastPurchaseCost) || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
   if (direct > 0) return Math.round(direct * 100) / 100
-  if (code === 'LP2') return Math.round(lp1 * 0.6 * 100) / 100
-  if (code === 'LP3') return Math.round(lp1 * 0.8 * 100) / 100
-  if (code === 'LP4') return Math.round(cr * 1.2 * 100) / 100
-  if (code === 'LP5') return Math.round(cr * 100) / 100
   if (code === 'CR') return Math.round(cr * 100) / 100
   if (code === 'CU') return Math.round(cu * 100) / 100
+  const fallback = defaultFormulaForCode(code)
+  const baseCode = list.formulaBaseCode || fallback?.baseCode
+  if (baseCode) {
+    const basePrice = baseCode === 'CR' ? cr : baseCode === 'CU' ? cu : directPrice(lists, product.id, baseCode)
+    if (!basePrice) return 0
+    return calculateFormulaPrice(
+      basePrice,
+      list.formulaOperation || fallback?.operation || 'multiply',
+      moneyValue(list.formulaCoefficient) || fallback?.coefficient || 1,
+      list.formulaRoundingMode || fallback?.roundingMode || 'nearest',
+      moneyValue(list.formulaRoundingValue) || fallback?.rounding || 0,
+    )
+  }
   return direct
 }
 
-function priceListHint(name: string) {
+function calculateFormulaPrice(basePrice: number, operation: string, coefficient: number, roundingMode: string, rounding: number) {
+  let calculated = basePrice
+  if (operation === 'add') calculated = basePrice + coefficient
+  else if (operation === 'subtract') calculated = Math.max(basePrice - coefficient, 0)
+  else calculated = basePrice * coefficient
+  if (rounding > 0) {
+    if (roundingMode === 'up') calculated = Math.ceil(calculated / rounding) * rounding
+    else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding
+    else calculated = Math.round(calculated / rounding) * rounding
+  }
+  return Number(calculated.toFixed(4))
+}
+
+function defaultFormulaForCode(code: string | null) {
+  if (code === 'LP2') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.6, roundingMode: 'nearest', rounding: 10 }
+  if (code === 'LP3') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.8, roundingMode: 'nearest', rounding: 10 }
+  if (code === 'LP4') return { baseCode: 'CR', operation: 'multiply', coefficient: 1.2, roundingMode: 'nearest', rounding: 10 }
+  if (code === 'LP5') return { baseCode: 'CR', operation: 'multiply', coefficient: 1, roundingMode: 'nearest', rounding: 10 }
+  return null
+}
+
+function formulaHint(list: PriceList) {
+  const code = priceListCode(list.name)
+  const fallback = defaultFormulaForCode(code)
+  const baseCode = list.formulaBaseCode || fallback?.baseCode
+  if (!baseCode) return null
+  const operation = list.formulaOperation || fallback?.operation || 'multiply'
+  const coefficient = moneyValue(list.formulaCoefficient) || fallback?.coefficient || 1
+  const operator = operation === 'add' ? '+' : operation === 'subtract' ? '-' : 'x'
+  return `${baseCode} ${operator} ${coefficient}`
+}
+
+function priceListHint(list: PriceList) {
+  const name = list.name
   const code = priceListCode(name)
-  if (code === 'LP2') return 'Automática: LP1 x 0.60'
-  if (code === 'LP3') return 'Automática: LP1 x 0.80'
-  if (code === 'LP4') return 'Automática: CR x 1.20'
-  if (code === 'LP5') return 'Automática: CR'
+  const hint = formulaHint(list)
+  if (hint) return `Automática: ${hint}`
   if (code === 'CR') return 'Manual: costo reposición'
   if (code === 'CU') return 'Manual: última compra'
   return 'Manual'
@@ -320,11 +364,11 @@ function ProductModal({ product, brands, categories, priceLists, onClose, onSave
                     inputMode="decimal"
                     value={prices[list.id] || ''}
                     onChange={(e) => setPrice(list.id, e.target.value)}
-                    placeholder={editable ? '0.00' : priceListHint(list.name)}
+                    placeholder={editable ? '0.00' : priceListHint(list)}
                     readOnly={!editable}
                     disabled={!editable}
                   />
-                  <small style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontSize: 11 }}>{priceListHint(list.name)}</small>
+                  <small style={{ display: 'block', marginTop: 4, color: 'var(--text-muted)', fontSize: 11 }}>{priceListHint(list)}</small>
                 </div>
                 )
               })}

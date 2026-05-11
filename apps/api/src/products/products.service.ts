@@ -12,7 +12,16 @@ const REQUIRED_AGUILA_PRICE_LISTS = [
   { name: 'CU - Costo Ultima Compra', isDefault: false },
 ];
 
-type PriceListForFormula = { id: string; name: string; isDefault?: boolean | null };
+type PriceListForFormula = {
+  id: string;
+  name: string;
+  isDefault?: boolean | null;
+  formulaBaseCode?: string | null;
+  formulaOperation?: string | null;
+  formulaCoefficient?: unknown;
+  formulaRoundingMode?: string | null;
+  formulaRoundingValue?: unknown;
+};
 type PriceListItemForFormula = { priceListId: string; price: unknown };
 type ProductForFormula = {
   priceListItems: PriceListItemForFormula[];
@@ -102,7 +111,16 @@ export class ProductsService {
       this.prisma.priceList.findMany({
         where: { tenantId, isActive: true },
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, isDefault: true },
+        select: {
+          id: true,
+          name: true,
+          isDefault: true,
+          formulaBaseCode: true,
+          formulaOperation: true,
+          formulaCoefficient: true,
+          formulaRoundingMode: true,
+          formulaRoundingValue: true,
+        },
       }),
     ]);
     const orderedPriceLists = this.sortPriceLists(priceLists);
@@ -652,18 +670,23 @@ export class ProductsService {
 
   private async syncPrices(tx: any, tenantId: string, productId: string, prices: any, allowedPriceListIds?: Set<string>): Promise<void> {
     if (!prices || typeof prices !== 'object') return;
-    const allowedIds = allowedPriceListIds ?? new Set(
-      (await tx.priceList.findMany({ where: { tenantId }, select: { id: true } })).map((list: { id: string }) => list.id),
+    const priceLists = await tx.priceList.findMany({ where: { tenantId }, select: { id: true, name: true } });
+    const allowedIds = allowedPriceListIds ?? new Set(priceLists.map((list: { id: string }) => list.id));
+    const manualOverrideIds = new Set(
+      priceLists
+        .filter((list: { name: string }) => this.priceListCode(list.name) === 'LP4')
+        .map((list: { id: string }) => list.id),
     );
 
     for (const [priceListId, rawPrice] of Object.entries(prices)) {
       if (!allowedIds.has(priceListId)) continue;
       const price = this.parseMoney(rawPrice);
       if (price === null || price < 0) continue;
+      const isManualOverride = manualOverrideIds.has(priceListId);
       await tx.priceListItem.upsert({
         where: { priceListId_productId: { priceListId, productId } },
-        update: { price },
-        create: { priceListId, productId, price },
+        update: { price, isManualOverride },
+        create: { priceListId, productId, price, isManualOverride },
       });
     }
   }
@@ -804,24 +827,74 @@ export class ProductsService {
     const selected = priceLists.find((list) => list.id === priceListId) || priceLists.find((list) => list.isDefault) || priceLists[0];
     const selectedCode = selected ? this.priceListCode(selected.name) : 'LP1';
     const direct = this.directListPrice(product, selected);
-    const lp1 = this.directListPrice(product, this.listByCode(priceLists, 'LP1')) ?? this.directListPrice(product, selected) ?? 0;
-    const cr = this.directListPrice(product, this.listByCode(priceLists, 'CR'))
-      ?? this.moneyValue(product.replacementCost)
-      ?? this.moneyValue(product.averageCost)
-      ?? 0;
-    const cu = this.directListPrice(product, this.listByCode(priceLists, 'CU'))
-      ?? this.moneyValue(product.lastPurchaseCost)
-      ?? this.moneyValue(product.replacementCost)
-      ?? this.moneyValue(product.averageCost)
-      ?? 0;
+    const lp1 = this.basePriceByCode(product, priceLists, 'LP1') ?? this.directListPrice(product, selected) ?? 0;
 
-    if (selectedCode === 'LP2') return { price: this.roundMoney(direct ?? lp1 * 0.6), multiplier: direct === null ? 0.6 : 1, name: direct === null ? 'LP2 = LP1 x 0.60' : 'LP2 guardada' };
-    if (selectedCode === 'LP3') return { price: this.roundMoney(direct ?? lp1 * 0.8), multiplier: direct === null ? 0.8 : 1, name: direct === null ? 'LP3 = LP1 x 0.80' : 'LP3 guardada' };
-    if (selectedCode === 'LP4') return { price: this.roundMoney(direct ?? cr * 1.2), multiplier: direct === null ? 1.2 : 1, name: direct === null ? 'LP4 = CR x 1.20' : 'LP4 guardada' };
-    if (selectedCode === 'LP5') return { price: this.roundMoney(direct ?? cr), multiplier: 1, name: direct === null ? 'LP5 = CR' : 'LP5 guardada' };
-    if (selectedCode === 'CR') return { price: this.roundMoney(cr), multiplier: 1, name: 'CR' };
-    if (selectedCode === 'CU') return { price: this.roundMoney(cu), multiplier: 1, name: 'CU' };
-    return { price: this.roundMoney(direct ?? lp1), multiplier: 1, name: selectedCode === 'LP1' ? 'LP1' : '' };
+    if (direct !== null) {
+      return { price: this.roundMoney(direct), multiplier: 1, name: selectedCode ? `${selectedCode} guardada` : '' };
+    }
+    if (selectedCode === 'CR') return { price: this.roundMoney(this.basePriceByCode(product, priceLists, 'CR') ?? 0), multiplier: 1, name: 'CR' };
+    if (selectedCode === 'CU') return { price: this.roundMoney(this.basePriceByCode(product, priceLists, 'CU') ?? 0), multiplier: 1, name: 'CU' };
+
+    const fallback = this.defaultFormulaForCode(selectedCode);
+    const baseCode = selected?.formulaBaseCode || fallback?.baseCode;
+    const coefficient = this.moneyValue(selected?.formulaCoefficient) ?? fallback?.coefficient ?? 1;
+    const operation = selected?.formulaOperation || fallback?.operation || 'multiply';
+    const roundingMode = selected?.formulaRoundingMode || fallback?.roundingMode || 'nearest';
+    const rounding = this.moneyValue(selected?.formulaRoundingValue) ?? fallback?.rounding ?? 0;
+    const basePrice = baseCode ? this.basePriceByCode(product, priceLists, baseCode) ?? 0 : lp1;
+
+    if (baseCode) {
+      return {
+        price: this.calculateFormulaPrice(basePrice, operation, coefficient, roundingMode, rounding),
+        multiplier: operation === 'multiply' ? coefficient : 1,
+        name: `${selectedCode || selected?.name || 'Lista'} = ${baseCode} ${this.formulaLabel(operation, coefficient)}`,
+      };
+    }
+
+    return { price: this.roundMoney(lp1), multiplier: 1, name: selectedCode === 'LP1' ? 'LP1' : '' };
+  }
+
+  private basePriceByCode(product: ProductForFormula, priceLists: PriceListForFormula[], code: string): number | null {
+    const normalizedCode = this.priceListCode(code) || code;
+    if (normalizedCode === 'CR') {
+      return this.directListPrice(product, this.listByCode(priceLists, 'CR'))
+        ?? this.moneyValue(product.replacementCost)
+        ?? this.moneyValue(product.averageCost);
+    }
+    if (normalizedCode === 'CU') {
+      return this.directListPrice(product, this.listByCode(priceLists, 'CU'))
+        ?? this.moneyValue(product.lastPurchaseCost)
+        ?? this.moneyValue(product.replacementCost)
+        ?? this.moneyValue(product.averageCost);
+    }
+    return this.directListPrice(product, this.listByCode(priceLists, normalizedCode));
+  }
+
+  private calculateFormulaPrice(basePrice: number, operation: string, coefficient: number, roundingMode: string, rounding: number): number {
+    let calculated = basePrice;
+    if (operation === 'add') calculated = basePrice + coefficient;
+    else if (operation === 'subtract') calculated = Math.max(basePrice - coefficient, 0);
+    else calculated = basePrice * coefficient;
+    if (rounding > 0) {
+      if (roundingMode === 'up') calculated = Math.ceil(calculated / rounding) * rounding;
+      else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding;
+      else calculated = Math.round(calculated / rounding) * rounding;
+    }
+    return Number(calculated.toFixed(4));
+  }
+
+  private defaultFormulaForCode(code: string | null) {
+    if (code === 'LP2') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.6, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP3') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.8, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP4') return { baseCode: 'CR', operation: 'multiply', coefficient: 1.2, roundingMode: 'nearest', rounding: 10 };
+    if (code === 'LP5') return { baseCode: 'CR', operation: 'multiply', coefficient: 1, roundingMode: 'nearest', rounding: 10 };
+    return null;
+  }
+
+  private formulaLabel(operation: string, coefficient: number): string {
+    if (operation === 'add') return `+ ${coefficient}`;
+    if (operation === 'subtract') return `- ${coefficient}`;
+    return `x ${coefficient}`;
   }
 
   private listByCode(priceLists: PriceListForFormula[], code: string): PriceListForFormula | undefined {
