@@ -20,7 +20,6 @@ jobs:
           DUMP="backup_${TIMESTAMP}.sql.gz"
           pg_dump "${{ secrets.DATABASE_URL }}" --no-owner --no-acl | gzip > "$DUMP"
           echo "DUMP=$DUMP" >> $GITHUB_ENV
-          echo "Generado: $DUMP ($(du -h "$DUMP" | cut -f1))"
 
       - name: Cifrar con GPG
         run: |
@@ -36,10 +35,10 @@ jobs:
           GPG="${{ env.DUMP }}.gpg"
           SIZE=$(du -h "$GPG" | cut -f1)
           DATE=$(date '+%d/%m/%Y %H:%M')
-          CAPTION="✅ Backup FreeColors ERP | $DATE | $SIZE | AES256"
-          curl -s -F chat_id="$CHAT_ID" \
+          curl -s \
+            -F chat_id="$CHAT_ID" \
             -F document=@"$GPG" \
-            -F caption="$CAPTION" \
+            -F caption="✅ Backup FreeColors | $DATE | $SIZE | AES256" \
             "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument"
 
       - name: Notificar error
@@ -48,7 +47,7 @@ jobs:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           curl -s -X POST -H "Content-Type: application/json" \
-            -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"❌ Backup FALLÓ: ${RUN_URL}\"}" \
+            -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"Backup FALLO: ${URL}\"}" \
             "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"
