@@ -2,8 +2,8 @@ name: Backup DB diario
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # 6am UTC = 3am Argentina (UTC-3)
-  workflow_dispatch:       # Permite ejecución manual desde GitHub UI
+    - cron: '0 6 * * *'
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -20,15 +20,13 @@ jobs:
           DUMP="backup_${TIMESTAMP}.sql.gz"
           pg_dump "${{ secrets.DATABASE_URL }}" --no-owner --no-acl | gzip > "$DUMP"
           echo "DUMP=$DUMP" >> $GITHUB_ENV
-          echo "Backup generado: $DUMP ($(du -h "$DUMP" | cut -f1))"
+          echo "Generado: $DUMP ($(du -h "$DUMP" | cut -f1))"
 
       - name: Cifrar con GPG
         run: |
           echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 \
             --symmetric --cipher-algo AES256 "${{ env.DUMP }}"
           rm -f "${{ env.DUMP }}"
-          echo "Cifrado: ${{ env.DUMP }}.gpg"
-          ls -lh "${{ env.DUMP }}.gpg"
 
       - name: Enviar a Telegram
         env:
@@ -36,17 +34,13 @@ jobs:
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           GPG="${{ env.DUMP }}.gpg"
-          SIZE=$(stat -c%s "$GPG")
-          SIZE_HUMAN=$(numfmt --to=iec $SIZE)
+          SIZE=$(du -h "$GPG" | cut -f1)
           DATE=$(date '+%d/%m/%Y %H:%M')
+          CAPTION="✅ Backup FreeColors ERP | $DATE | $SIZE | AES256"
           curl -s -F chat_id="$CHAT_ID" \
             -F document=@"$GPG" \
-            -F caption="✅ Backup completado
-        Fecha: $DATE
-        Tamaño: $SIZE_HUMAN
-        Cifrado: AES256
-        Archivo: $GPG" \
-            "https://api.telegram.org/bot$BOT_TOKEN/sendDocument"
+            -F caption="$CAPTION" \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument"
 
       - name: Notificar error
         if: failure()
@@ -55,9 +49,6 @@ jobs:
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          curl -s -X POST \
-            -H "Content-Type: application/json" \
-            -d "{\"chat_id\":\"$CHAT_ID\",\"text\":\"❌ Backup FALLÓ
-        Repo: ${{ github.repository }}
-        Run: $RUN_URL\"}" \
-            "https://api.telegram.org/bot$BOT_TOKEN/sendMessage"
+          curl -s -X POST -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"❌ Backup FALLÓ: ${RUN_URL}\"}" \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage"
