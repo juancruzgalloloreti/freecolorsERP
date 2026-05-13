@@ -163,12 +163,17 @@ export class PurchasesService {
   }) {
     await this.findById(id, tenantId)
 
+    if (data.status !== undefined) {
+      throw new BadRequestException('El estado solo puede cambiarse mediante las acciones de cancelar o recibir mercadería')
+    }
+
+    const { status: _, ...safeData } = data
+
     return this.prisma.purchaseOrder.update({
       where: { id },
       data: {
-        ...(data.expectedDate && { expectedDate: new Date(data.expectedDate) }),
-        ...(data.notes !== undefined && { notes: data.notes }),
-        ...(data.status && { status: data.status }),
+        ...(safeData.expectedDate && { expectedDate: new Date(safeData.expectedDate) }),
+        ...(safeData.notes !== undefined && { notes: safeData.notes }),
       },
       include: {
         supplier: true,
@@ -223,6 +228,10 @@ export class PurchasesService {
       if (order.status === PurchaseOrderStatus.CANCELLED || order.status === PurchaseOrderStatus.RECEIVED) {
         throw new BadRequestException('La orden no admite nuevas recepciones')
       }
+
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "purchase_orders" WHERE id = ${data.purchaseOrderId} FOR UPDATE`,
+      )
 
       const itemsById = new Map(order.items.map((item) => [item.id, item]))
       const receptionItems = data.items.map((item) => {

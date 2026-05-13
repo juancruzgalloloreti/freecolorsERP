@@ -148,12 +148,12 @@ export default function ProveedoresPage() {
                 {suppliers.map((p) => (
                   <tr key={p.id}>
                     <td style={{ fontWeight: '500' }}>{p.razonSocial}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{p.cuit || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{[p.ciudad, p.provincia].filter(Boolean).join(', ') || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || '—'}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{p.cuit || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{[p.ciudad, p.provincia].filter(Boolean).join(', ') || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || ''}</td>
                     {canManageSuppliers && (
                       <td>
                         <div style={{ display: 'flex', gap: '4px' }}>

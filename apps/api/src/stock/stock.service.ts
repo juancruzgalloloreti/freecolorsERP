@@ -1,32 +1,93 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
+import { PermissionsService } from '../permissions/permissions.service';
 import { pageParams, paged } from '../common/pagination';
 
 @Injectable()
 export class StockService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private permissions: PermissionsService) {}
 
   async current(tenantId: string, role: string, query: { search?: string; page?: number | string; limit?: number | string }): Promise<any> {
     const isOwner = role === 'OWNER';
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);
-    const movements = await this.prisma.stockMovement.groupBy({
-      by: ['productId', 'depositId'],
-      where: { tenantId },
-      _sum: { quantity: true },
-      _avg: { unitCost: true },
-    });
-    const products = await this.prisma.product.findMany({ where: { tenantId, isActive: true }, include: { brand: true, category: true } });
-    const deposits = await this.prisma.deposit.findMany({ where: { tenantId } });
     const q = query.search?.toLowerCase().trim();
+
+    const productFilter: any = { tenantId, isActive: true };
+    if (q) {
+      productFilter.OR = [
+        { code: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (shouldPage) {
+      const [total, products, deposits] = await Promise.all([
+        this.prisma.product.count({ where: productFilter }),
+        this.prisma.product.findMany({
+          where: productFilter,
+          include: { brand: true, category: true },
+          skip,
+          take: limit,
+        }),
+        this.prisma.deposit.findMany({ where: { tenantId } }),
+      ]);
+      if (products.length === 0) return paged([], total, page, limit);
+
+      const productIds = products.map((p) => p.id);
+      const depositMap = new Map(deposits.map((d) => [d.id, d]));
+      const movements = await this.prisma.stockMovement.groupBy({
+        by: ['productId', 'depositId'],
+        where: { tenantId, productId: { in: productIds } },
+        _sum: { quantity: true },
+      });
+
+      const rows = movements.map((m) => {
+        const product = products.find((p) => p.id === m.productId);
+        const deposit = depositMap.get(m.depositId);
+        const quantity = Number(m._sum.quantity ?? 0);
+        const unitCost = Number(product?.averageCost ?? 0);
+        return {
+          productId: m.productId,
+          productCode: product?.code ?? '',
+          productName: product?.name ?? '',
+          brandName: product?.brand?.name,
+          categoryName: product?.category?.name,
+          unit: product?.unit ?? 'un',
+          depositId: m.depositId,
+          depositName: deposit?.name ?? '',
+          qty: quantity,
+          quantity,
+          ...(isOwner ? { avgCost: unitCost, unitCost, totalValue: quantity * unitCost } : {}),
+        };
+      });
+      return paged(rows, total, page, limit);
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: productFilter,
+      include: { brand: true, category: true },
+    });
+    if (products.length === 0) return [];
+
+    const productIds = products.map((p) => p.id);
+    const [movements, deposits] = await Promise.all([
+      this.prisma.stockMovement.groupBy({
+        by: ['productId', 'depositId'],
+        where: { tenantId, productId: { in: productIds } },
+        _sum: { quantity: true },
+      }),
+      this.prisma.deposit.findMany({ where: { tenantId } }),
+    ]);
     const activeProductIds = new Set(products.map((product) => product.id));
+    const depositMap = new Map(deposits.map((d) => [d.id, d]));
 
     const rows = movements.filter((m) => activeProductIds.has(m.productId)).map((m) => {
       const product = products.find((p) => p.id === m.productId);
-      const deposit = deposits.find((d) => d.id === m.depositId);
+      const deposit = depositMap.get(m.depositId);
       const quantity = Number(m._sum.quantity ?? 0);
-      const unitCost = Number(m._avg.unitCost ?? 0);
+      const unitCost = Number(product?.averageCost ?? 0);
       return {
         productId: m.productId,
         productCode: product?.code ?? '',
@@ -38,14 +99,10 @@ export class StockService {
         depositName: deposit?.name ?? '',
         qty: quantity,
         quantity,
-        ...(isOwner ? {
-          avgCost: unitCost,
-          unitCost,
-          totalValue: quantity * unitCost,
-        } : {}),
+        ...(isOwner ? { avgCost: unitCost, unitCost, totalValue: quantity * unitCost } : {}),
       };
-    }).filter((row) => !q || [row.productCode, row.productName, row.depositName, row.brandName, row.categoryName].join(' ').toLowerCase().includes(q));
-    return shouldPage ? paged(rows.slice(skip, skip + limit), rows.length, page, limit) : rows.slice(0, 1000);
+    });
+    return rows.slice(0, 1000);
   }
 
   async movements(tenantId: string, role: string, query: { page?: number | string; limit?: number | string; productId?: string; depositId?: string; type?: string; dateFrom?: string; dateTo?: string }): Promise<any> {
@@ -83,12 +140,26 @@ export class StockService {
   }
 
   async record(tenantId: string, userId: string, role: string, data: any): Promise<any> {
-    this.assertManager(role);
-    const negative = ['ADJUSTMENT_OUT', 'TRANSFER_OUT', 'RETURN_OUT', 'SALE'].includes(data.type);
+    await this.assertCanAdjust(tenantId, userId, role);
+
+    const ALLOWED_MANUAL_TYPES = ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'RETURN_IN', 'RETURN_OUT'];
+    if (!ALLOWED_MANUAL_TYPES.includes(data.type)) {
+      throw new BadRequestException('Tipo de movimiento no permitido para registro manual');
+    }
+
+    const negative = ['ADJUSTMENT_OUT', 'RETURN_OUT'].includes(data.type);
     const quantity = Math.abs(Number(data.quantity || 0)) * (negative ? -1 : 1);
 
     if (!data.depositId) {
       throw new BadRequestException('depositId is required');
+    }
+
+    const deposit = await this.prisma.deposit.findFirst({
+      where: { id: data.depositId, tenantId, isActive: true },
+      select: { id: true },
+    });
+    if (!deposit) {
+      throw new BadRequestException('Depósito inválido');
     }
 
     if (!data.productId && (!data.product?.code || !data.product?.name)) {
@@ -121,6 +192,17 @@ export class StockService {
       }
 
       await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${productId}))`);
+
+      if (quantity < 0) {
+        const current = await tx.stockMovement.aggregate({
+          where: { tenantId, productId, depositId: data.depositId },
+          _sum: { quantity: true },
+        });
+        if (Number(current._sum.quantity ?? 0) + quantity < 0) {
+          throw new BadRequestException('Stock insuficiente para el movimiento');
+        }
+      }
+
       const movement = await tx.stockMovement.create({
         data: {
           tenantId,
@@ -140,9 +222,11 @@ export class StockService {
     });
   }
 
-  private assertManager(role: string) {
-    if (role !== 'OWNER') {
-      throw new ForbiddenException('Solo la cuenta owner puede registrar movimientos manuales de stock');
+  private async assertCanAdjust(tenantId: string, userId: string, role: string): Promise<void> {
+    if (role === 'OWNER') return;
+    const hasPermission = await this.permissions.hasPermission(userId, 'stock.adjust');
+    if (!hasPermission) {
+      throw new ForbiddenException('No tenés permiso para registrar movimientos manuales de stock');
     }
   }
 
@@ -154,13 +238,12 @@ export class StockService {
       FROM "stock_movements"
       WHERE "tenantId" = ${tenantId}
         AND "productId" = ${productId}
-        AND "quantity" > 0
     `) as Array<{ quantity: number; value: number }>;
-    const quantity = Number(rows[0]?.quantity ?? 0);
-    if (quantity <= 0) return;
+    const totalQty = Number(rows[0]?.quantity ?? 0);
+    if (totalQty <= 0) return;
     await tx.product.update({
       where: { id: productId },
-      data: { averageCost: Math.round((Number(rows[0]?.value ?? 0) / quantity) * 10_000) / 10_000 },
+      data: { averageCost: Math.round((Number(rows[0]?.value ?? 0) / totalQty) * 10_000) / 10_000 },
     });
   }
 }

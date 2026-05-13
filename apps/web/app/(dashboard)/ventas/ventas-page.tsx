@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
@@ -118,6 +119,29 @@ type RecentDoc = {
   puntoDeVenta?: number | null
 }
 
+type ResumableDocument = {
+  id: string
+  type: DocumentType
+  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
+  number?: number | null
+  puntoDeVenta?: { id?: string | null; number?: number | null } | null
+  puntoDeVentaId?: string | null
+  customer?: (Customer & { id?: string }) | null
+  date: string
+  notes?: string | null
+  items?: Array<{
+    productId?: string | null
+    productCode?: string | null
+    description: string
+    quantity: number
+    unitPrice: number
+    discount: number
+    taxRate?: number
+    brandName?: string | null
+    categoryName?: string | null
+  }>
+}
+
 const DOC_TYPES: Array<{ value: DocumentType; label: string; short: string }> = [
   { value: 'BUDGET', label: 'Presupuesto', short: 'Ppto' },
   { value: 'REMITO', label: 'Remito interno', short: 'Remito' },
@@ -136,7 +160,7 @@ const COUNTER_PRICE_COLUMNS = ['LP1', 'LP2', 'LP3', 'LP4'] as const
 
 function formatCounterListPrice(product: ProductHit, code: (typeof COUNTER_PRICE_COLUMNS)[number]) {
   const value = product.pricesByList?.[code]
-  return typeof value === 'number' && Number.isFinite(value) ? ARS.format(value) : '-'
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? ARS.format(value) : '—'
 }
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -223,7 +247,10 @@ function normalizePaymentsForDocument<T extends { method: string; amount: number
 
 export default function VentasPage() {
   const qc = useQueryClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
+  const resumeParam = searchParams.get('retomar')
   const isOwner = user?.role === 'OWNER'
   const isReadonly = user?.role === 'READONLY'
   const canUseCounter = !isReadonly
@@ -246,6 +273,7 @@ export default function VentasPage() {
   const [notes, setNotes] = useState('')
   const [search, setSearch] = useState('')
   const [lines, setLines] = useState<CounterLine[]>([])
+  const [resumeDocumentId, setResumeDocumentId] = useState<string | null>(null)
   const [lastDocument, setLastDocument] = useState<Record<string, unknown> | null>(null)
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null)
   const [printing, setPrinting] = useState(false)
@@ -262,6 +290,7 @@ export default function VentasPage() {
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
   const [quickProduct, setQuickProduct] = useState(() => emptyQuickProduct(''))
   const searchRef = useRef<HTMLInputElement>(null)
+  const loadedResumeIdRef = useRef<string | null>(null)
 
   const { data: customersRaw } = useQuery({ queryKey: ['customers-counter'], queryFn: () => customersApi.list({ limit: 500 }) })
   const { data: priceListsRaw } = useQuery({ queryKey: ['price-lists-counter'], queryFn: priceListsApi.list })
@@ -274,6 +303,11 @@ export default function VentasPage() {
     queryFn: () => documentsApi.list({ types: 'INVOICE_A,INVOICE_B,INVOICE_C,REMITO,BUDGET' }),
   })
   const { data: currentCash, isLoading: cashLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
+  const { data: resumeDocumentRaw } = useQuery({
+    queryKey: ['counter-resume-document', resumeParam],
+    queryFn: () => documentsApi.get(resumeParam as string),
+    enabled: Boolean(resumeParam),
+  })
 
   const priceLists = corePriceLists(asArray<PriceList>(priceListsRaw))
   const customers = asArray<Customer>(customersRaw)
@@ -289,6 +323,79 @@ export default function VentasPage() {
   const selectedCustomer = customers.find((customer) => customer.id === customerId)
   const needsPv = docType.startsWith('INVOICE_')
   const budgetMode = docType === 'BUDGET'
+
+  useEffect(() => {
+    if (!resumeParam || !resumeDocumentRaw || loadedResumeIdRef.current === resumeParam) return
+    const document = resumeDocumentRaw as ResumableDocument
+    loadedResumeIdRef.current = resumeParam
+
+    let cancelled = false
+    const hydrateDraft = async () => {
+      if (document.status !== 'DRAFT') {
+        if (!cancelled) {
+          setResumeDocumentId(null)
+          setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+        }
+        return
+      }
+      const productIds = [...new Set((document.items ?? [])
+        .map((item) => item.productId)
+        .filter((id): id is string => Boolean(id)))]
+      const productById = new Map<string, ProductHit>()
+      await Promise.all(productIds.map(async (productId) => {
+        try {
+          productById.set(productId, await productsApi.get(productId))
+        } catch {
+          // El backend vuelve a validar stock/precios al confirmar; si no se puede hidratar, igual dejamos retomar el borrador.
+        }
+      }))
+      if (cancelled) return
+
+      setResumeDocumentId(document.id)
+      setDocType(DOC_TYPES.some((type) => type.value === document.type) ? document.type : 'BUDGET')
+      setCustomerId(document.customer?.id || '')
+      setPuntoDeVentaId(document.puntoDeVenta?.id || document.puntoDeVentaId || '')
+      setDate(document.date ? new Date(document.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
+      setNotes(document.notes || '')
+      setPayments([])
+      setPaymentMode('CASH')
+      setPaymentMethod('CASH')
+      setPaymentLabel('Caja Mostrador-Efectivo')
+      setPaymentKind('FULL')
+      setPaymentEntry('')
+      setPaymentReference('')
+      setGlobalDiscount('')
+      const nextLines = (document.items ?? []).map((item) => {
+        const product = item.productId ? productById.get(item.productId) : undefined
+        const taxRate = Number(item.taxRate || product?.taxRate || 0)
+        return {
+          productId: item.productId || '',
+          code: product?.code || item.productCode || 'S/C',
+          description: item.description,
+          brandName: product?.brandName ?? item.brandName ?? null,
+          categoryName: product?.categoryName ?? item.categoryName ?? null,
+          unit: product?.unit || 'un',
+          stock: Number(product?.stock ?? product?.stockTotal ?? 0),
+          quantity: Number(item.quantity || 0),
+          unitPrice: Number(item.unitPrice || 0),
+          discount: Number(item.discount || 0),
+          taxRate,
+          productTaxRate: taxRate,
+        }
+      })
+      setIncludeVat(nextLines.some((line) => line.taxRate > 0))
+      setLines(nextLines)
+      setLastDocument(document as unknown as Record<string, unknown>)
+      setLastDocumentId(document.id)
+      setError(null)
+      setMessage(`Borrador ${documentNumber({ number: document.number, puntoDeVenta: document.puntoDeVenta?.number ?? null })} retomado. Finalizalo desde Mostrador para impactar pagos/caja.`)
+    }
+
+    void hydrateDraft()
+    return () => {
+      cancelled = true
+    }
+  }, [resumeDocumentRaw, resumeParam])
 
   const { data: hitsRaw, isFetching: searching } = useQuery({
     queryKey: ['counter-products', search, effectivePriceListId, effectiveDepositId],
@@ -609,7 +716,9 @@ export default function VentasPage() {
       }
       if (type.startsWith('INVOICE_') && !puntoDeVentaId && puntos.length === 0) throw new Error('Falta punto de venta.')
       const documentPayload = buildDocumentPayload(type)
-      if (action !== 'confirm') return documentsApi.create(documentPayload)
+      if (action !== 'confirm') {
+        return resumeDocumentId ? documentsApi.update(resumeDocumentId, documentPayload) : documentsApi.create(documentPayload)
+      }
       if (paymentMode === 'CURRENT_ACCOUNT' && !customerId) throw new Error('La cuenta corriente requiere seleccionar un cliente.')
       const entryAmount = numberInput(paymentEntry)
       if (payments.length === 0 && paymentKind === 'ENTRY' && entryAmount <= 0) throw new Error('Ingresá el importe de la entrada.')
@@ -636,10 +745,19 @@ export default function VentasPage() {
       if (type.startsWith('INVOICE_') && normalizedPayments.some((payment) => payment.method !== 'CURRENT_ACCOUNT') && !currentCash) {
         throw new Error('Abrí una caja antes de confirmar ventas de contado.')
       }
+      const paymentModeForDocument = normalizedPayments.some((payment) => payment.method === 'CURRENT_ACCOUNT') && normalizedPayments.some((payment) => payment.method !== 'CURRENT_ACCOUNT') ? 'MIXED' : paymentMode
+      if (resumeDocumentId) {
+        await documentsApi.update(resumeDocumentId, documentPayload)
+        return documentsApi.confirm(resumeDocumentId, {
+          depositId: effectiveDepositId,
+          paymentMode: paymentModeForDocument,
+          payments: normalizedPayments,
+        })
+      }
       return documentsApi.confirmSale({
         ...documentPayload,
         depositId: effectiveDepositId,
-        paymentMode: normalizedPayments.some((payment) => payment.method === 'CURRENT_ACCOUNT') && normalizedPayments.some((payment) => payment.method !== 'CURRENT_ACCOUNT') ? 'MIXED' : paymentMode,
+        paymentMode: paymentModeForDocument,
         payments: normalizedPayments,
       })
     },
@@ -654,6 +772,11 @@ export default function VentasPage() {
       setLastDocumentId(document.id ?? null)
       setMessage(`${document.type === 'BUDGET' ? 'Presupuesto' : 'Documento'} ${document.status === 'CONFIRMED' ? 'confirmado' : 'guardado'} correctamente.`)
       setError(null)
+      if (resumeDocumentId) {
+        setResumeDocumentId(null)
+        loadedResumeIdRef.current = null
+        router.replace('/ventas', { scroll: false })
+      }
       resetCounter()
     },
     onError: (mutationError: unknown) => {
@@ -797,7 +920,10 @@ export default function VentasPage() {
       <div className={`shift-strip ${currentCash ? 'open' : 'closed'}`}>
         <div>
           <span>Turno</span>
-          <strong>{currentCash ? 'Caja abierta' : 'Caja cerrada'}</strong>
+          <strong style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: currentCash ? '#22c55e' : '#ef4444' }} />
+            {currentCash ? 'Caja abierta' : 'Caja cerrada'}
+          </strong>
         </div>
         <div>
           <span>Usuario</span>
@@ -1177,8 +1303,8 @@ export default function VentasPage() {
               </div>
             )}
             <div className="counter-primary-actions">
-              <button className="btn btn-secondary" type="button" onClick={() => documentMutation.mutate({ action: 'draft', type: 'BUDGET' })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
-                <FileText size={14} /> Guardar
+              <button className="btn btn-secondary" type="button" onClick={() => documentMutation.mutate({ action: 'draft', type: resumeDocumentId ? docType : 'BUDGET' })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter}>
+                <FileText size={14} /> {resumeDocumentId ? 'Actualizar' : 'Guardar'}
               </button>
               <button className="btn btn-primary" type="button" data-confirm-action="true" onClick={() => documentMutation.mutate({ action: 'confirm', type: docType })} disabled={documentMutation.isPending || lines.length === 0 || !canUseCounter || blocksStockConfirmation} title={blocksStockConfirmation ? 'No se puede confirmar con stock insuficiente' : undefined}>
                 <Check size={14} /> {documentMutation.isPending ? 'Confirmando...' : 'Confirmar'}

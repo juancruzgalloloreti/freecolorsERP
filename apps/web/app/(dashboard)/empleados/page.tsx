@@ -53,8 +53,8 @@ function apiMessage(error: unknown, fallback: string) {
 
 export default function EmpleadosPage() {
   const qc = useQueryClient()
-  const { user, hasAnyPermission } = useAuth()
-  const canManage = user?.role === 'OWNER' || hasAnyPermission(['user.create', 'user.edit', 'user.manage_permissions'])
+  const { user } = useAuth()
+  const canManage = user?.role === 'OWNER'
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')

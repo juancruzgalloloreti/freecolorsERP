@@ -382,11 +382,10 @@ export default function ClientesPage() {
                 {customers.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: '500' }}>{c.name}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{c.cuit || '—'}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{c.cuit || ''}</td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       {c.phone && <div>{c.phone}</div>}
                       {c.email && <div>{c.email}</div>}
-                      {!c.phone && !c.email && '—'}
                     </td>
                     <td><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{IVA_CONDITIONS.find(i => i.value === c.ivaCondition)?.label || c.ivaCondition}</span></td>
                     <td><span className={`badge ${c.isActive ? 'badge-green' : 'badge-red'}`}>{c.isActive ? 'Activo' : 'Inactivo'}</span></td>

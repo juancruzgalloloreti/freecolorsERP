@@ -17,5 +17,8 @@
     "lint": "pnpm --filter web lint && pnpm --filter @erp/api lint",
     "db:generate": "pnpm --filter @erp/db db:generate",
     "db:seed": "pnpm --filter @erp/db db:seed"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
   }
 }

@@ -1,13 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
   Ban,
-  Check,
   Download,
   FileText,
   Printer,
@@ -166,34 +165,32 @@ export default function DocumentosPage() {
   const [amountMin, setAmountMin] = useState('')
   const [amountMax, setAmountMax] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [pendingAction, setPendingAction] = useState<'confirm' | 'cancel' | 'convert-a' | 'convert-b' | 'convert-c' | null>(null)
+  const [pendingAction, setPendingAction] = useState<'cancel' | 'convert-a' | 'convert-b' | 'convert-c' | null>(null)
+  const detailRef = useRef<HTMLElement>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const { data: rowsRaw, isLoading } = useQuery({
-    queryKey: ['documents-history', search, status, type, dateFrom, dateTo],
+    queryKey: ['documents-history', search, status, type, dateFrom, dateTo, amountMin, amountMax],
     queryFn: () => documentsApi.list({
       search: search || undefined,
       status: status === 'all' ? undefined : status,
       type: type === 'all' ? undefined : type,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
+      amountMin: amountMin || undefined,
+      amountMax: amountMax || undefined,
     }),
   })
   const rows = asArray<DocumentRow>(rowsRaw)
-  const filteredRows = useMemo(() => {
-    const min = amountMin ? Number(amountMin.replace(',', '.')) : null
-    const max = amountMax ? Number(amountMax.replace(',', '.')) : null
-    return rows.filter((row) => {
-      const total = Number(row.total || 0)
-      if (min !== null && Number.isFinite(min) && total < min) return false
-      if (max !== null && Number.isFinite(max) && total > max) return false
-      return true
-    })
-  }, [amountMax, amountMin, rows])
+  const filteredRows = rows
   const activeFilterCount = [search, status !== 'all' ? status : '', type !== 'all' ? type : '', dateFrom, dateTo, amountMin, amountMax].filter(Boolean).length
 
   const activeId = selectedId || selectedParam || null
+
+  useEffect(() => {
+    detailRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [activeId])
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['document-detail', activeId],
@@ -225,9 +222,8 @@ export default function DocumentosPage() {
   }
 
   const actionMutation = useMutation({
-    mutationFn: async (action: 'confirm' | 'cancel' | 'convert-a' | 'convert-b' | 'convert-c') => {
+    mutationFn: async (action: 'cancel' | 'convert-a' | 'convert-b' | 'convert-c') => {
       if (!activeId) throw new Error('Seleccioná un documento')
-      if (action === 'confirm') return documentsApi.confirm(activeId, { paymentMode: 'CASH' })
       if (action === 'cancel') return documentsApi.cancel(activeId, { reason: cancelReason.trim() })
       const targetType = action === 'convert-a' ? 'INVOICE_A' : action === 'convert-c' ? 'INVOICE_C' : 'INVOICE_B'
       return documentsApi.convert(activeId, { type: targetType })
@@ -375,7 +371,7 @@ export default function DocumentosPage() {
           )}
         </section>
 
-        {activeId && <aside className="document-detail-panel" aria-label="Detalle de comprobante">
+        {activeId && <aside ref={detailRef} className="document-detail-panel" aria-label="Detalle de comprobante">
           <button className="btn btn-icon btn-secondary document-detail-close" type="button" aria-label="Cerrar detalle" onClick={closeDetail}>
             <X size={15} />
           </button>
@@ -403,21 +399,20 @@ export default function DocumentosPage() {
               </div>
 
               <div className="document-customer-strip">
-                <div><span>Telefono</span><strong>{selected.customerSnapshot?.phone || selected.customer?.phone || '-'}</strong></div>
-                <div><span>Direccion</span><strong>{[
-                  selected.customerSnapshot?.address || selected.customer?.address,
-                  selected.customerSnapshot?.city || selected.customer?.city,
-                  selected.customerSnapshot?.province || selected.customer?.province,
-                ].filter(Boolean).join(', ') || '-'}</strong></div>
-                <div><span>Condicion IVA</span><strong>{selected.customerSnapshot?.ivaCondition || selected.customer?.ivaCondition || '-'}</strong></div>
-                <div><span>Entrega</span><strong>{selected.customerSnapshot?.deliveryAddress || '-'}</strong></div>
+                {(() => {
+                  const phone = selected.customerSnapshot?.phone || selected.customer?.phone
+                  const address = [selected.customerSnapshot?.address || selected.customer?.address, selected.customerSnapshot?.city || selected.customer?.city, selected.customerSnapshot?.province || selected.customer?.province].filter(Boolean).join(', ')
+                  const iva = selected.customerSnapshot?.ivaCondition || selected.customer?.ivaCondition
+                  const delivery = selected.customerSnapshot?.deliveryAddress
+                  return (<>{phone ? <div><span>Telefono</span><strong>{phone}</strong></div> : null}{address ? <div><span>Direccion</span><strong>{address}</strong></div> : null}{iva ? <div><span>Condicion IVA</span><strong>{iva}</strong></div> : null}{delivery ? <div><span>Entrega</span><strong>{delivery}</strong></div> : null}</>)
+                })()}
               </div>
 
               <div className="detail-actions">
                 {selected.status === 'DRAFT' && (
-                  <button className="btn btn-primary" type="button" onClick={() => setPendingAction('confirm')}>
-                    <Check size={14} /> Confirmar
-                  </button>
+                  <Link className="btn btn-primary" href={`/ventas?retomar=${selected.id}`}>
+                    <FileText size={14} /> Retomar en Mostrador
+                  </Link>
                 )}
                 {selected.type === 'BUDGET' && selected.status !== 'CANCELLED' && (
                   <>
@@ -525,14 +520,6 @@ export default function DocumentosPage() {
         </aside>}
       </div>
 
-      <ConfirmDialog
-        open={pendingAction === 'confirm'}
-        title="Confirmar documento"
-        body="Se numerará el documento y, si corresponde, descontará stock y registrará pago."
-        pending={actionMutation.isPending}
-        onCancel={() => setPendingAction(null)}
-        onConfirm={() => actionMutation.mutate('confirm')}
-      />
       {pendingAction === 'cancel' && (
         <div className="entity-sheet-overlay">
           <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cancel-document-title" tabIndex={-1}>

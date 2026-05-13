@@ -17,7 +17,7 @@ export class ReportsService {
       this.prisma.customer.count({ where: { tenantId, isActive: true } }),
       this.prisma.document.count({ where: { tenantId, date: { gte: start } } }),
       this.prisma.document.findMany({ where: { tenantId, status: 'CONFIRMED', date: { gte: start }, type: { in: ['INVOICE_A', 'INVOICE_B', 'INVOICE_C'] } }, select: { total: true } }),
-      this.prisma.stockMovement.groupBy({ by: ['productId', 'depositId'], where: { tenantId }, _sum: { quantity: true } }),
+      this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } }),
     ]);
 
     return {
@@ -248,8 +248,8 @@ export class ReportsService {
       status: doc.status,
       number: doc.number,
       puntoDeVenta: doc.puntoDeVenta?.number ?? null,
-      customerName: doc.customer?.name ?? 'Consumidor final',
-      customerCuit: doc.customer?.cuit ?? null,
+      customerName: doc.customerNameSnapshot || doc.customer?.name || 'Consumidor final',
+      customerCuit: doc.customerCuitSnapshot || doc.customer?.cuit || null,
       userName: doc.createdBy ? `${doc.createdBy.firstName} ${doc.createdBy.lastName}` : '',
       paymentMethods: doc.payments.map((payment: any) => payment.method).join(', '),
       subtotal: Number(doc.subtotal || 0),
@@ -268,14 +268,13 @@ export class ReportsService {
       by: ['productId'],
       where: { tenantId },
       _sum: { quantity: true },
-      _avg: { unitCost: true },
     });
     const stockByProduct = new Map(movements.map((row) => [row.productId, row]));
 
     return products.map((product) => {
       const stock = stockByProduct.get(product.id);
       const quantity = Number(stock?._sum.quantity ?? 0);
-      const unitCost = Number(stock?._avg.unitCost ?? 0);
+      const unitCost = Number(product.averageCost ?? 0);
       return {
         id: product.id,
         code: product.code,
@@ -292,16 +291,32 @@ export class ReportsService {
     });
   }
 
+  private customerName(doc: any): string {
+    return doc.customerNameSnapshot || doc.customer?.name || 'Consumidor final';
+  }
+
+  private customerCuit(doc: any): string | null {
+    return doc.customerCuitSnapshot || doc.customer?.cuit || null;
+  }
+
+  private customerCity(doc: any): string | null {
+    return doc.customerCitySnapshot || doc.customer?.city || null;
+  }
+
   private salesGroupKey(doc: any, groupBy: SalesSummaryGroup): string {
     if (groupBy === 'month') {
       return new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(doc.date);
     }
-    if (groupBy === 'cuit') return doc.customer?.cuit || 'Sin CUIT';
-    if (groupBy === 'document') return doc.customer ? `${doc.customer.name}${doc.customer.cuit ? ` - ${doc.customer.cuit}` : ''}` : 'Consumidor final';
+    if (groupBy === 'cuit') return this.customerCuit(doc) || 'Sin CUIT';
+    if (groupBy === 'document') {
+      const name = this.customerName(doc);
+      const cuit = this.customerCuit(doc);
+      return cuit ? `${name} - ${cuit}` : name;
+    }
     if (groupBy === 'receipt') return this.documentTypeLabel(doc.type);
     if (groupBy === 'pos') return doc.puntoDeVenta ? `${String(doc.puntoDeVenta.number).padStart(4, '0')} - ${doc.puntoDeVenta.name}` : 'Sin punto de venta';
-    if (groupBy === 'locality') return doc.customer?.city || 'Sin localidad';
-    if (groupBy === 'account') return doc.customer?.name || 'Consumidor final';
+    if (groupBy === 'locality') return this.customerCity(doc) || 'Sin localidad';
+    if (groupBy === 'account') return this.customerName(doc);
     if (groupBy === 'user' || groupBy === 'userMl') return doc.createdBy ? `${doc.createdBy.firstName} ${doc.createdBy.lastName}` : 'Sin usuario';
     return 'Sin agrupar';
   }

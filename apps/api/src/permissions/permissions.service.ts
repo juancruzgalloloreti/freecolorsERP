@@ -1,38 +1,42 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common'
 import { PrismaService } from '../common/prisma.service'
+import { AuditService } from '../audit/audit.service'
 
 @Injectable()
 export class PermissionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditService) {}
 
   private readonly roleDefaults: Record<string, string[]> = {
     OWNER: ['*'],
     ADMIN: [
-      'sale.create', 'sale.discount', 'sale.cancel', 'sale.view',
+      'sale.create', 'sale.discount', 'sale.discount.apply', 'sale.discount.override', 'sale.cancel', 'sale.view',
       'stock.view', 'stock.adjust', 'stock.transfer',
       'cash.open', 'cash.close', 'cash.move',
       'customer.create', 'customer.edit', 'customer.delete', 'customer.credit_limit',
       'supplier.create', 'supplier.edit', 'supplier.delete',
       'product.create', 'product.edit', 'product.delete',
-      'document.create', 'document.approve_large_amount',
+      'document.create', 'document.confirm', 'document.cancel', 'document.approve_large_amount',
+      'price.update',
+      'audit.read',
       'purchase.view', 'purchase.create', 'purchase.edit', 'purchase.receive', 'purchase.cancel',
       'check.view', 'check.manage',
       'approval.view', 'approval.manage', 'approval.decide',
       'report.view', 'report.export',
-      'user.create', 'user.edit', 'user.delete', 'user.manage_permissions',
+      'user.create', 'user.edit', 'user.manage', 'user.delete', 'user.manage_permissions',
     ],
     EMPLOYEE: [
-      'sale.create', 'sale.discount', 'sale.view',
+      'sale.create', 'sale.discount', 'sale.discount.apply', 'sale.view',
       'stock.view',
       'cash.open', 'cash.close', 'cash.move',
       'customer.create', 'customer.edit',
       'supplier.create', 'supplier.edit',
+      'document.create', 'document.confirm',
       'purchase.view', 'purchase.create', 'purchase.receive',
       'check.view',
       'approval.view', 'approval.decide',
     ],
     READONLY: [
-      'sale.view', 'stock.view', 'purchase.view', 'check.view', 'approval.view', 'report.view',
+      'sale.view', 'stock.view', 'purchase.view', 'check.view', 'approval.view', 'report.view', 'audit.read',
     ],
   }
 
@@ -92,8 +96,14 @@ export class PermissionsService {
     })
   }
 
+  private async assertUserInTenant(userId: string, tenantId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId }, select: { id: true } });
+    if (!user) throw new NotFoundException('Usuario no encontrado en el tenant');
+  }
+
   // User permissions
-  async getUserPermissions(userId: string) {
+  async getUserPermissions(userId: string, tenantId?: string) {
+    if (tenantId) await this.assertUserInTenant(userId, tenantId);
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -123,7 +133,9 @@ export class PermissionsService {
     return [...explicit, ...defaults]
   }
 
-  async grantPermissionToUser(userId: string, permissionId: string) {
+  async grantPermissionToUser(tenantId: string, userId: string, permissionId: string, requesterId: string) {
+    await this.assertUserInTenant(userId, tenantId)
+
     const existing = await this.prisma.userPermission.findUnique({
       where: {
         userId_permissionId: {
@@ -135,15 +147,30 @@ export class PermissionsService {
     if (existing) {
       throw new ConflictException('User already has this permission')
     }
-    return this.prisma.userPermission.create({
+
+    const result = await this.prisma.userPermission.create({
       data: {
         userId,
         permissionId,
       },
     })
+
+    await this.audit.record({
+      tenantId,
+      userId: requesterId,
+      action: 'permissions.grant',
+      entityType: 'UserPermission',
+      entityId: result.id,
+      summary: `Permiso ${permissionId} otorgado a usuario ${userId}`,
+      metadata: { targetUserId: userId, permissionId },
+    })
+
+    return result
   }
 
-  async revokePermissionFromUser(userId: string, permissionId: string) {
+  async revokePermissionFromUser(tenantId: string, userId: string, permissionId: string, requesterId: string) {
+    await this.assertUserInTenant(userId, tenantId)
+
     const existing = await this.prisma.userPermission.findUnique({
       where: {
         userId_permissionId: {
@@ -155,7 +182,8 @@ export class PermissionsService {
     if (!existing) {
       throw new NotFoundException('User permission not found')
     }
-    return this.prisma.userPermission.delete({
+
+    const result = await this.prisma.userPermission.delete({
       where: {
         userId_permissionId: {
           userId,
@@ -163,9 +191,26 @@ export class PermissionsService {
         },
       },
     })
+
+    await this.audit.record({
+      tenantId,
+      userId: requesterId,
+      action: 'permissions.revoke',
+      entityType: 'UserPermission',
+      entityId: permissionId,
+      summary: `Permiso ${permissionId} revocado de usuario ${userId}`,
+      metadata: { targetUserId: userId, permissionId },
+    })
+
+    return result
   }
 
-  async syncUserPermissions(userId: string, permissionCodes: string[]) {
+  async syncUserPermissions(tenantId: string, userId: string, permissionCodes: string[], requesterId: string) {
+    await this.assertUserInTenant(userId, tenantId)
+    if (requesterId === userId) {
+      throw new ForbiddenException('No podés modificar tus propios permisos')
+    }
+
     // Get all permission IDs from codes
     const permissions = await this.prisma.permission.findMany({
       where: {
@@ -177,12 +222,12 @@ export class PermissionsService {
     const permissionIds = permissions.map((p) => p.id)
 
     // Delete existing user permissions
-    await this.prisma.userPermission.deleteMany({
+    const deleted = await this.prisma.userPermission.deleteMany({
       where: { userId },
     })
 
     // Create new user permissions
-    const userPermissions = await this.prisma.userPermission.createMany({
+    await this.prisma.userPermission.createMany({
       data: permissionIds.map((permissionId) => ({
         userId,
         permissionId,
@@ -190,7 +235,17 @@ export class PermissionsService {
       skipDuplicates: true,
     })
 
-    return this.getUserPermissions(userId)
+    await this.audit.record({
+      tenantId,
+      userId: requesterId,
+      action: 'permissions.sync',
+      entityType: 'User',
+      entityId: userId,
+      summary: `Permisos sincronizados para usuario ${userId}: ${permissionCodes.length} permisos`,
+      metadata: { targetUserId: userId, permissionCodes, previousCount: deleted.count },
+    })
+
+    return this.getUserPermissions(userId, tenantId)
   }
 
   async hasPermission(userId: string, permissionCode: string): Promise<boolean> {
@@ -228,7 +283,9 @@ export class PermissionsService {
     const defaultPermissions = [
       // Sales permissions
       { code: 'sale.create', description: 'Crear ventas', category: 'sales' },
-      { code: 'sale.discount', description: 'Aplicar descuentos', category: 'sales' },
+      { code: 'sale.discount', description: 'Aplicar descuentos en ventas', category: 'sales' },
+      { code: 'sale.discount.apply', description: 'Aplicar descuento por línea', category: 'sales' },
+      { code: 'sale.discount.override', description: 'Sobreescribir límite de descuento', category: 'sales' },
       { code: 'sale.cancel', description: 'Cancelar ventas', category: 'sales' },
       { code: 'sale.view', description: 'Ver ventas', category: 'sales' },
       // Stock permissions
@@ -267,13 +324,20 @@ export class PermissionsService {
       { code: 'product.delete', description: 'Eliminar productos', category: 'products' },
       // Documents permissions
       { code: 'document.create', description: 'Crear documentos', category: 'documents' },
+      { code: 'document.confirm', description: 'Confirmar documentos', category: 'documents' },
+      { code: 'document.cancel', description: 'Anular documentos', category: 'documents' },
       { code: 'document.approve_large_amount', description: 'Aprobar documentos de monto elevado', category: 'documents' },
       // Reports permissions
       { code: 'report.view', description: 'Ver reportes', category: 'reports' },
       { code: 'report.export', description: 'Exportar reportes', category: 'reports' },
+      // Price permissions
+      { code: 'price.update', description: 'Actualizar precios', category: 'prices' },
+      // Audit permissions
+      { code: 'audit.read', description: 'Ver registro de auditoría', category: 'audit' },
       // Users permissions
       { code: 'user.create', description: 'Crear usuarios', category: 'users' },
       { code: 'user.edit', description: 'Editar usuarios', category: 'users' },
+      { code: 'user.manage', description: 'Gestionar usuarios', category: 'users' },
       { code: 'user.delete', description: 'Eliminar usuarios', category: 'users' },
       { code: 'user.manage_permissions', description: 'Gestionar permisos de usuarios', category: 'users' },
     ]

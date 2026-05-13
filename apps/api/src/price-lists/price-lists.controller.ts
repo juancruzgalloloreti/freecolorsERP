@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PriceListsService } from './price-lists.service';
 
@@ -9,7 +9,10 @@ export class PriceListsController {
   @Get() findAll(@Req() req: any) { return this.service.findAll(req.user.tenantId); }
   @Post() create(@Req() req: any, @Body() body: any) { return this.service.create(req.user.tenantId, req.user.role, body); }
   @Patch(':priceListId/items/:productId') updateItem(@Req() req: any, @Param('priceListId') priceListId: string, @Param('productId') productId: string, @Body() body: any) {
-    return this.service.updateItem(req.user.tenantId, req.user.role, priceListId, productId, Number(body.price || 0));
+    if (body.price === undefined) {
+      throw new BadRequestException('price es requerido');
+    }
+    return this.service.updateItem(req.user.tenantId, req.user.role, priceListId, productId, Number(body.price));
   }
 
   @Post(':priceListId/recalculate')

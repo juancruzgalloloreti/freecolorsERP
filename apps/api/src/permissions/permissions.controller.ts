@@ -28,35 +28,38 @@ export class PermissionsController {
 
   @Get('user/:userId')
   @RequirePermission('user.manage_permissions')
-  async getUserPermissions(@Param('userId') userId: string) {
-    return this.permissionsService.getUserPermissions(userId)
+  async getUserPermissions(@Req() req: any, @Param('userId') userId: string) {
+    return this.permissionsService.getUserPermissions(userId, req.user.tenantId)
   }
 
   @Post('user/:userId/grant/:permissionId')
   @RequirePermission('user.manage_permissions')
   async grantPermissionToUser(
+    @Req() req: any,
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string
   ) {
-    return this.permissionsService.grantPermissionToUser(userId, permissionId)
+    return this.permissionsService.grantPermissionToUser(req.user.tenantId, userId, permissionId, req.user.sub)
   }
 
   @Delete('user/:userId/revoke/:permissionId')
   @RequirePermission('user.manage_permissions')
   async revokePermissionFromUser(
+    @Req() req: any,
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string
   ) {
-    return this.permissionsService.revokePermissionFromUser(userId, permissionId)
+    return this.permissionsService.revokePermissionFromUser(req.user.tenantId, userId, permissionId, req.user.sub)
   }
 
   @Put('user/:userId/sync')
   @RequirePermission('user.manage_permissions')
   async syncUserPermissions(
+    @Req() req: any,
     @Param('userId') userId: string,
     @Body() data: { permissionCodes: string[] }
   ) {
-    return this.permissionsService.syncUserPermissions(userId, data.permissionCodes)
+    return this.permissionsService.syncUserPermissions(req.user.tenantId, userId, data.permissionCodes, req.user.sub)
   }
 
   @Post('seed')

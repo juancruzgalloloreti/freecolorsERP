@@ -17,37 +17,41 @@ export class CurrentAccountService {
       };
     }
     Object.keys(where).forEach((key) => where[key] === undefined && delete where[key]);
-    const [entries, total, balanceRows] = await Promise.all([
-      this.prisma.currentAccountEntry.findMany({
-        where,
-        include: { customer: true, document: true },
-        orderBy: { date: 'desc' },
-        skip: shouldPage ? skip : undefined,
-        take: shouldPage || query.limit ? limit : 200,
-      }),
-      shouldPage ? this.prisma.currentAccountEntry.count({ where }) : Promise.resolve(0),
-      this.prisma.currentAccountEntry.groupBy({
-        by: ['customerId'],
-        where: { tenantId },
-        _sum: { amount: true },
-      }),
-    ]);
-    const balances = new Map<string, number>();
-    for (const row of balanceRows) {
-      balances.set(row.customerId, Number(row._sum.amount ?? 0));
-    }
-    const rows = entries.map((entry) => ({
-      id: entry.id,
-      customerId: entry.customerId,
-      customerName: entry.customer.name,
-      description: entry.description,
-      amount: Number(entry.amount),
-      balance: balances.get(entry.customerId) ?? 0,
-      type: entry.type,
-      date: entry.date,
-      createdAt: entry.createdAt,
-    }));
+    const entries = await this.prisma.currentAccountEntry.findMany({
+      where,
+      include: { customer: true, document: true },
+      orderBy: { date: 'asc' },
+      skip: shouldPage ? skip : undefined,
+      take: (shouldPage || query.limit) ? limit : 200,
+    });
+    const total = shouldPage ? await this.prisma.currentAccountEntry.count({ where }) : entries.length;
+
+    // Compute running balance per entry (cumulative by date)
+    const runningBalance = new Map<string, number>();
+    const rows = entries.map((entry) => {
+      const prev = runningBalance.get(entry.customerId) ?? 0;
+      const amount = Number(entry.amount);
+      const balance = this.roundMoney(prev + amount);
+      runningBalance.set(entry.customerId, balance);
+      return {
+        id: entry.id,
+        customerId: entry.customerId,
+        customerName: entry.customer.name,
+        description: entry.description,
+        amount,
+        balance,
+        type: entry.type,
+        date: entry.date,
+        createdAt: entry.createdAt,
+      };
+    });
+    // Reverse to show most recent first (entries were fetched chronological)
+    rows.reverse();
     return shouldPage ? paged(rows, total, page, limit) : rows;
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   addEntry(tenantId: string, userId: string, role: string, data: any): any {

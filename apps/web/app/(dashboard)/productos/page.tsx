@@ -36,8 +36,16 @@ function parseCsv(text: string) {
   let cell = ''
   let row: string[] = []
   let quoted = false
-  const firstLine = text.split(/\r?\n/, 1)[0] || ''
-  const delimiter = (firstLine.match(/;/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0) ? ';' : ','
+  // Scan delimiters outside quoted cells (handles quoted newlines in first cell)
+  let semiCount = 0
+  let commaCount = 0
+  let inStr = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === '"') inStr = !inStr
+    else if (!inStr) { if (c === ';') semiCount++; else if (c === ',') commaCount++ }
+  }
+  const delimiter = semiCount > commaCount ? ';' : ','
 
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]

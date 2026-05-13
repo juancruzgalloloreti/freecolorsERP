@@ -26,7 +26,7 @@ const DOCUMENT_LABELS: Record<string, string> = {
 }
 
 function descriptionLabel(value?: string) {
-  if (!value) return '-'
+  if (!value) return ''
   return value.replace(/\b(INVOICE_A|INVOICE_B|INVOICE_C|BUDGET|REMITO)\b/g, (type) => DOCUMENT_LABELS[type] || type)
 }
 
@@ -107,8 +107,8 @@ export default function CuentaCorrientePage() {
               <thead><tr><th>Fecha</th><th>Cliente</th><th>Descripción</th><th style={{ textAlign: 'right' }}>Importe</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
               <tbody>{filtered.map((row, index) => (
                 <tr key={row.id ?? index}>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date || row.createdAt ? new Date(row.date || row.createdAt || '').toLocaleDateString('es-AR') : '-'}</td>
-                  <td style={{ fontWeight: 600 }}>{row.customerName || row.customer?.name || '-'}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date || row.createdAt ? new Date(row.date || row.createdAt || '').toLocaleDateString('es-AR') : ''}</td>
+                  <td style={{ fontWeight: 600 }}>{row.customerName || row.customer?.name || ''}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{descriptionLabel(row.description)}</td>
                   <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(row.amount ?? 0) >= 0 ? '#fca5a5' : '#86efac' }}>${Number(row.amount ?? 0).toLocaleString('es-AR')}</td>
                   <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>${Number(row.balance ?? 0).toLocaleString('es-AR')}</td>

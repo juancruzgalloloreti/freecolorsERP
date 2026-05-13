@@ -22,7 +22,7 @@ type PriceListForFormula = {
   formulaRoundingMode?: string | null;
   formulaRoundingValue?: unknown;
 };
-type PriceListItemForFormula = { priceListId: string; price: unknown };
+type PriceListItemForFormula = { priceListId: string; price: unknown; isManualOverride?: boolean };
 type ProductForFormula = {
   priceListItems: PriceListItemForFormula[];
   replacementCost?: unknown;
@@ -603,8 +603,13 @@ export class ProductsService {
       const stock = this.parseMoney(this.pick(raw, ['stock', 'Stock', 'STOCK']));
 
       if (!code) errors.push(`fila ${rowNumber}: falta Codigo`);
-      else if (codes.has(code)) errors.push(`fila ${rowNumber}: Codigo duplicado (${code})`);
-      else codes.add(code);
+      else {
+        const processedCode = this.buildAguilaCode(code, raw, {
+          alternateCode: this.value(raw, ['Código alternativo', 'Codigo alternativo', 'codigo alternativo', 'B']),
+        });
+        if (codes.has(processedCode)) errors.push(`fila ${rowNumber}: Codigo duplicado tras procesar (${processedCode})`);
+        else codes.add(processedCode);
+      }
 
       if (!name) errors.push(`fila ${rowNumber}: falta Nombre`);
       else if (names.has(this.normalizeProductName(name))) errors.push(`fila ${rowNumber}: Nombre duplicado (${name})`);
@@ -699,17 +704,12 @@ export class ProductsService {
     if (!prices || typeof prices !== 'object') return;
     const priceLists = await tx.priceList.findMany({ where: { tenantId }, select: { id: true, name: true } });
     const allowedIds = allowedPriceListIds ?? new Set(priceLists.map((list: { id: string }) => list.id));
-    const manualOverrideIds = new Set(
-      priceLists
-        .filter((list: { name: string }) => this.priceListCode(list.name) === 'LP4')
-        .map((list: { id: string }) => list.id),
-    );
 
     for (const [priceListId, rawPrice] of Object.entries(prices)) {
       if (!allowedIds.has(priceListId)) continue;
       const price = this.parseMoney(rawPrice);
       if (price === null || price < 0) continue;
-      const isManualOverride = manualOverrideIds.has(priceListId);
+      const isManualOverride = false;
       await tx.priceListItem.upsert({
         where: { priceListId_productId: { priceListId, productId } },
         update: { price, isManualOverride },
@@ -798,7 +798,7 @@ export class ProductsService {
         const grossPrice = this.parseMoney(explicitGross);
         const netPrice = this.parseMoney(explicitNet);
         if (grossPrice !== null) price = grossPrice;
-        else if (netPrice !== null && ivaRate > 0) price = this.roundMoney(netPrice * (1 + ivaRate / 100));
+        else if (netPrice !== null) price = this.roundMoney(netPrice * (1 + (ivaRate ?? 21) / 100));
       }
       if (code === 'LP4' || index === 3) {
         const explicitGross = this.pick(raw, ['Precio Lista 4 con iva', 'Precio lista 4 con iva', 'Lista 4 con iva']);
@@ -806,7 +806,7 @@ export class ProductsService {
         const grossPrice = this.parseMoney(explicitGross);
         const netPrice = this.parseMoney(explicitNet);
         if (grossPrice !== null) price = grossPrice;
-        else if (netPrice !== null && ivaRate > 0) price = this.roundMoney(netPrice * (1 + ivaRate / 100));
+        else if (netPrice !== null) price = this.roundMoney(netPrice * (1 + (ivaRate ?? 21) / 100));
       }
       if (price !== null) prices[list.id] = price;
     });
@@ -867,7 +867,15 @@ export class ProductsService {
     const lp1 = this.basePriceByCode(product, priceLists, 'LP1') ?? this.directListPrice(product, selected) ?? 0;
 
     if (direct !== null) {
-      return { price: this.roundMoney(direct), multiplier: 1, name: selectedCode ? `${selectedCode} guardada` : '' };
+      // For LP4, respect isManualOverride: use direct price if manually set, otherwise calculate formula
+      if (selectedCode === 'LP4') {
+        const priceItem = selected ? product.priceListItems.find((p) => p.priceListId === selected.id) : null;
+        if (priceItem?.isManualOverride) {
+          return { price: this.roundMoney(direct), multiplier: 1, name: `${selectedCode} manual` };
+        }
+      } else {
+        return { price: this.roundMoney(direct), multiplier: 1, name: selectedCode ? `${selectedCode} guardada` : '' };
+      }
     }
     if (selectedCode === 'CR') return { price: this.roundMoney(this.basePriceByCode(product, priceLists, 'CR') ?? 0), multiplier: 1, name: 'CR' };
     if (selectedCode === 'CU') return { price: this.roundMoney(this.basePriceByCode(product, priceLists, 'CU') ?? 0), multiplier: 1, name: 'CU' };

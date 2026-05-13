@@ -2,8 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DocumentStatus, DocumentType, SalesOrderStatus } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { assertPermission } from '../common/permissions';
 import { pageParams, paged } from '../common/pagination';
+import { parseMoney } from '../common/money';
 
 type SalesOrderItemInput = {
   productId?: string;
@@ -68,7 +68,6 @@ export class SalesOrdersService {
   }
 
   async create(tenantId: string, userId: string, role: string, data: SalesOrderWriteData): Promise<any> {
-    assertPermission(role, 'documents.create');
     const order = await this.prisma.$transaction(async (tx) => {
       const computed = this.computeItems(data.items ?? []);
       if (computed.length === 0) throw new BadRequestException('El pedido necesita al menos un item');
@@ -104,7 +103,6 @@ export class SalesOrdersService {
   }
 
   async update(tenantId: string, role: string, id: string, data: SalesOrderWriteData): Promise<any> {
-    assertPermission(role, 'documents.create');
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.salesOrder.findFirst({ where: { id, tenantId }, select: { id: true, status: true } });
       if (!current) throw new NotFoundException('Pedido inexistente');
@@ -134,7 +132,6 @@ export class SalesOrdersService {
   }
 
   async changeStatus(tenantId: string, userId: string, role: string, id: string, rawStatus: string): Promise<any> {
-    assertPermission(role, 'documents.create');
     const status = String(rawStatus || '').toUpperCase() as SalesOrderStatus;
     if (!Object.values(SalesOrderStatus).includes(status)) throw new BadRequestException('Estado de pedido inválido');
     const current = await this.prisma.salesOrder.findFirst({ where: { id, tenantId }, select: { id: true, number: true, status: true } });
@@ -160,7 +157,6 @@ export class SalesOrdersService {
   }
 
   async convertToDocument(tenantId: string, userId: string, role: string, id: string, data: { type?: DocumentType; puntoDeVentaId?: string | null }): Promise<any> {
-    assertPermission(role, 'documents.create');
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.salesOrder.findFirst({
         where: { id, tenantId },
@@ -334,9 +330,7 @@ export class SalesOrdersService {
   }
 
   private toNumber(value: unknown): number {
-    if (value === undefined || value === null || value === '') return 0;
-    const parsed = Number(String(value).replace(',', '.'));
-    return Number.isFinite(parsed) ? parsed : 0;
+    return parseMoney(value);
   }
 
   private toPositiveNumber(value: unknown, label: string): number {

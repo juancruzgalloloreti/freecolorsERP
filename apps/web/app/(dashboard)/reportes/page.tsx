@@ -48,6 +48,11 @@ const ARS = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 })
 
+function reportMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—'
+  return ARS.format(value)
+}
+
 const GROUPS: { value: SalesGroup; label: string }[] = [
   { value: 'month', label: 'Mes' },
   { value: 'cuit', label: 'CUIT / Documento' },
@@ -293,23 +298,23 @@ export default function ReportesPage() {
                 {rows.map((row) => (
                   <tr key={row.concept}>
                     <td><strong>{row.concept}</strong></td>
-                    <td className="money-cell">{ARS.format(Number(row.currentAccount || 0))}</td>
-                    <td className="money-cell">{ARS.format(Number(row.cash || 0))}</td>
-                    <td className="money-cell">{ARS.format(Number(row.net || 0))}</td>
-                    <td className="money-cell">{ARS.format(Number(row.tax || 0))}</td>
-                    <td className="money-cell">{ARS.format(Number(row.otherTaxes || 0))}</td>
-                    <td className="money-cell strong">{ARS.format(Number(row.total || 0))}</td>
+                    <td className="money-cell">{reportMoney(row.currentAccount)}</td>
+                    <td className="money-cell">{reportMoney(row.cash)}</td>
+                    <td className="money-cell">{reportMoney(row.net)}</td>
+                    <td className="money-cell">{reportMoney(row.tax)}</td>
+                    <td className="money-cell">{reportMoney(row.otherTaxes)}</td>
+                    <td className="money-cell strong">{reportMoney(row.total)}</td>
                     <td className="money-cell">{Number(row.count || 0).toLocaleString('es-AR')}</td>
                   </tr>
                 ))}
                 <tr className="report-total-row">
                   <td><strong>Totales</strong></td>
-                  <td className="money-cell">{ARS.format(Number(totals.currentAccount || 0))}</td>
-                  <td className="money-cell">{ARS.format(Number(totals.cash || 0))}</td>
-                  <td className="money-cell">{ARS.format(Number(totals.net || 0))}</td>
-                  <td className="money-cell">{ARS.format(Number(totals.tax || 0))}</td>
-                  <td className="money-cell">{ARS.format(Number(totals.otherTaxes || 0))}</td>
-                  <td className="money-cell strong">{ARS.format(Number(totals.total || 0))}</td>
+                  <td className="money-cell">{reportMoney(totals.currentAccount)}</td>
+                  <td className="money-cell">{reportMoney(totals.cash)}</td>
+                  <td className="money-cell">{reportMoney(totals.net)}</td>
+                  <td className="money-cell">{reportMoney(totals.tax)}</td>
+                  <td className="money-cell">{reportMoney(totals.otherTaxes)}</td>
+                  <td className="money-cell strong">{reportMoney(totals.total)}</td>
                   <td className="money-cell">{Number(totals.count || 0).toLocaleString('es-AR')}</td>
                 </tr>
               </tbody>

@@ -51,13 +51,19 @@ export class SuppliersService {
   async account(tenantId: string, supplierId: string): Promise<any> {
     const supplier = await this.prisma.supplier.findFirst({ where: { id: supplierId, tenantId }, select: { id: true, name: true } });
     if (!supplier) throw new NotFoundException('Proveedor inexistente');
-    const entries = await this.prisma.supplierAccountEntry.findMany({
-      where: { tenantId, supplierId },
-      include: { document: true },
-      orderBy: { date: 'desc' },
-      take: 200,
-    });
-    const balance = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const [entries, balanceRows] = await Promise.all([
+      this.prisma.supplierAccountEntry.findMany({
+        where: { tenantId, supplierId },
+        include: { document: true },
+        orderBy: { date: 'desc' },
+        take: 200,
+      }),
+      this.prisma.supplierAccountEntry.aggregate({
+        where: { tenantId, supplierId },
+        _sum: { amount: true },
+      }),
+    ]);
+    const balance = Number(balanceRows._sum.amount ?? 0);
     return {
       supplier,
       balance,

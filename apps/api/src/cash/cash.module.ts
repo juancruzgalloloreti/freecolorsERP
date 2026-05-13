@@ -3,9 +3,10 @@ import { CashController } from './cash.controller';
 import { CashService } from './cash.service';
 import { CommonModule } from '../common/common.module';
 import { AuditModule } from '../audit/audit.module';
+import { PermissionsModule } from '../permissions/permissions.module';
 
 @Module({
-  imports: [CommonModule, AuditModule],
+  imports: [CommonModule, AuditModule, PermissionsModule],
   controllers: [CashController],
   providers: [CashService],
   exports: [CashService],

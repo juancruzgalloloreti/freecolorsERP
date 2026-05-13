@@ -119,7 +119,13 @@ export default function CajaPage() {
       {message && <div className={`counter-alert ${message.startsWith('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginBottom: 14 }}>
-        <div className="stat-card"><div className="stat-value">{isLoading ? '...' : currentSession ? 'Abierta' : 'Cerrada'}</div><div className="stat-label">Estado</div></div>
+        <div className="stat-card" style={currentSession ? {} : { borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.06)' }}>
+          <div className="stat-value" style={{ display: 'flex', alignItems: 'center', gap: 6, color: currentSession ? '#22c55e' : '#fca5a5' }}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: currentSession ? '#22c55e' : '#ef4444' }} />
+            {isLoading ? '...' : currentSession ? 'Abierta' : 'Cerrada'}
+          </div>
+          <div className="stat-label">Estado</div>
+        </div>
         <div className="stat-card"><div className="stat-value">{money(inspectedSession?.expectedAmount)}</div><div className="stat-label">Saldo esperado</div></div>
         <div className="stat-card"><div className="stat-value">{money(totals.income)}</div><div className="stat-label">Entradas</div></div>
         <div className="stat-card"><div className="stat-value">{money(totals.outcome)}</div><div className="stat-label">Salidas</div></div>

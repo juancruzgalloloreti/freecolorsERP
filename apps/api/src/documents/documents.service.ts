@@ -3,8 +3,9 @@ import { CashMovementType, CashSessionStatus, DocumentStatus, DocumentType, IvaC
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CashService } from '../cash/cash.service';
-import { assertPermission, maxDiscountForRole } from '../common/permissions';
+import { maxDiscountForRole } from '../common/discount-utils';
 import { pageParams, paged } from '../common/pagination';
+import { parseMoney } from '../common/money';
 
 type DocumentWriteData = {
   type?: DocumentType;
@@ -102,13 +103,18 @@ const SUPPLIER_CREDIT_TYPES = new Set<DocumentType>([
 export class DocumentsService {
   constructor(private prisma: PrismaService, private audit: AuditService, private cash: CashService) {}
 
-  async findAll(tenantId: string, query: { types?: string; status?: string; type?: string; search?: string; page?: string | number; limit?: string | number; dateFrom?: string; dateTo?: string }): Promise<any> {
+  async findAll(tenantId: string, query: { types?: string; status?: string; type?: string; search?: string; page?: string | number; limit?: string | number; dateFrom?: string; dateTo?: string; amountMin?: string | number; amountMax?: string | number }): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 60, 200);
-    const where: any = { tenantId };
-    if (query.types) where.type = { in: query.types.split(',').filter(Boolean) };
-    if (query.type) where.type = query.type;
-    if (query.status) where.status = query.status;
+    const where: Prisma.DocumentWhereInput = { tenantId };
+    const documentTypes = new Set<string>(Object.values(DocumentType));
+    const documentStatuses = new Set<string>(Object.values(DocumentStatus));
+    if (query.types) {
+      const types = query.types.split(',').filter((value): value is DocumentType => documentTypes.has(value));
+      if (types.length) where.type = { in: types };
+    }
+    if (query.type && documentTypes.has(query.type)) where.type = query.type as DocumentType;
+    if (query.status && documentStatuses.has(query.status)) where.status = query.status as DocumentStatus;
     if (query.dateFrom || query.dateTo) {
       const dateTo = query.dateTo ? new Date(query.dateTo) : null;
       if (dateTo) dateTo.setHours(23, 59, 59, 999);
@@ -116,6 +122,33 @@ export class DocumentsService {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
         ...(dateTo ? { lte: dateTo } : {}),
       };
+    }
+    const amountMin = this.optionalNumber(query.amountMin);
+    const amountMax = this.optionalNumber(query.amountMax);
+    if (amountMin !== null || amountMax !== null) {
+      where.total = {
+        ...(amountMin !== null ? { gte: amountMin } : {}),
+        ...(amountMax !== null ? { lte: amountMax } : {}),
+      };
+    }
+    const q = query.search?.toLowerCase().trim();
+    if (q) {
+      const normalized = q.toUpperCase().replace(/\s+/g, '_');
+      const numberCandidate = Number(q.includes('-') ? q.split('-').pop() : q);
+      const typeMatches = Object.values(DocumentType).filter((value) => value.toLowerCase().includes(q) || value.includes(normalized));
+      const statusMatches = Object.values(DocumentStatus).filter((value) => value.toLowerCase().includes(q) || value.includes(normalized));
+      where.OR = [
+        { customerNameSnapshot: { contains: q, mode: 'insensitive' } },
+        { customerCuitSnapshot: { contains: q, mode: 'insensitive' } },
+        { notes: { contains: q, mode: 'insensitive' } },
+        { customer: { is: { name: { contains: q, mode: 'insensitive' } } } },
+        { customer: { is: { cuit: { contains: q, mode: 'insensitive' } } } },
+        { supplier: { is: { name: { contains: q, mode: 'insensitive' } } } },
+        { supplier: { is: { cuit: { contains: q, mode: 'insensitive' } } } },
+        ...(Number.isInteger(numberCandidate) ? [{ number: numberCandidate }] : []),
+        ...(typeMatches.length ? [{ type: { in: typeMatches } }] : []),
+        ...(statusMatches.length ? [{ status: { in: statusMatches } }] : []),
+      ];
     }
 
     const [docs, total] = await Promise.all([
@@ -128,16 +161,7 @@ export class DocumentsService {
       }),
       shouldPage ? this.prisma.document.count({ where }) : Promise.resolve(0),
     ]);
-    const q = query.search?.toLowerCase().trim();
-    const rows = docs.map((d) => this.toListDto(d)).filter((d) => !q || [
-      d.customerName,
-      d.customerCuit,
-      d.supplierName,
-      d.number,
-      d.type,
-      d.status,
-      d.notes,
-    ].join(' ').toLowerCase().includes(q));
+    const rows = docs.map((d) => this.toListDto(d));
     return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 
@@ -164,7 +188,6 @@ export class DocumentsService {
   }
 
   async create(tenantId: string, userId: string, role: string, data: DocumentWriteData): Promise<any> {
-    assertPermission(role, 'documents.create');
     const document = await this.prisma.$transaction(async (tx) => this.writeDraft(tx, tenantId, userId, role, data));
     await this.audit.record({
       tenantId,
@@ -179,7 +202,6 @@ export class DocumentsService {
   }
 
   async update(tenantId: string, role: string, id: string, data: DocumentWriteData): Promise<any> {
-    assertPermission(role, 'documents.create');
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.document.findFirst({ where: { id, tenantId }, select: { id: true, status: true, createdById: true, type: true, customerId: true, notes: true } });
       if (!current) throw new NotFoundException('Documento inexistente');
@@ -188,7 +210,15 @@ export class DocumentsService {
       }
 
       const computed = this.computeItems(data.items ?? []);
-      await this.assertPricesAllowed(tx, tenantId, role, data.priceListId, computed);
+
+      const resolvedUpdateCustomerId = data.customerId === undefined ? current.customerId : data.customerId;
+      const effectiveUpdatePriceListId = data.priceListId
+        || (resolvedUpdateCustomerId
+          ? (await tx.customer.findUnique({ where: { id: resolvedUpdateCustomerId }, select: { priceListId: true } }))?.priceListId
+          : null)
+        || null;
+      await this.assertPricesAllowed(tx, tenantId, role, effectiveUpdatePriceListId, computed);
+
       const totals = this.computeTotals(computed, data.roundTotal);
       const effectiveType = data.type ?? current.type;
       const effectiveCustomerId = data.customerId === undefined ? current.customerId : data.customerId || null;
@@ -218,7 +248,6 @@ export class DocumentsService {
   }
 
   async confirm(tenantId: string, userId: string, role: string, id: string, payload: ConfirmPayload = {}): Promise<any> {
-    assertPermission(role, 'documents.confirm');
     await this.prisma.$transaction(async (tx) => {
       const confirmed = await this.confirmDraftInTransaction(tx, tenantId, userId, role, id, payload);
       await this.auditInTransaction(tx, {
@@ -240,8 +269,6 @@ export class DocumentsService {
   }
 
   async confirmSale(tenantId: string, userId: string, role: string, data: ConfirmSalePayload): Promise<any> {
-    assertPermission(role, 'documents.create');
-    assertPermission(role, 'documents.confirm');
     const documentId = await this.prisma.$transaction(async (tx) => {
       const draft = await this.writeDraft(tx, tenantId, userId, role, data);
       const confirmed = await this.confirmDraftInTransaction(tx, tenantId, userId, role, draft.id, data);
@@ -266,7 +293,6 @@ export class DocumentsService {
   }
 
   async cancel(tenantId: string, userId: string, role: string, id: string, payload: { reason?: string } = {}): Promise<any> {
-    assertPermission(role, 'documents.cancel');
     if (!payload.reason?.trim()) throw new BadRequestException('La anulacion requiere motivo');
     if (payload.reason.trim().length < 10) throw new BadRequestException('El motivo de anulacion debe tener al menos 10 caracteres');
     await this.prisma.$transaction(async (tx) => {
@@ -280,6 +306,7 @@ export class DocumentsService {
       }
 
       if (document.status === DocumentStatus.CONFIRMED) {
+        const affectedProducts = new Set<string>();
         for (const movement of document.stockMovements) {
           await tx.stockMovement.create({
             data: {
@@ -294,6 +321,7 @@ export class DocumentsService {
               notes: `Reversa por anulacion${payload.reason ? `: ${payload.reason}` : ''}`,
             },
           });
+          affectedProducts.add(movement.productId);
         }
 
         for (const entry of document.ccEntries) {
@@ -311,7 +339,28 @@ export class DocumentsService {
           });
         }
 
+        for (const productId of affectedProducts) {
+          await this.recalculateAverageCost(tx, tenantId, productId);
+        }
+
         await this.reverseCashMovements(tx, tenantId, userId, document.cashMovements, id, payload.reason);
+
+        const supplierEntries = await tx.supplierAccountEntry.findMany({
+          where: { documentId: id },
+        });
+        for (const entry of supplierEntries) {
+          await tx.supplierAccountEntry.create({
+            data: {
+              tenantId,
+              supplierId: entry.supplierId,
+              documentId: id,
+              type: entry.type,
+              amount: Number(entry.amount) * -1,
+              description: `Reversa proveedor por anulacion${payload.reason ? `: ${payload.reason}` : ''}`,
+              date: new Date(),
+            },
+          });
+        }
       }
 
       await tx.document.update({
@@ -332,8 +381,20 @@ export class DocumentsService {
   }
 
   async convert(tenantId: string, userId: string, role: string, id: string, data: DocumentWriteData): Promise<any> {
-    assertPermission(role, 'documents.create');
     return this.prisma.$transaction(async (tx) => {
+      // Lock source document to prevent concurrent conversion
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "documents" WHERE id = ${id} FOR UPDATE`,
+      );
+
+      const existing = await tx.documentConversion.findFirst({
+        where: { sourceId: id, status: 'COMPLETED' },
+        select: { id: true, targetId: true },
+      });
+      if (existing) {
+        throw new BadRequestException('Este documento ya fue convertido');
+      }
+
       const source = await tx.document.findFirst({
         where: { id, tenantId },
         include: { items: true },
@@ -411,7 +472,11 @@ export class DocumentsService {
   private async writeDraft(tx: any, tenantId: string, userId: string, role: string, data: DocumentWriteData): Promise<any> {
     const type = data.type ?? DocumentType.BUDGET;
     const computed = this.computeItems(data.items ?? []);
-    await this.assertPricesAllowed(tx, tenantId, role, data.priceListId, computed);
+    // Fallback: customer's priceListId → data's priceListId → LP1 (via assertPricesAllowed default)
+    const effectivePriceListId = data.priceListId
+      || (data.customerId ? (await tx.customer.findFirst({ where: { id: data.customerId, tenantId }, select: { priceListId: true } }))?.priceListId : null)
+      || null;
+    await this.assertPricesAllowed(tx, tenantId, role, effectivePriceListId, computed);
     const totals = this.computeTotals(computed, data.roundTotal);
     if (computed.length === 0) {
       throw new BadRequestException('El documento necesita al menos un item');
@@ -508,8 +573,8 @@ export class DocumentsService {
         const unitPrice = this.toNumber(item.unitPrice);
         const discount = Math.min(Math.max(this.toNumber(item.discount), 0), 100);
         const taxRate = Math.min(Math.max(this.toNumber(item.taxRate), 0), 100);
-        const subtotal = quantity * unitPrice * (1 - discount / 100);
-        const taxAmount = subtotal * taxRate / 100;
+        const subtotal = this.roundMoney(quantity * unitPrice * (1 - discount / 100));
+        const taxAmount = this.roundMoney(subtotal * taxRate / 100);
         return {
           productId: item.productId ? String(item.productId) : null,
           description: item.description?.trim() || 'Item',
@@ -519,7 +584,7 @@ export class DocumentsService {
           taxRate,
           subtotal,
           taxAmount,
-          total: subtotal + taxAmount,
+          total: this.roundMoney(subtotal + taxAmount),
           sortOrder: index,
         };
       });
@@ -593,14 +658,25 @@ export class DocumentsService {
   }
 
   private async confirmDraftInTransaction(tx: any, tenantId: string, userId: string, role: string, id: string, payload: ConfirmPayload): Promise<any> {
+    // Atomic claim: row lock + status check in one UPDATE to prevent double-confirm race
+    const claimed = await tx.document.updateMany({
+      where: { id, tenantId, status: DocumentStatus.DRAFT },
+      data: { updatedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      const exists = await tx.document.findFirst({
+        where: { id, tenantId },
+        select: { status: true },
+      });
+      if (!exists) throw new NotFoundException('Documento inexistente');
+      throw new BadRequestException('Solo se pueden confirmar documentos en borrador');
+    }
+
+    // Row locked and confirmed as DRAFT — re-fetch with includes
     const document = await tx.document.findFirst({
       where: { id, tenantId },
       include: { items: true, customer: true, puntoDeVenta: true, payments: true },
     });
-    if (!document) throw new NotFoundException('Documento inexistente');
-    if (document.status !== DocumentStatus.DRAFT) {
-      throw new BadRequestException('Solo se pueden confirmar documentos en borrador');
-    }
     if (document.items.length === 0) {
       throw new BadRequestException('No se puede confirmar un documento sin items');
     }
@@ -739,6 +815,22 @@ export class DocumentsService {
       if (!document.customerId) {
         throw new BadRequestException('La cuenta corriente requiere un cliente');
       }
+
+      const customer = await tx.customer.findUnique({
+        where: { id: document.customerId },
+        select: { creditLimit: true },
+      });
+      if (customer?.creditLimit != null && Number(customer.creditLimit) > 0) {
+        const currentBalance = await tx.currentAccountEntry.aggregate({
+          where: { customerId: document.customerId },
+          _sum: { amount: true },
+        });
+        const newBalance = Math.abs(Number(currentBalance._sum.amount ?? 0)) + currentAccountAmount;
+        if (newBalance > Number(customer.creditLimit)) {
+          throw new BadRequestException('El cliente supera su límite de crédito');
+        }
+      }
+
       await tx.currentAccountEntry.create({
         data: {
           tenantId,
@@ -793,20 +885,7 @@ export class DocumentsService {
       const amount = Number(movement.amount || 0);
       if (!amount || movement.type === CashMovementType.CLOSING_DIFFERENCE || movement.type === CashMovementType.OPENING) continue;
 
-      const session = await tx.cashSession.findFirst({
-        where: { id: movement.sessionId, tenantId },
-        select: { id: true, status: true },
-      });
-      let targetSessionId = session?.status === CashSessionStatus.OPEN ? session.id : null;
-      if (!targetSessionId) {
-        const current = await tx.cashSession.findFirst({
-          where: { tenantId, status: CashSessionStatus.OPEN },
-          orderBy: { openedAt: 'desc' },
-          select: { id: true },
-        });
-        if (!current) throw new BadRequestException('Abrí una caja antes de anular documentos con movimientos de caja');
-        targetSessionId = current.id;
-      }
+      const targetSessionId = movement.sessionId;
 
       await tx.cashMovement.create({
         data: {
@@ -981,9 +1060,12 @@ export class DocumentsService {
   }
 
   private toNumber(value: unknown): number {
-    if (value === undefined || value === null || value === '') return 0;
-    const parsed = Number(String(value).replace(',', '.'));
-    return Number.isFinite(parsed) ? parsed : 0;
+    return parseMoney(value);
+  }
+
+  private optionalNumber(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    return parseMoney(value);
   }
 
   private toPositiveNumber(value: unknown, label: string): number {
@@ -1171,7 +1253,6 @@ export class DocumentsService {
     const maxDiscount = maxDiscountForRole(role);
     for (const item of items) {
       const discount = Number(item.discount);
-      if (discount > 0) assertPermission(role, 'sales.discount.apply');
       if (discount > maxDiscount) {
         throw new BadRequestException(`El descuento de ${item.description} supera el maximo permitido para tu rol (${maxDiscount}%)`);
       }
@@ -1204,13 +1285,12 @@ export class DocumentsService {
       FROM "stock_movements"
       WHERE "tenantId" = ${tenantId}
         AND "productId" = ${productId}
-        AND "quantity" > 0
     `) as Array<{ quantity: number; value: number }>;
-    const quantity = Number(rows[0]?.quantity ?? 0);
-    if (quantity <= 0) return;
+    const totalQty = Number(rows[0]?.quantity ?? 0);
+    if (totalQty <= 0) return;
     await tx.product.update({
       where: { id: productId },
-      data: { averageCost: this.roundMoney(Number(rows[0]?.value ?? 0) / quantity) },
+      data: { averageCost: this.roundMoney(Number(rows[0]?.value ?? 0) / totalQty) },
     });
   }
 }

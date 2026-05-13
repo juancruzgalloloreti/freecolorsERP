@@ -112,7 +112,10 @@ export class ChecksService {
   async bounce(id: string, tenantId: string, data: { reason: string }) {
     const check = await this.findById(id, tenantId)
     if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.CANCELLED) {
-      throw new BadRequestException('Cannot bounce a cleared or cancelled check')
+      throw new BadRequestException('No se puede rechazar un cheque cobrado o cancelado')
+    }
+    if (check.status === CheckStatus.BOUNCED) {
+      throw new BadRequestException('Este cheque ya fue rechazado')
     }
 
     return this.prisma.check.update({
@@ -144,7 +147,13 @@ export class ChecksService {
   async cancel(id: string, tenantId: string) {
     const check = await this.findById(id, tenantId)
     if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.BOUNCED) {
-      throw new BadRequestException('Cannot cancel a cleared or bounced check')
+      throw new BadRequestException('No se puede cancelar un cheque cobrado o rechazado')
+    }
+    if (check.status === CheckStatus.DEPOSITED) {
+      throw new BadRequestException('Este cheque ya fue depositado y no puede cancelarse desde el sistema')
+    }
+    if (check.status === CheckStatus.ENDORSED) {
+      throw new BadRequestException('Este cheque ya fue endosado y no puede cancelarse desde el sistema')
     }
 
     return this.prisma.check.update({

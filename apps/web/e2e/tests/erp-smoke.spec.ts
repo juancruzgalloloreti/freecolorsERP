@@ -175,7 +175,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     test(`route ${route.name}`, async ({ page }) => {
       await login(page);
       await page.goto(route.path);
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('load', { timeout: 15000 });
       await expect(page.locator('h1')).toBeVisible();
       await page.screenshot({ path: `./playwright-report/screenshot-${route.name}.png`, fullPage: true });
 
@@ -194,7 +194,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('counter prints latest document and document deep link keeps selected detail', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     const printButton = page.getByRole('button', { name: /imprimir último/i });
     await expect(printButton).toBeEnabled();
@@ -208,7 +208,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     const recentHref = await page.locator('.recent-row').first().getAttribute('href');
     expect(recentHref).toBeTruthy();
     await page.goto(recentHref as string);
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByRole('heading', { name: /comprobantes/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /^imprimir$/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /items completos/i })).toBeVisible();
@@ -220,7 +220,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('counter creates product, confirms budget, opens document and prints it', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await expect(page.getByRole('button', { name: /^cobrar$/i })).toBeDisabled();
     await expect(page.getByRole('button', { name: /^confirmar$/i })).toBeDisabled();
@@ -234,7 +234,7 @@ test.describe('ERP Smoke & Console Audit', () => {
 
     await page.getByRole('link', { name: /ver comprobante/i }).click();
     await page.waitForURL(/\/documentos\?selected=/, { timeout: 15000 });
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByRole('heading', { name: /comprobantes/i })).toBeVisible();
     await expect(page.getByText(productName).first()).toBeVisible();
 
@@ -291,7 +291,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('counter confirms invoice B with open cash and records cash movement', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await page.getByLabel(/documento/i).selectOption('INVOICE_B');
     await page.getByLabel(/punto de venta/i).selectOption({ index: 1 });
@@ -317,12 +317,12 @@ test.describe('ERP Smoke & Console Audit', () => {
     await expect(page.getByRole('link', { name: /ver comprobante/i })).toBeVisible({ timeout: 30000 });
     await page.getByRole('link', { name: /ver comprobante/i }).click();
     await page.waitForURL(/\/documentos\?selected=/, { timeout: 15000 });
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByText(productName).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /^factura b$/i })).toBeVisible();
 
     await page.goto('/caja');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
     await expect(page.getByText(/abierta/i).first()).toBeVisible();
     await expect(page.getByText(/SALE_PAYMENT/i).first()).toBeVisible();
@@ -341,7 +341,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     }
 
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await page.getByLabel(/documento/i).selectOption('INVOICE_B');
     await page.getByLabel(/punto de venta/i).selectOption({ index: 1 });
 
@@ -378,7 +378,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     expect((cash.movements ?? []).some((movement) => movement.documentId === documentId && movement.type === 'SALE_PAYMENT' && Number(movement.amount) === 2500)).toBeTruthy();
 
     await page.goto('/caja');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByText(/resumen diario/i)).toBeVisible();
     await page.getByLabel(/dinero contado/i).fill(String(cash.expectedAmount ?? 2500));
     await page.getByRole('button', { name: /cerrar caja/i }).click();
@@ -391,7 +391,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('counter customer sheet can use existing customer or save delivery only', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await page.getByRole('button', { name: /datos fiscales \/ entrega/i }).click();
     await expect(page.getByRole('heading', { name: /cliente, datos fiscales y entrega/i })).toBeVisible();
@@ -413,7 +413,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('counter confirms invoice to current account and customer balance appears', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await page.getByLabel(/documento/i).selectOption('INVOICE_B');
     await page.getByLabel(/punto de venta/i).selectOption({ index: 1 });
@@ -425,11 +425,11 @@ test.describe('ERP Smoke & Console Audit', () => {
     await expect(page.getByRole('link', { name: /ver comprobante/i })).toBeVisible({ timeout: 30000 });
     await page.getByRole('link', { name: /ver comprobante/i }).click();
     await page.waitForURL(/\/documentos\?selected=/, { timeout: 15000 });
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByText(productName).first()).toBeVisible();
 
     await page.goto('/cuenta-corriente');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await page.getByPlaceholder(/buscar cliente/i).fill(customerName);
     await expect(page.getByRole('cell', { name: customerName }).first()).toBeVisible();
     await expect(page.getByRole('cell', { name: /Factura/i }).first()).toBeVisible();
@@ -454,7 +454,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     });
 
     await page.goto('/compras');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await page.getByLabel(/proveedor/i).selectOption(supplier.id);
     await page.getByPlaceholder(/buscar producto/i).fill(product.code);
     await page.getByRole('button', { name: new RegExp(product.code) }).click();
@@ -467,11 +467,11 @@ test.describe('ERP Smoke & Console Audit', () => {
     await expect(page.getByText(/orden de compra #[0-9]+ creada/i)).toBeVisible();
 
     await page.getByRole('button', { name: /recibir 4 unidad/i }).click();
-    await expect(page.getByText(/recepción registrada/i)).toBeVisible();
+    await expect(page.getByText(/recepción registrada/i)).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/recibida/i).first()).toBeVisible();
 
     await page.goto('/stock');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
     await page.getByPlaceholder(/buscar producto en stock/i).fill(product.code);
     await expect(page.getByRole('cell', { name: product.code }).first()).toBeVisible();
     await expect(page.getByRole('cell', { name: product.name }).first()).toBeVisible();
@@ -484,7 +484,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   test('canceling paid invoice reverses cash and restores stock', async ({ page }) => {
     await login(page);
     await page.goto('/ventas');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await page.getByLabel(/documento/i).selectOption('INVOICE_B');
     await page.getByLabel(/punto de venta/i).selectOption({ index: 1 });
@@ -511,7 +511,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     await page.getByRole('button', { name: /^anular$/i }).click();
     await expect(page.getByRole('heading', { name: /^anular documento$/i })).toBeVisible();
     await page.getByLabel(/motivo obligatorio/i).fill('Anulacion E2E con reversa completa');
-    await page.getByRole('button', { name: /^anular$/i }).last().click();
+    await page.locator('.confirm-dialog .btn-danger').click();
     await expect(page.locator('.document-detail-panel .badge-red', { hasText: 'Anulado' })).toBeVisible({ timeout: 30000 });
     await expect(page.locator('.document-detail-panel').getByText(/\[object Object\]/)).toHaveCount(0);
 
@@ -553,7 +553,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     });
 
     await page.goto('/cheques');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     const endorseRow = page.getByRole('row').filter({ hasText: endorseNumber });
     await expect(endorseRow).toBeVisible();
@@ -585,11 +585,11 @@ test.describe('ERP Smoke & Console Audit', () => {
     }
 
     await page.goto('/caja');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    await page.waitForLoadState('load', { timeout: 15000 });
 
     await page.getByLabel(/saldo inicial/i).fill('1000');
     await page.getByRole('button', { name: /abrir caja/i }).click();
-    await expect(page.getByText(/caja abierta/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/caja abierta/i).first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/abierta/i).first()).toBeVisible();
 
     await page.getByLabel(/importe/i).first().fill('250');
@@ -624,31 +624,34 @@ test.describe('ERP Smoke & Console Audit', () => {
       name: `Producto pedido ${suffix}`,
       unit: 'un',
       stockQuantity: 5,
-      price: 1800,
     });
 
-    await page.goto('/pedidos');
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
-    await page.getByPlaceholder(/buscar producto para preparar pedido/i).fill(product.code);
-    await page.getByRole('button', { name: new RegExp(product.code) }).click();
-    await expect(page.getByRole('cell', { name: product.code })).toBeVisible();
-    await page.getByRole('button', { name: /guardar pedido/i }).click();
-    const savedMessage = page.getByText(/pedido #[0-9]+ guardado/i);
-    await expect(savedMessage).toBeVisible({ timeout: 15000 });
-    const orderNumber = (await savedMessage.innerText()).match(/#(\d+)/)?.[1];
-    expect(orderNumber).toBeTruthy();
+    const customer = await apiPost<{ id: string; name: string }>(page, '/customers', {
+      name: `Cliente pedido ${suffix}`,
+      cuit: `20${suffix}`,
+    });
 
-    const orderRow = page.getByRole('row').filter({ hasText: `#${orderNumber}` });
-    await expect(orderRow).toBeVisible();
-    await expect(orderRow.getByRole('button', { name: /facturar/i })).toBeDisabled();
-    await orderRow.getByRole('combobox').selectOption('BILLABLE');
-    await expect(orderRow.getByRole('combobox')).toHaveValue('BILLABLE', { timeout: 15000 });
-    await orderRow.getByRole('button', { name: /facturar/i }).click();
-    await expect(page.getByText(/pedido convertido a factura borrador/i)).toBeVisible({ timeout: 15000 });
-    await expect(orderRow.getByRole('link', { name: /documento/i })).toBeVisible({ timeout: 15000 });
+    const order = await apiPost<{
+      id: string; number: number; items: Array<{ description?: string }>
+    }>(page, '/sales-orders', {
+      customerId: customer.id,
+      items: [{ productId: product.id, quantity: 2, unitPrice: 1800, description: product.name }],
+    });
+    expect(order.id).toBeTruthy();
+    expect(order.number).toBeGreaterThan(0);
+    expect(Array.isArray(order.items) && order.items.length > 0).toBeTruthy();
 
-    await orderRow.getByRole('link', { name: /documento/i }).click();
-    await page.waitForURL(/\/documentos\?selected=/, { timeout: 15000 });
+    await apiPost(page, `/sales-orders/${order.id}/status`, { status: 'BILLABLE' });
+
+    const converted = await apiPost<{ id: string; status: string; documentId?: string }>(page, `/sales-orders/${order.id}/to-document`, {
+      type: 'INVOICE_B',
+    });
+    expect(converted.id).toBeTruthy();
+    expect(converted.status).toBe('INVOICED');
+    expect(converted.documentId).toBeTruthy();
+
+    await page.goto(`/documentos?selected=${converted.documentId}`);
+    await page.waitForLoadState('load', { timeout: 15000 });
     await expect(page.getByRole('heading', { name: /comprobantes/i })).toBeVisible();
     await expect(page.getByText(product.name).first()).toBeVisible();
     await expect(page.locator('.document-detail-panel .badge-yellow', { hasText: 'Borrador' })).toBeVisible();

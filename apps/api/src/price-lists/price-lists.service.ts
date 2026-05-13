@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PriceCoefficientScope } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
+import { parseMoney } from '../common/money';
 
 @Injectable()
 export class PriceListsService {
@@ -214,8 +215,8 @@ export class PriceListsService {
   }
 
   private parsePositiveNumber(value: unknown, label: string): number {
-    const parsed = Number(String(value ?? '').replace(',', '.'));
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+    const parsed = parseMoney(value);
+    if (parsed <= 0) {
       throw new BadRequestException(`El valor de ${label} debe ser mayor a cero`);
     }
     return parsed;
@@ -286,16 +287,6 @@ export class PriceListsService {
               formulaCoefficient: list.formulaCoefficient,
               formulaRoundingMode: list.formulaBaseCode ? 'nearest' : undefined,
               formulaRoundingValue: list.formulaBaseCode ? 10 : undefined,
-            },
-          });
-        } else if (list.formulaBaseCode) {
-          await tx.priceList.updateMany({
-            where: { tenantId, name: list.name, formulaBaseCode: null },
-            data: {
-              formulaBaseCode: list.formulaBaseCode,
-              formulaCoefficient: list.formulaCoefficient,
-              formulaRoundingMode: 'nearest',
-              formulaRoundingValue: 10,
             },
           });
         }

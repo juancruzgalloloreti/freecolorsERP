@@ -184,6 +184,7 @@ export default function StockPage() {
   const [modal, setModal] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'current' | 'movements'>('current')
+  const [movementPage, setMovementPage] = useState(1)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState<'delete' | 'zero' | null>(null)
@@ -196,8 +197,8 @@ export default function StockPage() {
     enabled: tab === 'current',
   })
   const { data: movementsData, isLoading: movLoading } = useQuery({
-    queryKey: ['stock-movements'],
-    queryFn: () => stockApi.movements({ limit: 100 }),
+    queryKey: ['stock-movements', movementPage],
+    queryFn: () => stockApi.movements({ limit: 100, page: movementPage }),
     enabled: tab === 'movements',
   })
   const { data: deposits } = useQuery({ queryKey: ['deposits'], queryFn: stockApi.deposits })
@@ -605,6 +606,15 @@ export default function StockPage() {
               </table>
             </div>
           )}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', borderTop: '1px solid var(--border)' }}>
+            <button className="fc-button fc-button-secondary" disabled={movementPage <= 1} onClick={() => setMovementPage(p => Math.max(1, p - 1))}>
+              Anterior
+            </button>
+            <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>Pág. {movementPage}</span>
+            <button className="fc-button fc-button-secondary" disabled={(movementsData as { total?: number } | undefined)?.total !== undefined && movementPage * 100 >= Number((movementsData as { total?: number })?.total ?? 0)} onClick={() => setMovementPage(p => p + 1)}>
+              Siguiente
+            </button>
+          </div>
         </div>
       )}
 
