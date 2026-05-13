@@ -1,0 +1,12 @@
+ten@DESKTOP-83QB4IL MINGW64 ~/desktop/erp (main)
+pnpm run dev
+
+
+ten@DESKTOP-83QB4IL MINGW64 ~/desktop/erp/apps/api
+pnpm --filter api dev
+
+
+DATABASE_URL: Connection string de Supabase (puerto 5432, el directo)
+TELEGRAM_BOT_TOKEN: 8769030183:AAG2ArGkl98R0MpfOCa0Mvtl89wfJZSfu0g
+TELEGRAM_CHAT_ID: -1003937100365
+GPG_PASSPHRASE: freecolors-erp-backup-2026!
