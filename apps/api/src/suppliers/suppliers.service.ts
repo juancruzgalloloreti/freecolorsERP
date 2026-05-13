@@ -19,7 +19,19 @@ export class SuppliersService {
       }),
       shouldPage ? this.prisma.supplier.count({ where }) : Promise.resolve(0),
     ]);
-    return shouldPage ? paged(rows, total, page, limit) : rows;
+    const mapped = rows.map((s) => ({
+      id: s.id,
+      razonSocial: s.name,
+      cuit: s.cuit,
+      telefono: s.phone,
+      email: s.email,
+      direccion: s.address,
+      condicionIva: s.ivaCondition,
+      condicionPago: '',
+      notas: s.notes,
+      createdAt: s.createdAt,
+    }));
+    return shouldPage ? paged(mapped, total, page, limit) : mapped;
   }
   async create(tenantId: string, role: string, data: any): Promise<any> {
     this.assertManager(role);

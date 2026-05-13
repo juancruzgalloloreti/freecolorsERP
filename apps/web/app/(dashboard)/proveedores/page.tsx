@@ -151,7 +151,7 @@ export default function ProveedoresPage() {
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{p.cuit || ''}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || ''}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{[p.ciudad, p.provincia].filter(Boolean).join(', ') || ''}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.direccion || ''}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || ''}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || ''}</td>
                     {canManageSuppliers && (

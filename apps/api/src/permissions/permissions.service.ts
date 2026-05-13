@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common'
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, Inject, forwardRef } from '@nestjs/common'
 import { PrismaService } from '../common/prisma.service'
 import { AuditService } from '../audit/audit.service'
 
 @Injectable()
 export class PermissionsService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AuditService)) private audit: AuditService,
+  ) {}
 
   private readonly roleDefaults: Record<string, string[]> = {
     OWNER: ['*'],

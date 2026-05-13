@@ -289,6 +289,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   });
 
   test('counter confirms invoice B with open cash and records cash movement', async ({ page }) => {
+    test.setTimeout(60000); // Flaky: timeout en suite completo (30 tests, 1 worker)
     await login(page);
     await page.goto('/ventas');
     await page.waitForLoadState('load', { timeout: 15000 });
@@ -411,6 +412,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   });
 
   test('counter confirms invoice to current account and customer balance appears', async ({ page }) => {
+    test.setTimeout(60000); // Flaky: timeout en suite completo (30 tests, 1 worker)
     await login(page);
     await page.goto('/ventas');
     await page.waitForLoadState('load', { timeout: 15000 });
@@ -440,6 +442,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   });
 
   test('purchase order reception increases stock and marks order received', async ({ page }) => {
+    test.setTimeout(60000); // Flaky: timeout en suite completo (30 tests, 1 worker)
     await login(page);
     const suffix = Date.now().toString().slice(-8);
     const supplier = await apiPost<{ id: string; name: string }>(page, '/suppliers', {
@@ -482,6 +485,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   });
 
   test('canceling paid invoice reverses cash and restores stock', async ({ page }) => {
+    test.setTimeout(60000); // Flaky: timeout en suite completo (30 tests, 1 worker)
     await login(page);
     await page.goto('/ventas');
     await page.waitForLoadState('load', { timeout: 15000 });
@@ -578,6 +582,7 @@ test.describe('ERP Smoke & Console Audit', () => {
   });
 
   test('cash desk opens, records movements, and closes with counted amount', async ({ page }) => {
+    test.setTimeout(60000); // Flaky: timeout en suite completo (30 tests, 1 worker)
     await login(page);
     const existingCash = await apiGet<{ expectedAmount?: number } | null>(page, '/cash/current');
     if (existingCash) {

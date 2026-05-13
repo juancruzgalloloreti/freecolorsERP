@@ -1,17 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import {
-  BarChart3,
-  FileText,
-  Home,
-  Layers3,
-  MoreHorizontal,
-  Package,
-  ReceiptText,
-} from 'lucide-react'
 
 export function PageHeader({
   title,
@@ -149,36 +138,6 @@ export function RoleGate({
   if (!role || !allow.includes(role)) return null
   return <>{children}</>
 }
-
-const bottomNav = [
-  { href: '/dashboard', label: 'Inicio', icon: Home },
-  { href: '/ventas', label: 'Mostrador', icon: ReceiptText },
-  { href: '/stock', label: 'Existencias', icon: Layers3 },
-  { href: '/productos', label: 'Productos', icon: Package },
-  { href: '/documentos', label: 'Más', icon: MoreHorizontal },
-]
-
-export function BottomNav() {
-  const pathname = usePathname()
-  return (
-    <nav className="bottom-nav" aria-label="Navegación móvil">
-      {bottomNav.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`)
-        return (
-          <Link key={href} href={href} className={`bottom-nav-link ${active ? 'active' : ''}`}>
-            <Icon size={18} />
-            <span>{label}</span>
-          </Link>
-        )
-      })}
-    </nav>
-  )
-}
-
-export const moreLinks = [
-  { href: '/documentos', label: 'Documentos', icon: FileText },
-  { href: '/reportes', label: 'Reportes', icon: BarChart3 },
-]
 
 function useFocusTrap(open: boolean, containerRef: React.RefObject<HTMLElement | null>) {
   useEffect(() => {

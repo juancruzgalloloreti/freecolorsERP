@@ -1515,19 +1515,19 @@ export default function VentasPage() {
           <button type="button" className={paymentKind === 'ENTRY' ? 'active' : ''} onClick={chooseEntry}>
             <strong>Entrada</strong><span>Pago parcial · deja saldo en CC</span>
           </button>
-          <button type="button" onClick={() => choosePayment('CASH', 'Caja Mostrador-Efectivo')}>
+          <button type="button" className={paymentMethod === 'CASH' ? 'active' : ''} onClick={() => choosePayment('CASH', 'Caja Mostrador-Efectivo')}>
             <strong>Efectivo</strong><span>Caja Mostrador · Pesos</span>
           </button>
-          <button type="button" onClick={() => choosePayment('MERCADO_PAGO', 'Caja Mostrador-Mercado Pago')}>
+          <button type="button" className={paymentMethod === 'MERCADO_PAGO' ? 'active' : ''} onClick={() => choosePayment('MERCADO_PAGO', 'Caja Mostrador-Mercado Pago')}>
             <strong>Mercado Pago</strong><span>Caja Mostrador · Dinero digital</span>
           </button>
-          <button type="button" onClick={() => choosePayment('DEBIT_CARD', 'Caja Mostrador-Débito')}>
+          <button type="button" className={paymentMethod === 'DEBIT_CARD' ? 'active' : ''} onClick={() => choosePayment('DEBIT_CARD', 'Caja Mostrador-Débito')}>
             <strong>Débito</strong><span>Caja Mostrador · Tarjeta</span>
           </button>
-          <button type="button" onClick={() => choosePayment('BANK_TRANSFER', 'Banco/Transferencia')}>
+          <button type="button" className={paymentMethod === 'BANK_TRANSFER' ? 'active' : ''} onClick={() => choosePayment('BANK_TRANSFER', 'Banco/Transferencia')}>
             <strong>Transferencia</strong><span>Banco · Pesos</span>
           </button>
-          <button type="button" onClick={() => choosePayment('CURRENT_ACCOUNT', 'Cuenta corriente', 'CURRENT_ACCOUNT')}>
+          <button type="button" className={paymentMethod === 'CURRENT_ACCOUNT' ? 'active' : ''} onClick={() => choosePayment('CURRENT_ACCOUNT', 'Cuenta corriente', 'CURRENT_ACCOUNT')}>
             <strong>Cuenta corriente</strong><span>Requiere cliente seleccionado</span>
           </button>
         </div>

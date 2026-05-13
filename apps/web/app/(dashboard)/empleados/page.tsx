@@ -42,6 +42,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   products: 'Productos',
   documents: 'Comprobantes',
   reports: 'Reportes',
+  prices: 'Precios',
+  audit: 'Auditoría',
   users: 'Empleados y permisos',
 }
 
