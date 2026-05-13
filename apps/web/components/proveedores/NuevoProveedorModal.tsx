@@ -36,8 +36,6 @@ const empty = {
   email: '',
   telefono: '',
   direccion: '',
-  ciudad: '',
-  provincia: 'Buenos Aires',
   condicionIva: 'Responsable Inscripto',
   condicionPago: 'Contado',
   notas: '',
@@ -56,8 +54,6 @@ export default function NuevoProveedorModal({ proveedor, error, onClose, onSave 
           email: proveedor.email ?? '',
           telefono: proveedor.telefono ?? '',
           direccion: proveedor.direccion ?? '',
-          ciudad: proveedor.ciudad ?? '',
-          provincia: proveedor.provincia ?? 'Buenos Aires',
           condicionIva: proveedor.condicionIva ?? 'Responsable Inscripto',
           condicionPago: proveedor.condicionPago ?? 'Contado',
           notas: proveedor.notas ?? '',
@@ -81,7 +77,7 @@ export default function NuevoProveedorModal({ proveedor, error, onClose, onSave 
       cuit: form.cuit.trim() || null,
       email: form.email.trim() || null,
       phone: form.telefono.trim() || null,
-      address: [form.direccion, form.ciudad, form.provincia].map((part) => part.trim()).filter(Boolean).join(', ') || null,
+      address: form.direccion.trim() || null,
       ivaCondition: form.condicionIva,
       notes: form.notas.trim() || null,
       isActive: true,
@@ -128,17 +124,6 @@ export default function NuevoProveedorModal({ proveedor, error, onClose, onSave 
           <div>
             <label className="fc-label">Dirección</label>
             <input className="fc-input" value={form.direccion} onChange={e => set('direccion', e.target.value)} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label className="fc-label">Ciudad</label>
-              <input className="fc-input" value={form.ciudad} onChange={e => set('ciudad', e.target.value)} />
-            </div>
-            <div>
-              <label className="fc-label">Provincia</label>
-              <input className="fc-input" value={form.provincia} onChange={e => set('provincia', e.target.value)} placeholder="Buenos Aires" />
-            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
