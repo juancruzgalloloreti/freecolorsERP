@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentStatus, DocumentType, SalesOrderStatus } from '@erp/db';
+import { DocumentType, SalesOrderStatus } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { DocumentsService } from '../documents/documents.service';
 import { pageParams, paged } from '../common/pagination';
 import { parseMoney } from '../common/money';
 
@@ -24,7 +25,11 @@ type SalesOrderWriteData = {
 
 @Injectable()
 export class SalesOrdersService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private documentsService: DocumentsService,
+  ) {}
 
   async findAll(tenantId: string, query: { status?: string; search?: string; page?: string | number; limit?: string | number }): Promise<any> {
     const shouldPage = query.page !== undefined;
@@ -157,60 +162,56 @@ export class SalesOrdersService {
   }
 
   async convertToDocument(tenantId: string, userId: string, role: string, id: string, data: { type?: DocumentType; puntoDeVentaId?: string | null }): Promise<any> {
-    return this.prisma.$transaction(async (tx) => {
-      const order = await tx.salesOrder.findFirst({
-        where: { id, tenantId },
-        include: { items: true },
-      });
-      if (!order) throw new NotFoundException('Pedido inexistente');
-      if (order.status === SalesOrderStatus.CANCELLED) throw new BadRequestException('No se puede facturar un pedido cancelado');
-      if (order.documentId) throw new BadRequestException('El pedido ya tiene documento asociado');
-      const type = data.type ?? DocumentType.INVOICE_B;
-      const document = await tx.document.create({
-        data: {
-          tenantId,
-          createdById: userId,
-          type,
-          status: DocumentStatus.DRAFT,
-          customerId: order.customerId,
-          puntoDeVentaId: this.needsPuntoDeVenta(type) ? data.puntoDeVentaId || null : null,
-          date: new Date(),
-          notes: this.appendNote(order.notes, `Generado desde pedido #${order.number}`),
-          subtotal: order.subtotal,
-          taxAmount: order.taxAmount,
-          total: order.total,
-          items: {
-            create: order.items.map((item: any) => ({
-              productId: item.productId,
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              discount: item.discount,
-              taxRate: item.taxRate,
-              subtotal: item.subtotal,
-              taxAmount: item.taxAmount,
-              total: item.total,
-              sortOrder: item.sortOrder,
-            })),
-          },
-        },
-      });
-      const updated = await tx.salesOrder.update({
-        where: { id },
-        data: { status: SalesOrderStatus.INVOICED, documentId: document.id },
-        include: { customer: true, createdBy: true, document: true, items: true },
-      });
-      await this.audit.record({
-        tenantId,
-        userId,
-        action: 'sales_orders.to_document',
-        entityType: 'SalesOrder',
-        entityId: id,
-        summary: `Pedido #${order.number} convertido a documento`,
-        metadata: { documentId: document.id, type },
-      });
-      return this.toDetailDto(updated);
+    const order = await this.prisma.salesOrder.findFirst({
+      where: { id, tenantId },
+      include: { items: true },
     });
+    if (!order) throw new NotFoundException('Pedido inexistente');
+    if (order.status === SalesOrderStatus.CANCELLED) throw new BadRequestException('No se puede facturar un pedido cancelado');
+    if (order.documentId) throw new BadRequestException('El pedido ya tiene documento asociado');
+
+    const type = data.type ?? DocumentType.INVOICE_B;
+    const notes = order.notes
+      ? `${order.notes} — Generado desde pedido #${order.number}`
+      : `Generado desde pedido #${order.number}`;
+
+    const document = await this.documentsService.createDraftFromOrderData(
+      tenantId,
+      userId,
+      role,
+      {
+        customerId: order.customerId,
+        type,
+        puntoDeVentaId: type.startsWith('INVOICE_') ? data.puntoDeVentaId || null : null,
+        notes,
+        items: order.items.map((item: any) => ({
+          productId: item.productId,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          discount: Number(item.discount ?? 0),
+          taxRate: Number(item.taxRate ?? 0),
+        })),
+      },
+    );
+
+    const updated = await this.prisma.salesOrder.update({
+      where: { id },
+      data: { status: SalesOrderStatus.INVOICED, documentId: document.id },
+      include: { customer: true, createdBy: true, document: true, items: true },
+    });
+
+    await this.audit.record({
+      tenantId,
+      userId,
+      action: 'sales_orders.to_document',
+      entityType: 'SalesOrder',
+      entityId: id,
+      summary: `Pedido #${order.number} convertido a documento`,
+      metadata: { documentId: document.id, type },
+    });
+
+    return this.toDetailDto(updated);
   }
 
   async exportCsv(tenantId: string, query: { status?: string }): Promise<string> {
@@ -324,11 +325,6 @@ export class SalesOrdersService {
     };
   }
 
-  private needsPuntoDeVenta(type: DocumentType): boolean {
-    const fiscalTypes: DocumentType[] = [DocumentType.INVOICE_A, DocumentType.INVOICE_B, DocumentType.INVOICE_C, DocumentType.CREDIT_NOTE_A, DocumentType.CREDIT_NOTE_B, DocumentType.DEBIT_NOTE_A, DocumentType.DEBIT_NOTE_B];
-    return fiscalTypes.includes(type);
-  }
-
   private toNumber(value: unknown): number {
     return parseMoney(value);
   }
@@ -341,10 +337,6 @@ export class SalesOrdersService {
 
   private roundMoney(value: number): number {
     return Math.round(value * 100) / 100;
-  }
-
-  private appendNote(notes: string | null | undefined, next: string): string {
-    return [notes, next].filter(Boolean).join('\n');
   }
 
   private formatNumber(value: number): string {

@@ -17,6 +17,17 @@ export class CurrentAccountService {
       };
     }
     Object.keys(where).forEach((key) => where[key] === undefined && delete where[key]);
+
+    // Compute real balance from ALL entries (not just fetched subset)
+    let realBalance: number | undefined;
+    if (query.customerId) {
+      const { _sum } = await this.prisma.currentAccountEntry.aggregate({
+        where: { tenantId, customerId: query.customerId },
+        _sum: { amount: true },
+      });
+      realBalance = this.roundMoney(Number(_sum.amount ?? 0));
+    }
+
     const entries = await this.prisma.currentAccountEntry.findMany({
       where,
       include: { customer: true, document: true },
@@ -47,6 +58,13 @@ export class CurrentAccountService {
     });
     // Reverse to show most recent first (entries were fetched chronological)
     rows.reverse();
+
+    if (realBalance !== undefined) {
+      if (shouldPage) {
+        return { ...paged(rows, total, page, limit), balance: realBalance };
+      }
+      return { data: rows, balance: realBalance };
+    }
     return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 

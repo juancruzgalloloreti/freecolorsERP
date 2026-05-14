@@ -61,6 +61,13 @@ export class CustomersService {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);
     const where = { tenantId, customerId };
+
+    const { _sum } = await this.prisma.currentAccountEntry.aggregate({
+      where,
+      _sum: { amount: true },
+    });
+    const balance = this.roundMoney(Number(_sum.amount ?? 0));
+
     const [rows, total] = await Promise.all([
       this.prisma.currentAccountEntry.findMany({
         where,
@@ -71,7 +78,11 @@ export class CustomersService {
       }),
       shouldPage ? this.prisma.currentAccountEntry.count({ where }) : Promise.resolve(0),
     ]);
-    return shouldPage ? paged(rows, total, page, limit) : rows;
+
+    if (shouldPage) {
+      return { ...paged(rows, total, page, limit), balance };
+    }
+    return { data: rows, balance };
   }
 
   accountLegacy(tenantId: string, customerId: string): any {
@@ -314,6 +325,10 @@ export class CustomersService {
   private csvCell(value: unknown): string {
     const text = String(value ?? '');
     return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 }
 

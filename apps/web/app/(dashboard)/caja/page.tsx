@@ -48,7 +48,7 @@ function apiMessage(error: unknown, fallback: string) {
 
 export default function CajaPage() {
   const qc = useQueryClient()
-  const { user } = useAuth()
+  const { user, hasPermission } = useAuth()
   const isOwner = user?.role === 'OWNER'
   const [openingAmount, setOpeningAmount] = useState('')
   const [move, setMove] = useState({ type: 'CASH_IN', amount: '', description: '', reference: '' })
@@ -177,7 +177,7 @@ export default function CajaPage() {
           <h2 style={{ fontSize: 16, marginBottom: 10 }}>Abrir caja</h2>
           <label className="fc-label" htmlFor="cash-opening-amount">Saldo inicial</label>
           <input id="cash-opening-amount" className="fc-input" inputMode="decimal" value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} placeholder="0,00" />
-          <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!isOwner || openMutation.isPending} onClick={() => openMutation.mutate()}>
+          <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!hasPermission('cash.open') || openMutation.isPending} onClick={() => openMutation.mutate()}>
             <Unlock size={14} /> {openMutation.isPending ? 'Abriendo...' : 'Abrir caja'}
           </button>
         </section>
@@ -195,7 +195,7 @@ export default function CajaPage() {
             <input id="cash-movement-description" className="fc-input" value={move.description} onChange={(event) => setMove((current) => ({ ...current, description: event.target.value }))} placeholder={move.type === 'CASH_OUT' ? 'Pago, retiro, gasto...' : 'Ingreso manual'} />
             <label className="fc-label" htmlFor="cash-movement-reference" style={{ marginTop: 10 }}>Referencia</label>
             <input id="cash-movement-reference" className="fc-input" value={move.reference} onChange={(event) => setMove((current) => ({ ...current, reference: event.target.value }))} placeholder="Opcional" />
-            <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!isOwner || !move.amount || moveMutation.isPending} onClick={() => moveMutation.mutate()}>
+            <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!hasPermission('cash.move') || !move.amount || moveMutation.isPending} onClick={() => moveMutation.mutate()}>
               Registrar
             </button>
 
@@ -221,7 +221,7 @@ export default function CajaPage() {
                   />
                 </>
               )}
-              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!isOwner || !countedAmount || closeNeedsNote || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
+              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!hasPermission('cash.close') || !countedAmount || closeNeedsNote || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
                 <Lock size={14} /> {closeMutation.isPending ? 'Cerrando...' : 'Cerrar caja'}
               </button>
             </div>

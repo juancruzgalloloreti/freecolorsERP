@@ -76,7 +76,7 @@ export class ChecksService {
       },
     })
     if (!check) {
-      throw new NotFoundException('Check not found')
+      throw new NotFoundException('Cheque no encontrado')
     }
     return check
   }
@@ -84,7 +84,7 @@ export class ChecksService {
   async deposit(id: string, tenantId: string, data: { depositDate?: string }) {
     const check = await this.findById(id, tenantId)
     if (check.status !== CheckStatus.RECEIVED) {
-      throw new BadRequestException('Check must be in RECEIVED status to deposit')
+      throw new BadRequestException('El cheque debe estar en estado Recibido para depositarse')
     }
 
     return this.prisma.check.update({
@@ -98,7 +98,7 @@ export class ChecksService {
   async clear(id: string, tenantId: string) {
     const check = await this.findById(id, tenantId)
     if (check.status !== CheckStatus.DEPOSITED) {
-      throw new BadRequestException('Check must be in DEPOSITED status to clear')
+      throw new BadRequestException('El cheque debe estar en estado Depositado para compensarse')
     }
 
     return this.prisma.check.update({
@@ -131,7 +131,7 @@ export class ChecksService {
   async endorse(id: string, tenantId: string, data: { endorsedTo: string }) {
     const check = await this.findById(id, tenantId)
     if (check.status !== CheckStatus.RECEIVED) {
-      throw new BadRequestException('Check must be in RECEIVED status to endorse')
+      throw new BadRequestException('El cheque debe estar en estado Recibido para endosarse')
     }
 
     return this.prisma.check.update({

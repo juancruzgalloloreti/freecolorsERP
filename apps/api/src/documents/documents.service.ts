@@ -505,6 +505,36 @@ export class DocumentsService {
     return this.toDetailDto(document);
   }
 
+  async createDraftFromOrderData(
+    tenantId: string,
+    userId: string,
+    role: string,
+    data: {
+      customerId: string | null;
+      type?: DocumentType;
+      puntoDeVentaId?: string | null;
+      notes?: string | null;
+      items: Array<{
+        productId: string;
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        discount: number;
+        taxRate: number;
+      }>;
+    },
+  ): Promise<any> {
+    return this.prisma.$transaction(async (tx) => {
+      return this.writeDraft(tx, tenantId, userId, role, {
+        customerId: data.customerId,
+        type: data.type,
+        puntoDeVentaId: data.puntoDeVentaId,
+        notes: data.notes,
+        items: data.items,
+      });
+    });
+  }
+
   private async buildCustomerSnapshot(tx: any, tenantId: string, type: DocumentType, customerId?: string | null, notes?: string | null): Promise<Record<string, string | null | undefined>> {
     const deliveryAddressSnapshot = this.extractDeliveryAddress(notes);
     const isCustomerDocument = Boolean(customerId) || CUSTOMER_CHARGE_TYPES.has(type) || STOCK_DOCUMENT_TYPES.has(type) || type === DocumentType.BUDGET;

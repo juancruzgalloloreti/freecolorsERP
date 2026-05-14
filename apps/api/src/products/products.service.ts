@@ -709,7 +709,8 @@ export class ProductsService {
       if (!allowedIds.has(priceListId)) continue;
       const price = this.parseMoney(rawPrice);
       if (price === null || price < 0) continue;
-      const isManualOverride = false;
+      const list = priceLists.find((l: { id: string }) => l.id === priceListId);
+      const isManualOverride = list ? this.priceListCode(list.name) === 'LP4' : false;
       await tx.priceListItem.upsert({
         where: { priceListId_productId: { priceListId, productId } },
         update: { price, isManualOverride },

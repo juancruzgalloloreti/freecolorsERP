@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import {
+  ConfirmDialog,
   EntitySheet,
   MoneyInput,
   PageHeader,
@@ -289,8 +290,10 @@ export default function VentasPage() {
   const [globalDiscount, setGlobalDiscount] = useState('')
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
   const [quickProduct, setQuickProduct] = useState(() => emptyQuickProduct(''))
+  const [resumeConfirm, setResumeConfirm] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedResumeIdRef = useRef<string | null>(null)
+  const pendingResumeRef = useRef<ResumableDocument | null>(null)
 
   const { data: customersRaw } = useQuery({ queryKey: ['customers-counter'], queryFn: () => customersApi.list({ limit: 500 }) })
   const { data: priceListsRaw } = useQuery({ queryKey: ['price-lists-counter'], queryFn: priceListsApi.list })
@@ -324,78 +327,99 @@ export default function VentasPage() {
   const needsPv = docType.startsWith('INVOICE_')
   const budgetMode = docType === 'BUDGET'
 
+  const hydrateDraft = useCallback(async (document: ResumableDocument) => {
+    if (document.status !== 'DRAFT') {
+      setResumeDocumentId(null)
+      setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      return
+    }
+    const productIds = [...new Set((document.items ?? [])
+      .map((item) => item.productId)
+      .filter((id): id is string => Boolean(id)))]
+    const productById = new Map<string, ProductHit>()
+    await Promise.all(productIds.map(async (productId) => {
+      try {
+        productById.set(productId, await productsApi.get(productId))
+      } catch {
+        // El backend vuelve a validar stock/precios al confirmar; si no se puede hidratar, igual dejamos retomar el borrador.
+      }
+    }))
+
+    setResumeDocumentId(document.id)
+    setDocType(DOC_TYPES.some((type) => type.value === document.type) ? document.type : 'BUDGET')
+    setCustomerId(document.customer?.id || '')
+    setPuntoDeVentaId(document.puntoDeVenta?.id || document.puntoDeVentaId || '')
+    setDate(document.date ? new Date(document.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
+    setNotes(document.notes || '')
+    setPayments([])
+    setPaymentMode('CASH')
+    setPaymentMethod('CASH')
+    setPaymentLabel('Caja Mostrador-Efectivo')
+    setPaymentKind('FULL')
+    setPaymentEntry('')
+    setPaymentReference('')
+    setGlobalDiscount('')
+    const nextLines = (document.items ?? []).map((item) => {
+      const product = item.productId ? productById.get(item.productId) : undefined
+      const taxRate = Number(item.taxRate || product?.taxRate || 0)
+      return {
+        productId: item.productId || '',
+        code: product?.code || item.productCode || 'S/C',
+        description: item.description,
+        brandName: product?.brandName ?? item.brandName ?? null,
+        categoryName: product?.categoryName ?? item.categoryName ?? null,
+        unit: product?.unit || 'un',
+        stock: Number(product?.stock ?? product?.stockTotal ?? 0),
+        quantity: Number(item.quantity || 0),
+        unitPrice: Number(item.unitPrice || 0),
+        discount: Number(item.discount || 0),
+        taxRate,
+        productTaxRate: taxRate,
+      }
+    })
+    setIncludeVat(nextLines.some((line) => line.taxRate > 0))
+    setLines(nextLines)
+    setLastDocument(document as unknown as Record<string, unknown>)
+    setLastDocumentId(document.id)
+    setError(null)
+    setMessage(`Borrador ${documentNumber({ number: document.number, puntoDeVenta: document.puntoDeVenta?.number ?? null })} retomado. Finalizalo desde Mostrador para impactar pagos/caja.`)
+  }, [])
+
   useEffect(() => {
     if (!resumeParam || !resumeDocumentRaw || loadedResumeIdRef.current === resumeParam) return
     const document = resumeDocumentRaw as ResumableDocument
+
+    if (document.status !== 'DRAFT') {
+      setResumeDocumentId(null)
+      setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      return
+    }
+
+    if (lines.length > 0) {
+      pendingResumeRef.current = document
+      setResumeConfirm(true)
+      return
+    }
+
     loadedResumeIdRef.current = resumeParam
+    void hydrateDraft(document)
+  }, [resumeDocumentRaw, resumeParam, lines])
 
-    let cancelled = false
-    const hydrateDraft = async () => {
-      if (document.status !== 'DRAFT') {
-        if (!cancelled) {
-          setResumeDocumentId(null)
-          setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
-        }
-        return
-      }
-      const productIds = [...new Set((document.items ?? [])
-        .map((item) => item.productId)
-        .filter((id): id is string => Boolean(id)))]
-      const productById = new Map<string, ProductHit>()
-      await Promise.all(productIds.map(async (productId) => {
-        try {
-          productById.set(productId, await productsApi.get(productId))
-        } catch {
-          // El backend vuelve a validar stock/precios al confirmar; si no se puede hidratar, igual dejamos retomar el borrador.
-        }
-      }))
-      if (cancelled) return
+  const confirmResume = useCallback(() => {
+    const document = pendingResumeRef.current
+    if (!document) return
+    setResumeConfirm(false)
+    pendingResumeRef.current = null
+    loadedResumeIdRef.current = resumeParam
+    void hydrateDraft(document)
+  }, [hydrateDraft, resumeParam])
 
-      setResumeDocumentId(document.id)
-      setDocType(DOC_TYPES.some((type) => type.value === document.type) ? document.type : 'BUDGET')
-      setCustomerId(document.customer?.id || '')
-      setPuntoDeVentaId(document.puntoDeVenta?.id || document.puntoDeVentaId || '')
-      setDate(document.date ? new Date(document.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
-      setNotes(document.notes || '')
-      setPayments([])
-      setPaymentMode('CASH')
-      setPaymentMethod('CASH')
-      setPaymentLabel('Caja Mostrador-Efectivo')
-      setPaymentKind('FULL')
-      setPaymentEntry('')
-      setPaymentReference('')
-      setGlobalDiscount('')
-      const nextLines = (document.items ?? []).map((item) => {
-        const product = item.productId ? productById.get(item.productId) : undefined
-        const taxRate = Number(item.taxRate || product?.taxRate || 0)
-        return {
-          productId: item.productId || '',
-          code: product?.code || item.productCode || 'S/C',
-          description: item.description,
-          brandName: product?.brandName ?? item.brandName ?? null,
-          categoryName: product?.categoryName ?? item.categoryName ?? null,
-          unit: product?.unit || 'un',
-          stock: Number(product?.stock ?? product?.stockTotal ?? 0),
-          quantity: Number(item.quantity || 0),
-          unitPrice: Number(item.unitPrice || 0),
-          discount: Number(item.discount || 0),
-          taxRate,
-          productTaxRate: taxRate,
-        }
-      })
-      setIncludeVat(nextLines.some((line) => line.taxRate > 0))
-      setLines(nextLines)
-      setLastDocument(document as unknown as Record<string, unknown>)
-      setLastDocumentId(document.id)
-      setError(null)
-      setMessage(`Borrador ${documentNumber({ number: document.number, puntoDeVenta: document.puntoDeVenta?.number ?? null })} retomado. Finalizalo desde Mostrador para impactar pagos/caja.`)
-    }
-
-    void hydrateDraft()
-    return () => {
-      cancelled = true
-    }
-  }, [resumeDocumentRaw, resumeParam])
+  const cancelResume = useCallback(() => {
+    setResumeConfirm(false)
+    pendingResumeRef.current = null
+    loadedResumeIdRef.current = null
+    router.replace('/ventas', { scroll: false })
+  }, [router])
 
   const { data: hitsRaw, isFetching: searching } = useQuery({
     queryKey: ['counter-products', search, effectivePriceListId, effectiveDepositId],
@@ -1543,6 +1567,16 @@ export default function VentasPage() {
           </button>
         </div>
       </EntitySheet>
+
+      <ConfirmDialog
+        open={resumeConfirm}
+        title="Retomar borrador"
+        body="Ya tenés productos cargados en el Mostrador. ¿Querés descartarlos y retomar el borrador?"
+        confirmLabel="Descartar y retomar"
+        pending={false}
+        onCancel={cancelResume}
+        onConfirm={confirmResume}
+      />
     </div>
   )
 }

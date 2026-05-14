@@ -46,7 +46,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
         if (existing.responseCode) response.status(existing.responseCode);
         return of(existing.responseBody);
       }
-      throw new ConflictException('La operación idempotente todavía está en proceso');
+      if (existing.expiresAt < new Date()) {
+        await this.prisma.idempotencyKey.update({
+          where: { tenantId_key: { tenantId, key } },
+          data: { status: 'FAILED' },
+        });
+      } else {
+        throw new ConflictException('La operación idempotente todavía está en proceso');
+      }
     }
 
     await this.prisma.idempotencyKey.create({

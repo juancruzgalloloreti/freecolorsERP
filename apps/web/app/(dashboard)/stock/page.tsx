@@ -63,6 +63,12 @@ function exportStockCsv(items: StockItem[]) {
   window.URL.revokeObjectURL(url)
 }
 
+function parseMoney(value: unknown): number {
+  if (value === undefined || value === null || value === '') return 0
+  const parsed = Number(String(value).replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function apiMessage(error: unknown, fallback: string) {
   const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
   const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || fallback
@@ -164,8 +170,8 @@ function MovementModal({ deposits, products, onClose, onSave }: {
               product: mode === 'new' ? { code: form.productCode, name: form.productName } : undefined,
               depositId: form.depositId,
               type: form.type,
-              quantity: parseFloat(form.quantity),
-              unitCost: parseFloat(form.unitCost || '0'),
+              quantity: parseMoney(form.quantity),
+              unitCost: parseMoney(form.unitCost),
               notes: form.notes,
             })}>
             Registrar

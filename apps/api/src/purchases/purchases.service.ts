@@ -67,7 +67,7 @@ export class PurchasesService {
       },
     })
     if (!order) {
-      throw new NotFoundException('Purchase order not found')
+      throw new NotFoundException('Orden de compra no encontrada')
     }
     return order
   }
@@ -189,7 +189,7 @@ export class PurchasesService {
   async cancel(id: string, tenantId: string) {
     const order = await this.findById(id, tenantId)
     if (order.status === 'RECEIVED' || order.status === 'PARTIALLY_RECEIVED') {
-      throw new ConflictException('Cannot cancel a received order')
+      throw new ConflictException('No se puede cancelar una orden ya recibida')
     }
 
     return this.prisma.purchaseOrder.update({
@@ -383,7 +383,7 @@ export class PurchasesService {
       },
     })
     if (!reception) {
-      throw new NotFoundException('Reception not found')
+      throw new NotFoundException('Recepción no encontrada')
     }
     return reception
   }

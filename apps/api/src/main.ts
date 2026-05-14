@@ -4,7 +4,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
+import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
+import { SentryFilter } from './common/sentry.filter';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -50,6 +52,12 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document);
   }
+  // ─── Sentry (solo production) ──────────────────────────────────
+  if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+    Sentry.init({ dsn: process.env.SENTRY_DSN, environment: 'production' });
+    app.useGlobalFilters(new SentryFilter());
+  }
+
   const port = configService.get<number>('PORT', 3001);
   await app.listen(port);
   logger.log(`API corriendo en: http://localhost:${port}/api/v1`);

@@ -13,6 +13,10 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ No ejecutar seed en producción');
+    process.exit(1);
+  }
   console.log('🌱 Seeding database...');
 
   // ─── Tenant ───────────────────────────────────────────────────

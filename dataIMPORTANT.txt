@@ -10,3 +10,7 @@ DATABASE_URL: Connection string de Supabase (puerto 5432, el directo)
 TELEGRAM_BOT_TOKEN: 8769030183:AAG2ArGkl98R0MpfOCa0Mvtl89wfJZSfu0g
 TELEGRAM_CHAT_ID: -1003937100365
 GPG_PASSPHRASE: freecolors-erp-backup-2026!
+
+
+dns sentry next js: https://7131b454212ac7a27aba8cb9b60f3b48@o4511385004670976.ingest.us.sentry.io/4511385018761216
+dns sentry nest js: https://1210ac275422b97f075c4bc2b32802a9@o4511385004670976.ingest.us.sentry.io/4511385022889984
