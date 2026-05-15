@@ -48,8 +48,7 @@ function apiMessage(error: unknown, fallback: string) {
 
 export default function CajaPage() {
   const qc = useQueryClient()
-  const { user, hasPermission } = useAuth()
-  const isOwner = user?.role === 'OWNER'
+  const { hasPermission } = useAuth()
   const [openingAmount, setOpeningAmount] = useState('')
   const [move, setMove] = useState({ type: 'CASH_IN', amount: '', description: '', reference: '' })
   const [countedAmount, setCountedAmount] = useState('')

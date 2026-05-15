@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -330,8 +330,10 @@ export default function VentasPage() {
 
   const hydrateDraft = useCallback(async (document: ResumableDocument) => {
     if (document.status !== 'DRAFT') {
-      setResumeDocumentId(null)
-      setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      queueMicrotask(() => {
+        setResumeDocumentId(null)
+        setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      })
       return
     }
     const productIds = [...new Set((document.items ?? [])
@@ -391,20 +393,22 @@ export default function VentasPage() {
     const document = resumeDocumentRaw as ResumableDocument
 
     if (document.status !== 'DRAFT') {
-      setResumeDocumentId(null)
-      setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      queueMicrotask(() => {
+        setResumeDocumentId(null)
+        setError('Solo se pueden retomar comprobantes en borrador desde Mostrador.')
+      })
       return
     }
 
     if (lines.length > 0) {
       pendingResumeRef.current = document
-      setResumeConfirm(true)
+      queueMicrotask(() => setResumeConfirm(true))
       return
     }
 
     loadedResumeIdRef.current = resumeParam
-    void hydrateDraft(document)
-  }, [resumeDocumentRaw, resumeParam, lines])
+    startTransition(() => { void hydrateDraft(document) })
+  }, [resumeDocumentRaw, resumeParam, lines, hydrateDraft])
 
   const confirmResume = useCallback(() => {
     const document = pendingResumeRef.current
@@ -412,7 +416,7 @@ export default function VentasPage() {
     setResumeConfirm(false)
     pendingResumeRef.current = null
     loadedResumeIdRef.current = resumeParam
-    void hydrateDraft(document)
+    startTransition(() => { void hydrateDraft(document) })
   }, [hydrateDraft, resumeParam])
 
   const cancelResume = useCallback(() => {

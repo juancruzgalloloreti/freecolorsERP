@@ -13,7 +13,7 @@ export class DocumentsController {
   @Get('puntos-de-venta') puntos(@Req() req: any) { return this.service.puntos(req.user.tenantId); }
   @Get(':id') get(@Req() req: any, @Param('id') id: string) { return this.service.get(req.user.tenantId, id); }
   @Post() @RequirePermission('document.create') create(@Req() req: any, @Body() body: any) { return this.service.create(req.user.tenantId, req.user.sub, req.user.role, body); }
-  @Post('confirm-sale') @RequirePermission('document.create', 'document.confirm') confirmSale(@Req() req: any, @Body() body: any) { return this.service.confirmSale(req.user.tenantId, req.user.sub, req.user.role, body); }
+  @Post('confirm-sale') @RequirePermission('sale.create') confirmSale(@Req() req: any, @Body() body: any) { return this.service.confirmSale(req.user.tenantId, req.user.sub, req.user.role, body); }
   @Patch(':id') @RequirePermission('document.create') update(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.update(req.user.tenantId, req.user.role, id, body); }
   @Post(':id/confirm') @RequirePermission('document.confirm') confirm(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.confirm(req.user.tenantId, req.user.sub, req.user.role, id, body); }
   @Patch(':id/confirm') @RequirePermission('document.confirm') confirmAlias(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.confirm(req.user.tenantId, req.user.sub, req.user.role, id, body); }

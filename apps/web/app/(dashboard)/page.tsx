@@ -2,22 +2,36 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 import { DollarSign, TrendingUp, CreditCard, ShoppingCart, FileText, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 const QUICK_LINKS = [
-  { href: '/ventas', label: 'Abrir mostrador', desc: 'Vender, guardar borrador y emitir', color: '#7c3aed', dot: '#a78bfa' },
-  { href: '/compras', label: 'Cargar compra', desc: 'Ordenes y recepciones', color: '#3b82f6', dot: '#60a5fa' },
-  { href: '/productos', label: 'Productos', desc: 'Fichas, marcas y rubros', color: '#22c55e', dot: '#4ade80' },
-  { href: '/stock', label: 'Existencias', desc: 'Saldos y movimientos', color: '#f59e0b', dot: '#fbbf24' },
-  { href: '/clientes', label: 'Clientes', desc: 'Datos y cuenta corriente', color: '#ef4444', dot: '#f87171' },
-  { href: '/listas-de-precio', label: 'Precios', desc: 'Listas y actualizaciones', color: '#8b5cf6', dot: '#c4b5fd' },
+  { href: '/ventas', label: 'Abrir mostrador', desc: 'Vender, guardar borrador y emitir', color: '#7c3aed', dot: '#a78bfa', permissions: ['sale.view', 'sale.create'] },
+  { href: '/compras', label: 'Cargar compra', desc: 'Ordenes y recepciones', color: '#3b82f6', dot: '#60a5fa', permissions: ['purchase.view', 'purchase.create'] },
+  { href: '/productos', label: 'Productos', desc: 'Fichas, marcas y rubros', color: '#22c55e', dot: '#4ade80', permissions: ['product.create', 'product.edit', 'stock.view'] },
+  { href: '/stock', label: 'Existencias', desc: 'Saldos y movimientos', color: '#f59e0b', dot: '#fbbf24', permissions: ['stock.view'] },
+  { href: '/clientes', label: 'Clientes', desc: 'Datos y cuenta corriente', color: '#ef4444', dot: '#f87171', permissions: ['customer.create', 'customer.edit'] },
+  { href: '/listas-de-precio', label: 'Precios', desc: 'Listas y actualizaciones', color: '#8b5cf6', dot: '#c4b5fd', permissions: ['price.update'] },
+]
+
+const STAT_CARDS = [
+  { href: '/documentos', key: 'salesToday', label: 'Ventas hoy', icon: DollarSign, color: '#22c55e', permission: 'report.view', format: 'money' },
+  { href: '/reportes', key: 'salesThisMonth', label: 'Ventas este mes', icon: TrendingUp, color: '#f59e0b', permission: 'report.view', format: 'money' },
+  { href: '/cuenta-corriente', key: 'customerDebt', label: 'Deuda clientes', icon: CreditCard, color: '#ef4444', permission: 'customer.credit_limit', format: 'money' },
+  { href: '/compras', key: 'pendingPurchases', label: 'Compras pendientes', icon: ShoppingCart, color: '#3b82f6', permission: 'purchase.view', format: 'number' },
+  { href: '/documentos', key: 'unconfirmedDocs', label: 'Docs sin confirmar', icon: FileText, color: '#7c3aed', permission: 'document.create', format: 'number' },
 ]
 
 export default function DashboardPage() {
+  const { hasPermission, hasAnyPermission } = useAuth()
+  const canReadSummary = hasPermission('report.view')
+  const visibleStats = STAT_CARDS.filter((stat) => hasPermission(stat.permission))
+  const visibleQuickLinks = QUICK_LINKS.filter((link) => hasAnyPermission(link.permissions))
   const { data, isLoading } = useQuery({
     queryKey: ['reports-summary'],
     queryFn: () => reportsApi.summary(),
+    enabled: canReadSummary,
   })
 
   const stats = (data || {}) as Record<string, number>
@@ -37,7 +51,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats grid */}
-      {isLoading ? (
+      {canReadSummary && isLoading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '28px' }}>
           {[1,2,3,4].map(i => (
             <div key={i} className="stat-card" style={{ opacity: 0.3 }}>
@@ -46,56 +60,20 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : visibleStats.length > 0 && canReadSummary ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-          <Link href="/documentos" style={{ textDecoration: 'none' }}>
-            <StatCard
-              value={stats.salesToday != null
-                ? `$${Number(stats.salesToday).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-                : '—'}
-              label="Ventas hoy"
-              icon={<DollarSign size={18} />}
-              color="#22c55e"
-            />
-          </Link>
-          <Link href="/reportes" style={{ textDecoration: 'none' }}>
-            <StatCard
-              value={stats.salesThisMonth != null
-                ? `$${Number(stats.salesThisMonth).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-                : '—'}
-              label="Ventas este mes"
-              icon={<TrendingUp size={18} />}
-              color="#f59e0b"
-            />
-          </Link>
-          <Link href="/cuenta-corriente" style={{ textDecoration: 'none' }}>
-            <StatCard
-              value={stats.customerDebt != null
-                ? `$${Number(stats.customerDebt).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-                : '—'}
-              label="Deuda clientes"
-              icon={<CreditCard size={18} />}
-              color="#ef4444"
-            />
-          </Link>
-          <Link href="/compras" style={{ textDecoration: 'none' }}>
-            <StatCard
-              value={stats.pendingPurchases ?? '—'}
-              label="Compras pendientes"
-              icon={<ShoppingCart size={18} />}
-              color="#3b82f6"
-            />
-          </Link>
-          <Link href="/documentos" style={{ textDecoration: 'none' }}>
-            <StatCard
-              value={stats.unconfirmedDocs ?? '—'}
-              label="Docs sin confirmar"
-              icon={<FileText size={18} />}
-              color="#7c3aed"
-            />
-          </Link>
+          {visibleStats.map(({ href, key, label, icon: Icon, color, format }) => (
+            <Link key={key} href={href} style={{ textDecoration: 'none' }}>
+              <StatCard
+                value={formatStat(stats[key], format)}
+                label={label}
+                icon={<Icon size={18} />}
+                color={color}
+              />
+            </Link>
+          ))}
         </div>
-      )}
+      ) : null}
 
       <div style={{
         display: 'flex',
@@ -111,7 +89,7 @@ export default function DashboardPage() {
 
       {/* Quick links */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-        {QUICK_LINKS.map(({ href, label, desc, color, dot }) => (
+        {visibleQuickLinks.map(({ href, label, desc, color, dot }) => (
           <Link key={href} href={href} style={{ textDecoration: 'none' }}>
             <div
               className="fc-card"
@@ -148,6 +126,14 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+function formatStat(value: number | undefined, format: string) {
+  if (value == null) return '—'
+  if (format === 'money') {
+    return `$${Number(value).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+  }
+  return value
 }
 
 function StatCard({

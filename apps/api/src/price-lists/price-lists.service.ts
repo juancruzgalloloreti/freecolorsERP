@@ -7,10 +7,13 @@ import { parseMoney } from '../common/money';
 export class PriceListsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string): Promise<any> {
+  async findAll(tenantId: string, role = ''): Promise<any> {
     await this.ensureRequiredLists(tenantId);
     const lists = await this.prisma.priceList.findMany({ where: { tenantId }, include: { items: { include: { product: true } } }, orderBy: { name: 'asc' } });
-    return this.sortPriceLists(lists);
+    const visibleLists = role === 'EMPLOYEE'
+      ? lists.filter((list) => !['CR', 'CU'].includes(this.priceListCode(list.name) || ''))
+      : lists;
+    return this.sortPriceLists(visibleLists);
   }
 
   create(tenantId: string, role: string, data: any): any {

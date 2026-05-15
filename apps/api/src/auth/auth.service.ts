@@ -84,10 +84,16 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!token || token.revokedAt) {
-      if (token && !token.revokedAt) {
-      }
-      throw new UnauthorizedException('Sesión expirada');
+    if (!token) throw new UnauthorizedException('Sesión expirada');
+
+    if (token.revokedAt) {
+      // Reuse detection: si llega un token ya revocado, es señal de posible robo.
+      // Revocar toda la familia de tokens para forzar re-login en todos los dispositivos.
+      await this.prisma.refreshToken.updateMany({
+        where: { familyId: token.familyId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException('Sesión inválida. Iniciá sesión nuevamente.');
     }
 
     if (token.expiresAt < new Date()) {

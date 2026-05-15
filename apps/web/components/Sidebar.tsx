@@ -33,7 +33,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/clientes', label: 'Clientes', icon: Users, permissions: ['customer.create', 'customer.edit'] },
       { href: '/proveedores', label: 'Proveedores', icon: Truck, permissions: ['supplier.create', 'supplier.edit', 'purchase.view'] },
-      { href: '/cuenta-corriente', label: 'Cuentas corrientes', icon: CreditCard, permissions: ['customer.credit_limit', 'supplier.edit'] },
+      { href: '/cuenta-corriente', label: 'Cuentas corrientes', icon: CreditCard, permissions: ['customer.credit_limit'] },
     ],
   },
   {
@@ -48,7 +48,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/aprobaciones', label: 'Aprobaciones', icon: CheckSquare, permissions: ['approval.view', 'approval.decide'] },
       { href: '/empleados', label: 'Empleados', icon: UserCog, permissions: ['user.create', 'user.edit', 'user.manage_permissions'] },
-      { href: '/reportes', label: 'Reportes', icon: BarChart3, permissions: ['report.view', 'audit.read'] },
+      { href: '/reportes', label: 'Reportes', icon: BarChart3, permissions: ['report.view'] },
     ],
   },
 ]

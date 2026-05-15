@@ -371,7 +371,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     expect(document.stockMovements?.some((movement) => Number(movement.quantity) === -1)).toBeTruthy();
 
     const stockRows = await apiGet<Array<{ productCode: string; qty: number; quantity: number }>>(page, `/stock?search=${encodeURIComponent(code)}`);
-    const stockList = Array.isArray(stockRows) ? stockRows : (stockRows as any)?.data ?? [];
+    const stockList = Array.isArray(stockRows) ? stockRows : (stockRows as { data?: typeof stockRows })?.data ?? [];
     const stockRow = stockList.find((row) => row.productCode === code);
     expect(Number(stockRow?.qty ?? stockRow?.quantity ?? 0)).toBe(9);
 
@@ -524,7 +524,7 @@ test.describe('ERP Smoke & Console Audit', () => {
     expect(canceledDocument.status).toBe('CANCELLED');
 
     const stockRows = await apiGet<Array<{ productCode: string; qty: number; quantity: number }>>(page, `/stock?search=${encodeURIComponent(code)}`);
-    const stockList = Array.isArray(stockRows) ? stockRows : (stockRows as any)?.data ?? [];
+    const stockList = Array.isArray(stockRows) ? stockRows : (stockRows as { data?: typeof stockRows })?.data ?? [];
     const stockRow = stockList.find((row) => row.productCode === code);
     expect(Number(stockRow?.qty ?? stockRow?.quantity ?? 0)).toBe(10);
   });

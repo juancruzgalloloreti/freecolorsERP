@@ -35,7 +35,7 @@ const cookieOptions = {
 
 const clearAuthCookies = () => {
   Cookies.remove('access_token', { path: '/' })
-  Cookies.remove('refresh_token', { path: '/' })
+  // refresh_token es httpOnly — la limpia el route handler /api/auth/logout via Set-Cookie server-side
   Cookies.remove('user', { path: '/' })
 }
 
@@ -70,7 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     Cookies.set('access_token', data.accessToken, cookieOptions)
-    Cookies.set('refresh_token', data.refreshToken, { ...cookieOptions, expires: 30 })
+    // refresh_token es httpOnly — ya lo setea el route handler /api/auth/login
+    // No escribir refresh_token desde JS: quedaría accesible a XSS
 
     try {
       const permissions = await authApi.getMyPermissions()

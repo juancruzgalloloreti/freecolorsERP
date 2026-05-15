@@ -28,18 +28,13 @@ export class PermissionsService {
       'user.create', 'user.edit', 'user.manage', 'user.delete', 'user.manage_permissions',
     ],
     EMPLOYEE: [
-      'sale.create', 'sale.discount', 'sale.discount.apply', 'sale.view',
+      'sale.create', 'sale.view',
       'stock.view',
-      'cash.open', 'cash.close', 'cash.move',
-      'customer.create', 'customer.edit',
-      'supplier.create', 'supplier.edit',
-      'document.create', 'document.confirm',
-      'purchase.view', 'purchase.create', 'purchase.receive',
-      'check.view',
-      'approval.view', 'approval.decide',
+      'customer.create',
+      'document.create',
     ],
     READONLY: [
-      'sale.view', 'stock.view', 'purchase.view', 'check.view', 'approval.view', 'report.view', 'audit.read',
+      'sale.view', 'stock.view', 'purchase.view', 'report.view',
     ],
   }
 

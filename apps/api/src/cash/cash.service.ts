@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CashMovementType, CashSessionStatus, PaymentMethod, Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -26,41 +26,49 @@ export class CashService {
   }
 
   async open(tenantId: string, userId: string, role: string, data: { openingAmount?: number | string; note?: string }) {
-    await this.prisma.$executeRaw(
-      Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(CONCAT('cash_open_', ${tenantId})))`,
-    );
-    const existing = await this.current(tenantId);
-    if (existing) throw new BadRequestException('Ya hay una caja abierta');
+    // N-01/C-04 fix: pg_advisory_xact_lock requiere una transacción activa para durar
+    // hasta el commit. Fuera de $transaction, Prisma lo ejecuta en autocommit y el lock
+    // se libera inmediatamente, dejando la protección contra apertura concurrente ilusoria.
+    const session = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(CONCAT('cash_open_', ${tenantId})))`,
+      );
+      const existing = await tx.cashSession.findFirst({
+        where: { tenantId, status: CashSessionStatus.OPEN },
+      });
+      if (existing) throw new BadRequestException('Ya hay una caja abierta');
 
-    const openingAmount = this.toMoney(data.openingAmount);
-    const session = await this.prisma.cashSession.create({
-      data: {
-        tenantId,
-        openedById: userId,
-        openingAmount,
-        expectedAmount: openingAmount,
-        openingNote: data.note || null,
-        movements: {
-          create: {
-            tenantId,
-            createdById: userId,
-            type: CashMovementType.OPENING,
-            method: PaymentMethod.CASH,
-            amount: openingAmount,
-            description: 'Apertura de caja',
+      const openingAmount = this.toMoney(data.openingAmount);
+      return tx.cashSession.create({
+        data: {
+          tenantId,
+          openedById: userId,
+          openingAmount,
+          expectedAmount: openingAmount,
+          openingNote: data.note || null,
+          movements: {
+            create: {
+              tenantId,
+              createdById: userId,
+              type: CashMovementType.OPENING,
+              method: PaymentMethod.CASH,
+              amount: openingAmount,
+              description: 'Apertura de caja',
+            },
           },
         },
-      },
-      include: { movements: true },
+        include: { movements: true },
+      });
     });
+
     await this.audit.record({
       tenantId,
       userId,
       action: 'cash.open',
       entityType: 'CashSession',
       entityId: session.id,
-      summary: `Caja abierta con ${openingAmount}`,
-      metadata: { openingAmount },
+      summary: `Caja abierta con ${session.openingAmount}`,
+      metadata: { openingAmount: session.openingAmount },
     });
     return session;
   }
