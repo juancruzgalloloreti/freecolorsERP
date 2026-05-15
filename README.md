@@ -97,6 +97,19 @@ NEXT_PUBLIC_UI_MODE="modern"
 
 Las URLs van sin `/api/v1`.
 
+### Backups
+
+El script `scripts/backup-erp.ps1` no contiene secretos hardcodeados. Antes de ejecutarlo, definir estas variables en el entorno:
+
+```powershell
+$env:DATABASE_URL="postgresql://user:pass@host/dbname?sslmode=require"
+$env:GPG_PASSPHRASE="passphrase-privada"
+$env:TELEGRAM_BOT_TOKEN="token-del-bot"
+$env:TELEGRAM_CHAT_ID="chat-id-destino"
+```
+
+Si falta alguna variable, el script corta antes de ejecutar `pg_dump`, cifrar o enviar el archivo.
+
 ## Comandos
 
 ```bash

@@ -1,13 +1,9 @@
 import 'dotenv/config';
 /**
- * BUG FIX: el original importaba de './packages/db/src/generated/client',
- * que sólo contenía el binario de Windows (query_engine-windows.dll.node).
- * En Linux/Mac el cliente no podía iniciar y el seed fallaba silenciosamente.
- *
- * Importamos desde @erp/db (el paquete del monorepo) que re-exporta
- * del cliente generado con binaryTargets = ["native", ...].
+ * Importamos desde el barrel fuente de @erp/db, que re-exporta
+ * desde @prisma/client generado en node_modules.
  */
-import { PrismaClient, UserRole, Plan, IvaCondition } from './packages/db/src/generated/client';
+import { PrismaClient, UserRole, Plan, IvaCondition } from './packages/db/src';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();

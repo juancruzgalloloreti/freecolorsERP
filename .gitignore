@@ -10,7 +10,6 @@ package-lock.json
 .env.local
 .env.*.local
 
-packages/db/src/generated/client/*.node
-packages/db/src/generated/client/runtime/*.node
+packages/db/src/generated/
 
 .vercel

@@ -1,11 +1,22 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
-# ── Configuración ─────────────────────────────────────────────
-$DATABASE_URL    = "postgresql://postgres.lqtosckcprprnsnagksv:OCduzxTK767HpVVo@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
-$GPG_PASSPHRASE  = "freecolors-erp-backup-2026!"
-$BOT_TOKEN       = "8769030183:AAG2ArGkl98R0MpfOCa0Mvtl89wfJZSfu0g"
-$CHAT_ID         = "-1003937100365"
-# ──────────────────────────────────────────────────────────────
+# Configuracion segura por variables de entorno.
+$REQUIRED_ENV_VARS = @(
+  "DATABASE_URL",
+  "GPG_PASSPHRASE",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_CHAT_ID"
+)
+
+$MISSING_ENV_VARS = $REQUIRED_ENV_VARS | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
+if ($MISSING_ENV_VARS.Count -gt 0) {
+  throw "Faltan variables de entorno requeridas para backup: $($MISSING_ENV_VARS -join ', ')"
+}
+
+$DATABASE_URL   = $env:DATABASE_URL
+$GPG_PASSPHRASE = $env:GPG_PASSPHRASE
+$BOT_TOKEN      = $env:TELEGRAM_BOT_TOKEN
+$CHAT_ID        = $env:TELEGRAM_CHAT_ID
 
 $TIMESTAMP = Get-Date -Format "yyyyMMdd_HHmm"
 $DUMP_FILE = "$env:TEMP\backup_$TIMESTAMP.sql"

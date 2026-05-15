@@ -42,7 +42,6 @@ interface PriceCoefficient {
   category?: { id: string; name: string } | null
 }
 
-const FORMULAS_KEY = 'freecolors-price-formulas'
 const DEFAULT_FORMULAS: PriceFormula[] = [
   {
     id: 'legacy-lp2',
@@ -104,21 +103,7 @@ export default function ListasDePrecioPage() {
   const [deletingList, setDeletingList] = useState<PriceList | null>(null)
   const [coefficientForm, setCoefficientForm] = useState({ scope: 'CATEGORY', targetId: '', name: '', multiplier: '1.00', validFrom: '', validTo: '' })
   const [message, setMessage] = useState<string | null>(null)
-  const [formulas, setFormulas] = useState<PriceFormula[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_FORMULAS
-    const saved = window.localStorage.getItem(FORMULAS_KEY)
-    if (!saved) return DEFAULT_FORMULAS
-    try {
-      const parsed = JSON.parse(saved)
-      if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_FORMULAS
-      return [
-        ...parsed,
-        ...DEFAULT_FORMULAS.filter((formula) => !parsed.some((item: PriceFormula) => item.id === formula.id)),
-      ]
-    } catch {
-      return DEFAULT_FORMULAS
-    }
-  })
+  const [formulaDrafts, setFormulaDrafts] = useState<Record<string, Partial<PriceFormula>>>({})
   const [formulaToAutoApply, setFormulaToAutoApply] = useState<string | null>(null)
   const [formulaAwaitingOverrideChoice, setFormulaAwaitingOverrideChoice] = useState<string | null>(null)
 
@@ -149,10 +134,6 @@ export default function ListasDePrecioPage() {
     [rawCategories]
   )
 
-  useEffect(() => {
-    window.localStorage.setItem(FORMULAS_KEY, JSON.stringify(formulas))
-  }, [formulas])
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => priceListsApi.remove(id),
     onSuccess: () => {
@@ -176,9 +157,14 @@ export default function ListasDePrecioPage() {
         includeManualOverrides,
       })
     },
-    onSuccess: (result: { updated?: number; skipped?: number; total?: number }) => {
-      qc.invalidateQueries({ queryKey: ['price-lists'] })
+    onSuccess: async (result: { updated?: number; skipped?: number; total?: number }, variables) => {
+      await qc.invalidateQueries({ queryKey: ['price-lists'] })
       setFormulaAwaitingOverrideChoice(null)
+      setFormulaDrafts((current) => {
+        const next = { ...current }
+        delete next[variables.formula.id]
+        return next
+      })
       setMessage(`Fórmula aplicada: ${result.updated || 0} precios actualizados, ${result.skipped || 0} omitidos.`)
     },
     onError: (error) => setMessage(apiMessage(error, 'No se pudo aplicar la fórmula')),
@@ -240,7 +226,9 @@ export default function ListasDePrecioPage() {
   }, [coreLists])
 
   const hydratedFormulas = useMemo(() => {
-    if (coreLists.length === 0) return formulas
+    if (coreLists.length === 0) {
+      return DEFAULT_FORMULAS.map((formula) => ({ ...formula, ...formulaDrafts[formula.id] }))
+    }
     const findByPrefix = (prefix: string) => coreLists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} `))
       || coreLists.find((list) => list.name.toUpperCase().startsWith(`${prefix.toUpperCase()} -`))
     const lp1 = findByPrefix('LP1')
@@ -255,22 +243,24 @@ export default function ListasDePrecioPage() {
       'legacy-lp4': { baseListId: cr?.id || lp1?.id, targetListId: lp4?.id },
       'legacy-lp5': { baseListId: cr?.id || lp1?.id, targetListId: lp5?.id },
     }
-    return formulas.map((formula) => {
+    return DEFAULT_FORMULAS.map((formula) => {
       const target = targets[formula.id]
-      if (!target) return formula
+      const draft = formulaDrafts[formula.id] || {}
+      if (!target) return { ...formula, ...draft }
       const targetList = coreLists.find((list) => list.id === target.targetListId)
       const savedBase = targetList?.formulaBaseCode
         ? coreLists.find((list) => priceListCode(list.name) === targetList.formulaBaseCode)?.id
         : ''
       return {
         ...formula,
-        baseListId: formula.baseListId || savedBase || target.baseListId || '',
-        targetListId: formula.targetListId || target.targetListId || '',
-        multiplier: targetList?.formulaCoefficient != null ? String(targetList.formulaCoefficient) : formula.multiplier,
-        rounding: targetList?.formulaRoundingValue != null ? String(targetList.formulaRoundingValue) : formula.rounding,
+        baseListId: draft.baseListId ?? savedBase ?? target.baseListId ?? '',
+        targetListId: draft.targetListId ?? target.targetListId ?? '',
+        multiplier: draft.multiplier ?? (targetList?.formulaCoefficient != null ? String(targetList.formulaCoefficient) : formula.multiplier),
+        rounding: draft.rounding ?? (targetList?.formulaRoundingValue != null ? String(targetList.formulaRoundingValue) : formula.rounding),
+        onlyMissing: draft.onlyMissing ?? formula.onlyMissing,
       }
     })
-  }, [formulas, coreLists])
+  }, [coreLists, formulaDrafts])
 
   const fixedFormulas = hydratedFormulas.filter((formula) => formula.id.startsWith('legacy-'))
 
@@ -315,7 +305,13 @@ export default function ListasDePrecioPage() {
     if (!isOwner) return
     const currentFormula = hydratedFormulas.find((formula) => formula.id === id)
     const nextFormula = currentFormula ? { ...currentFormula, [key]: value } : null
-    setFormulas((current) => current.map((formula) => formula.id === id ? { ...formula, [key]: value } : formula))
+    setFormulaDrafts((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        [key]: value,
+      },
+    }))
     if (['baseListId', 'targetListId', 'multiplier', 'rounding'].includes(key)) {
       if (nextFormula && manualOverridesCountForFormula(nextFormula) > 0) {
         setFormulaToAutoApply(null)
@@ -470,7 +466,7 @@ export default function ListasDePrecioPage() {
               <div className={`formula-row ${needsOverrideChoice ? 'formula-row-warning' : ''}`} key={formula.id}>
                 <label className="formula-cell formula-title">
                   <span>Regla</span>
-                  <input className="fc-input formula-name" value={formula.name} onChange={(e) => updateFormula(formula.id, 'name', e.target.value)} readOnly={!isOwner} />
+                  <input className="fc-input formula-name" value={formula.name} readOnly />
                 </label>
                 <label className="formula-cell">
                   <span>Base</span>
