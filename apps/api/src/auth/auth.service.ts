@@ -65,7 +65,7 @@ export class AuthService {
 
     await this.prisma.$transaction([
       this.prisma.refreshToken.create({
-        data: { familyId, tokenHash, userId, expiresAt },
+        data: { familyId, tokenHash, userId, tenantId, expiresAt },
       }),
       this.prisma.user.update({
         where: { id: userId },
@@ -121,7 +121,7 @@ export class AuthService {
       const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 
       await tx.refreshToken.create({
-        data: { familyId, tokenHash: newTokenHash, userId: token.userId, expiresAt: newExpiresAt },
+        data: { familyId, tokenHash: newTokenHash, userId: token.userId, tenantId: token.user.tenantId, expiresAt: newExpiresAt },
       });
 
       return {

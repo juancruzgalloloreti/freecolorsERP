@@ -164,6 +164,7 @@ model RefreshToken {
   familyId   String                        // agrupa tokens de una misma sesión
   tokenHash  String    @unique             // SHA-256 del token real, nunca el crudo
   userId     String
+  tenantId   String
   expiresAt  DateTime
   revokedAt  DateTime?                     // null = activo; !null = rotado o invalidado
   createdAt  DateTime  @default(now())
