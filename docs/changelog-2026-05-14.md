@@ -165,20 +165,145 @@ if (process.env.NODE_ENV === 'production') {
 
 ---
 
+---
+
+## Fix 11 — CRIT-01/03: Auth HttpOnly cookies + refresh token rotation
+
+**Archivos:**
+- `apps/api/src/auth/auth.service.ts` — refresh token rotation con familyId + reuse detection
+- `packages/db/prisma/schema.prisma` — modelo RefreshToken + drop columnas old
+- `packages/db/prisma/migrations/20260514120000_refresh_token_rotation/migration.sql` — migration manual
+- `apps/web/app/api/auth/login/route.ts` — HttpOnly solo en refresh_token
+- `apps/web/app/api/auth/refresh/route.ts` — server-side cookies() en vez de js-cookie
+- `apps/web/lib/api.ts` — interceptor refresh llama a Next.js route
+- `apps/web/contexts/AuthContext.tsx` — alineado con nuevo flujo
+
+**Problema:** T-02 identificaba que el refresh token viajaba en localStorage (vulnerable a XSS). Se implementó rotation con familyId + reuse detection.
+
+**Fix:**
+1. Modelo RefreshToken: `id, familyId, tokenHash, userId, tenantId, expiresAt, revokedAt, createdAt`
+2. Login: crea token con nuevo familyId, setea refresh_token como HttpOnly
+3. Refresh: revoca token actual, crea nuevo con mismo familyId, detecta reuse (token ya revoked = toda la familia se invalida)
+4. Logout: revoca todos los tokens del usuario
+5. Access_token y user cookies NO son HttpOnly (JS las necesita para axios interceptor y AuthContext)
+
+---
+
+## Fix 12 — CRIT-02: Permissions escalation — OWNER validation
+
+**Archivos:**
+- `apps/api/src/permissions/permissions.service.ts` — assertManagePermissions checkea OWNER
+- `apps/api/src/permissions/permissions.controller.ts` — usa assertManagePermissions
+
+**Problema:** ADMIN podía modificar permisos de OWNER.
+
+---
+
+## Fix 13 — CRIT-05: Cost helper centralizado
+
+**Archivo:** `apps/api/src/common/cost-utils.ts`
+
+**Problema:** `recalculateAverageCost` duplicado en stock y documents con distinta precisión.
+
+**Fix:** helper compartido con `COST_PRECISION = 4`.
+
+---
+
+## Fix 14 — CRIT-07: CC running balance con window function SQL
+
+**Archivo:** `apps/api/src/current-account/current-account.service.ts`
+
+**Problema:** Running balance calculado en JS sobre subset de entries (±200). Con clientes de +200 movimientos el saldo era incorrecto.
+
+**Fix:** `$queryRaw` con `SUM(amount) OVER (PARTITION BY customerId ORDER BY date ASC, id ASC)`.
+
+---
+
+## Fix 15 — CRIT-09/13: Stock pagination siempre activo
+
+**Archivo:** `apps/api/src/stock/stock.service.ts`
+
+**Problema:** `current()` cargaba todos los productos sin paginar si no se pasaba `page`.
+
+**Fix:** Siempre usa `paged()` con `pageParams(query, 100, 300)`.
+
+---
+
+## Fix 16 — CRIT-10: FOR UPDATE en purchases
+
+**Archivo:** `apps/api/src/purchases/purchases.service.ts`
+
+**Problema:** Lock adquirido DESPUÉS de leer la OC.
+
+**Fix:** `SELECT ... FOR UPDATE` antes de cualquier operación.
+
+---
+
+## Fix 17 — BUG-01: Prisma.empty como valor en `$queryRaw`
+
+**Archivo:** `apps/api/src/current-account/current-account.service.ts`
+
+**Problema:** `AND e."customerId" = ${query.customerId ?? Prisma.empty}` — cuando no hay customerId, produce `= NULL` que nunca matchea. Causaba que `/cuenta-corriente` siempre mostrara "No hay movimientos".
+
+**Fix:** `${query.customerId ? Prisma.sql\`AND e."customerId" = ${query.customerId}\` : Prisma.empty}`
+
+---
+
+## Fix 18 — BUG-02: recalculateAverageCost duplicado en purchases
+
+**Archivo:** `apps/api/src/purchases/purchases.service.ts`
+
+**Problema:** Versión privada usaba 2 decimales y filtraba `quantity > 0` (incorrecto).
+
+**Fix:** Usa `cost-utils.ts` compartido + actualiza `lastPurchaseCost` por separado.
+
+---
+
+## Fix 19 — BUG-03: Customer CC modal siempre vacío
+
+**Archivo:** `apps/web/app/(dashboard)/clientes/page.tsx`
+
+**Problema:** `data.entries` pero backend devuelve `{ data, balance }`. Modal siempre sin movimientos.
+
+**Fix:** `data.entries` → `data.data`
+
+---
+
 ## Resumen de archivos tocados
 
-| # | Archivo | Tipo |
-|---|---------|------|
-| 1 | `apps/api/src/products/products.service.ts` | Backend |
-| 2 | `apps/api/src/documents/documents.service.ts` | Backend |
-| 3 | `apps/api/src/sales-orders/sales-orders.module.ts` | Backend |
-| 4 | `apps/api/src/sales-orders/sales-orders.service.ts` | Backend |
-| 5 | `apps/api/src/current-account/current-account.service.ts` | Backend |
-| 6 | `apps/api/src/customers/customers.service.ts` | Backend |
-| 7 | `apps/api/src/common/idempotency.interceptor.ts` | Backend |
-| 8 | `apps/api/src/purchases/purchases.service.ts` | Backend |
-| 9 | `apps/api/src/checks/checks.service.ts` | Backend |
-| 10 | `apps/web/app/(dashboard)/caja/page.tsx` | Frontend |
-| 11 | `apps/web/app/(dashboard)/ventas/ventas-page.tsx` | Frontend |
-| 12 | `apps/web/app/(dashboard)/stock/page.tsx` | Frontend |
-| 13 | `seed.ts` | Root |
+### Backend API
+| Archivo | Bug |
+|---------|-----|
+| `apps/api/src/auth/auth.service.ts` | CRIT-01/03 |
+| `apps/api/src/permissions/permissions.service.ts` | CRIT-02 |
+| `apps/api/src/permissions/permissions.controller.ts` | CRIT-02 |
+| `apps/api/src/common/cost-utils.ts` | CRIT-05 |
+| `apps/api/src/common/pagination.ts` | (referencia) |
+| `apps/api/src/current-account/current-account.service.ts` | CRIT-07 + BUG-01 |
+| `apps/api/src/stock/stock.service.ts` | CRIT-09/13 + BUG-04 |
+| `apps/api/src/purchases/purchases.service.ts` | CRIT-10 + BUG-02 |
+| `apps/api/src/documents/documents.service.ts` | CRIT-05 import |
+
+### Frontend Web
+| Archivo | Bug |
+|---------|-----|
+| `apps/web/app/api/auth/login/route.ts` | CRIT-01/03 |
+| `apps/web/app/api/auth/refresh/route.ts` | CRIT-01/03 |
+| `apps/web/app/api/auth/logout/route.ts` | CRIT-01/03 |
+| `apps/web/lib/api.ts` | CRIT-01/03 |
+| `apps/web/contexts/AuthContext.tsx` | CRIT-01/03 |
+| `apps/web/app/(dashboard)/clientes/page.tsx` | BUG-03 |
+| `apps/web/e2e/tests/erp-smoke.spec.ts` | CRIT-09/13 |
+
+### Base de datos
+| Archivo | Bug |
+|---------|-----|
+| `packages/db/prisma/schema.prisma` | CRIT-01/03 |
+| `packages/db/prisma/migrations/20260514120000_refresh_token_rotation/migration.sql` | CRIT-01/03 |
+
+### Config / Docs
+| Archivo | Propósito |
+|---------|-----------|
+| `apps/web/.env.local` | Remove NODE_ENV=production |
+| `docs/ERP - Decisiones tomadas.md` | Shadow DB workaround |
+| `ERP - Estado actual.md` | Estado de bugs |

@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma, PurchaseOrderStatus, StockMovementType } from '@erp/db'
 import { PrismaService } from '../common/prisma.service'
+import { recalculateAverageCost } from '../common/cost-utils'
 
 @Injectable()
 export class PurchasesService {
@@ -215,6 +216,11 @@ export class PurchasesService {
     if (!data.items?.length) throw new BadRequestException('La recepción requiere al menos un item')
 
     return this.prisma.$transaction(async (tx) => {
+      // Bloquear la orden ANTES de leer para prevenir race conditions
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "purchase_orders" WHERE id = ${data.purchaseOrderId} FOR UPDATE`,
+      )
+
       const [order, deposit] = await Promise.all([
         tx.purchaseOrder.findFirst({
           where: { id: data.purchaseOrderId, tenantId },
@@ -228,10 +234,6 @@ export class PurchasesService {
       if (order.status === PurchaseOrderStatus.CANCELLED || order.status === PurchaseOrderStatus.RECEIVED) {
         throw new BadRequestException('La orden no admite nuevas recepciones')
       }
-
-      await tx.$executeRaw(
-        Prisma.sql`SELECT id FROM "purchase_orders" WHERE id = ${data.purchaseOrderId} FOR UPDATE`,
-      )
 
       const itemsById = new Map(order.items.map((item) => [item.id, item]))
       const receptionItems = data.items.map((item) => {
@@ -290,7 +292,11 @@ export class PurchasesService {
             notes: `Recepción OC #${order.number}${data.notes ? ` - ${data.notes}` : ''}`,
           },
         })
-        await this.recalculateAverageCost(tx, tenantId, orderItem.productId)
+        await recalculateAverageCost(tx, tenantId, orderItem.productId)
+        await tx.product.update({
+          where: { id: orderItem.productId },
+          data: { lastPurchaseCost: Number(orderItem.unitPrice || 0) },
+        })
       }
 
       const orderItems = await tx.purchaseOrderItem.findMany({
@@ -392,33 +398,5 @@ export class PurchasesService {
     return Math.round(Number(value || 0) * 100) / 100
   }
 
-  private async recalculateAverageCost(tx: any, tenantId: string, productId: string): Promise<void> {
-    const rows = await tx.$queryRaw(Prisma.sql`
-      SELECT
-        COALESCE(SUM("quantity"), 0)::float AS "quantity",
-        COALESCE(SUM("quantity" * "unitCost"), 0)::float AS "value"
-      FROM "stock_movements"
-      WHERE "tenantId" = ${tenantId}
-        AND "productId" = ${productId}
-        AND "quantity" > 0
-    `) as Array<{ quantity: number; value: number }>
-    const quantity = Number(rows[0]?.quantity ?? 0)
-    if (quantity <= 0) return
-    await tx.product.update({
-      where: { id: productId },
-      data: {
-        lastPurchaseCost: await this.lastPurchaseCost(tx, tenantId, productId),
-        averageCost: this.roundMoney(Number(rows[0]?.value ?? 0) / quantity),
-      },
-    })
-  }
 
-  private async lastPurchaseCost(tx: any, tenantId: string, productId: string): Promise<number> {
-    const movement = await tx.stockMovement.findFirst({
-      where: { tenantId, productId, type: StockMovementType.PURCHASE, quantity: { gt: 0 } },
-      orderBy: { createdAt: 'desc' },
-      select: { unitCost: true },
-    })
-    return Number(movement?.unitCost ?? 0)
-  }
 }

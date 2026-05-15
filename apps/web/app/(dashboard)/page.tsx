@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '@/lib/api'
-import { Package, FileText, Users, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react'
+import { DollarSign, TrendingUp, CreditCard, ShoppingCart, FileText, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 const QUICK_LINKS = [
@@ -48,26 +48,52 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-          <StatCard value={stats.totalProducts ?? '—'} label="Productos" icon={<Package size={18} />} color="#7c3aed" />
-          <StatCard value={stats.totalCustomers ?? '—'} label="Clientes" icon={<Users size={18} />} color="#3b82f6" />
-          <StatCard value={stats.documentsThisMonth ?? '—'} label="Docs este mes" icon={<FileText size={18} />} color="#22c55e" />
-          <StatCard
-            value={stats.salesThisMonth != null
-              ? `$${Number(stats.salesThisMonth).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-              : '—'}
-            label="Ventas este mes"
-            icon={<TrendingUp size={18} />}
-            color="#f59e0b"
-          />
-          {stats.lowStockCount > 0 && (
+          <Link href="/documentos" style={{ textDecoration: 'none' }}>
             <StatCard
-              value={stats.lowStockCount}
-              label="Stock bajo"
-              icon={<AlertTriangle size={18} />}
-              color="#ef4444"
-              warn
+              value={stats.salesToday != null
+                ? `$${Number(stats.salesToday).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+                : '—'}
+              label="Ventas hoy"
+              icon={<DollarSign size={18} />}
+              color="#22c55e"
             />
-          )}
+          </Link>
+          <Link href="/reportes" style={{ textDecoration: 'none' }}>
+            <StatCard
+              value={stats.salesThisMonth != null
+                ? `$${Number(stats.salesThisMonth).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+                : '—'}
+              label="Ventas este mes"
+              icon={<TrendingUp size={18} />}
+              color="#f59e0b"
+            />
+          </Link>
+          <Link href="/cuenta-corriente" style={{ textDecoration: 'none' }}>
+            <StatCard
+              value={stats.customerDebt != null
+                ? `$${Number(stats.customerDebt).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+                : '—'}
+              label="Deuda clientes"
+              icon={<CreditCard size={18} />}
+              color="#ef4444"
+            />
+          </Link>
+          <Link href="/compras" style={{ textDecoration: 'none' }}>
+            <StatCard
+              value={stats.pendingPurchases ?? '—'}
+              label="Compras pendientes"
+              icon={<ShoppingCart size={18} />}
+              color="#3b82f6"
+            />
+          </Link>
+          <Link href="/documentos" style={{ textDecoration: 'none' }}>
+            <StatCard
+              value={stats.unconfirmedDocs ?? '—'}
+              label="Docs sin confirmar"
+              icon={<FileText size={18} />}
+              color="#7c3aed"
+            />
+          </Link>
         </div>
       )}
 

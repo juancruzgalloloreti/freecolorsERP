@@ -174,7 +174,7 @@ function CCModal({ customer, onClose }: { customer: Customer; onClose: () => voi
     queryKey: ['cc', customer.id],
     queryFn: () => customersApi.account(customer.id),
   })
-  const entries = Array.isArray(data) ? data : (data as { entries?: unknown[] })?.entries || []
+  const entries = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data || []
   const saldo = (entries as { amount: number }[]).reduce((a, e) => a + Number(e.amount), 0)
 
   return (

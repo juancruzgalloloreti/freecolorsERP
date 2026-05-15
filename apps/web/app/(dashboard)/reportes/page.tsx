@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '@/lib/api'
 import { BarChart3, Download, Printer } from 'lucide-react'
+import { printReportA4 } from '@/lib/print-report'
 
 type SalesGroup = 'month' | 'cuit' | 'document' | 'receipt' | 'pos' | 'locality' | 'account' | 'user' | 'userMl'
 
@@ -173,7 +174,7 @@ export default function ReportesPage() {
           <button className="btn btn-secondary" type="button" onClick={() => downloadCsv(rows, totals, dateFrom, dateTo)} disabled={rows.length === 0}>
             <Download size={14} /> Exportar CSV
           </button>
-          <button className="btn btn-secondary" type="button" onClick={() => window.print()} disabled={rows.length === 0}>
+          <button className="btn btn-secondary" type="button" onClick={() => printReportA4(management, summary, dateFrom, dateTo, groupBy)} disabled={isLoading || rows.length === 0}>
             <Printer size={14} /> Imprimir
           </button>
         </div>

@@ -3,6 +3,7 @@ import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { pageParams, paged } from '../common/pagination';
+import { recalculateAverageCost } from '../common/cost-utils';
 
 @Injectable()
 export class StockService {
@@ -10,7 +11,6 @@ export class StockService {
 
   async current(tenantId: string, role: string, query: { search?: string; page?: number | string; limit?: number | string }): Promise<any> {
     const isOwner = role === 'OWNER';
-    const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);
     const q = query.search?.toLowerCase().trim();
 
@@ -22,68 +22,28 @@ export class StockService {
       ];
     }
 
-    if (shouldPage) {
-      const [total, products, deposits] = await Promise.all([
-        this.prisma.product.count({ where: productFilter }),
-        this.prisma.product.findMany({
-          where: productFilter,
-          include: { brand: true, category: true },
-          skip,
-          take: limit,
-        }),
-        this.prisma.deposit.findMany({ where: { tenantId } }),
-      ]);
-      if (products.length === 0) return paged([], total, page, limit);
-
-      const productIds = products.map((p) => p.id);
-      const depositMap = new Map(deposits.map((d) => [d.id, d]));
-      const movements = await this.prisma.stockMovement.groupBy({
-        by: ['productId', 'depositId'],
-        where: { tenantId, productId: { in: productIds } },
-        _sum: { quantity: true },
-      });
-
-      const rows = movements.map((m) => {
-        const product = products.find((p) => p.id === m.productId);
-        const deposit = depositMap.get(m.depositId);
-        const quantity = Number(m._sum.quantity ?? 0);
-        const unitCost = Number(product?.averageCost ?? 0);
-        return {
-          productId: m.productId,
-          productCode: product?.code ?? '',
-          productName: product?.name ?? '',
-          brandName: product?.brand?.name,
-          categoryName: product?.category?.name,
-          unit: product?.unit ?? 'un',
-          depositId: m.depositId,
-          depositName: deposit?.name ?? '',
-          qty: quantity,
-          quantity,
-          ...(isOwner ? { avgCost: unitCost, unitCost, totalValue: quantity * unitCost } : {}),
-        };
-      });
-      return paged(rows, total, page, limit);
-    }
-
-    const products = await this.prisma.product.findMany({
-      where: productFilter,
-      include: { brand: true, category: true },
-    });
-    if (products.length === 0) return [];
-
-    const productIds = products.map((p) => p.id);
-    const [movements, deposits] = await Promise.all([
-      this.prisma.stockMovement.groupBy({
-        by: ['productId', 'depositId'],
-        where: { tenantId, productId: { in: productIds } },
-        _sum: { quantity: true },
+    // Siempre paginar para evitar carga masiva en memoria
+    const total = await this.prisma.product.count({ where: productFilter });
+    const [products, deposits] = await Promise.all([
+      this.prisma.product.findMany({
+        where: productFilter,
+        include: { brand: true, category: true },
+        skip,
+        take: limit,
       }),
       this.prisma.deposit.findMany({ where: { tenantId } }),
     ]);
-    const activeProductIds = new Set(products.map((product) => product.id));
-    const depositMap = new Map(deposits.map((d) => [d.id, d]));
+    if (products.length === 0) return paged([], total, page, limit);
 
-    const rows = movements.filter((m) => activeProductIds.has(m.productId)).map((m) => {
+    const productIds = products.map((p) => p.id);
+    const depositMap = new Map(deposits.map((d) => [d.id, d]));
+    const movements = await this.prisma.stockMovement.groupBy({
+      by: ['productId', 'depositId'],
+      where: { tenantId, productId: { in: productIds } },
+      _sum: { quantity: true },
+    });
+
+    const rows = movements.map((m) => {
       const product = products.find((p) => p.id === m.productId);
       const deposit = depositMap.get(m.depositId);
       const quantity = Number(m._sum.quantity ?? 0);
@@ -102,7 +62,7 @@ export class StockService {
         ...(isOwner ? { avgCost: unitCost, unitCost, totalValue: quantity * unitCost } : {}),
       };
     });
-    return rows.slice(0, 1000);
+    return paged(rows, total, page, limit);
   }
 
   async movements(tenantId: string, role: string, query: { page?: number | string; limit?: number | string; productId?: string; depositId?: string; type?: string; dateFrom?: string; dateTo?: string }): Promise<any> {
@@ -216,7 +176,7 @@ export class StockService {
         },
       });
       if (quantity > 0) {
-        await this.recalculateAverageCost(tx, tenantId, productId);
+        await recalculateAverageCost(tx, tenantId, productId);
       }
       return movement;
     });
@@ -228,23 +188,6 @@ export class StockService {
     if (!hasPermission) {
       throw new ForbiddenException('No tenés permiso para registrar movimientos manuales de stock');
     }
-  }
-
-  private async recalculateAverageCost(tx: any, tenantId: string, productId: string): Promise<void> {
-    const rows = await tx.$queryRaw(Prisma.sql`
-      SELECT
-        COALESCE(SUM("quantity"), 0)::float AS "quantity",
-        COALESCE(SUM("quantity" * "unitCost"), 0)::float AS "value"
-      FROM "stock_movements"
-      WHERE "tenantId" = ${tenantId}
-        AND "productId" = ${productId}
-    `) as Array<{ quantity: number; value: number }>;
-    const totalQty = Number(rows[0]?.quantity ?? 0);
-    if (totalQty <= 0) return;
-    await tx.product.update({
-      where: { id: productId },
-      data: { averageCost: Math.round((Number(rows[0]?.value ?? 0) / totalQty) * 10_000) / 10_000 },
-    });
   }
 }
 

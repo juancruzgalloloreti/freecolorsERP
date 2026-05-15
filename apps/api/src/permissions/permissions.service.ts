@@ -99,6 +99,12 @@ export class PermissionsService {
     })
   }
 
+  private assertManagePermissions(role: string) {
+    if (role !== 'OWNER') {
+      throw new ForbiddenException('Solo el owner puede gestionar permisos');
+    }
+  }
+
   private async assertUserInTenant(userId: string, tenantId: string): Promise<void> {
     const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId }, select: { id: true } });
     if (!user) throw new NotFoundException('Usuario no encontrado en el tenant');
@@ -136,7 +142,8 @@ export class PermissionsService {
     return [...explicit, ...defaults]
   }
 
-  async grantPermissionToUser(tenantId: string, userId: string, permissionId: string, requesterId: string) {
+  async grantPermissionToUser(tenantId: string, userId: string, permissionId: string, requesterId: string, requesterRole: string) {
+    this.assertManagePermissions(requesterRole)
     await this.assertUserInTenant(userId, tenantId)
 
     const existing = await this.prisma.userPermission.findUnique({
@@ -148,7 +155,7 @@ export class PermissionsService {
       },
     })
     if (existing) {
-      throw new ConflictException('User already has this permission')
+      throw new ConflictException('El usuario ya tiene este permiso')
     }
 
     const result = await this.prisma.userPermission.create({
@@ -171,7 +178,8 @@ export class PermissionsService {
     return result
   }
 
-  async revokePermissionFromUser(tenantId: string, userId: string, permissionId: string, requesterId: string) {
+  async revokePermissionFromUser(tenantId: string, userId: string, permissionId: string, requesterId: string, requesterRole: string) {
+    this.assertManagePermissions(requesterRole)
     await this.assertUserInTenant(userId, tenantId)
 
     const existing = await this.prisma.userPermission.findUnique({
@@ -183,7 +191,7 @@ export class PermissionsService {
       },
     })
     if (!existing) {
-      throw new NotFoundException('User permission not found')
+      throw new NotFoundException('El usuario no tiene este permiso')
     }
 
     const result = await this.prisma.userPermission.delete({
@@ -208,7 +216,8 @@ export class PermissionsService {
     return result
   }
 
-  async syncUserPermissions(tenantId: string, userId: string, permissionCodes: string[], requesterId: string) {
+  async syncUserPermissions(tenantId: string, userId: string, permissionCodes: string[], requesterId: string, requesterRole: string) {
+    this.assertManagePermissions(requesterRole)
     await this.assertUserInTenant(userId, tenantId)
     if (requesterId === userId) {
       throw new ForbiddenException('No podés modificar tus propios permisos')

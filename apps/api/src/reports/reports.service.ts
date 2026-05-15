@@ -8,24 +8,45 @@ export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string): Promise<any> {
-    const start = new Date();
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const monthStart = new Date(today);
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const nextMonth = new Date(monthStart);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    const [totalProducts, totalCustomers, documentsThisMonth, salesDocs, lowStockRows] = await Promise.all([
-      this.prisma.product.count({ where: { tenantId, isActive: true } }),
-      this.prisma.customer.count({ where: { tenantId, isActive: true } }),
-      this.prisma.document.count({ where: { tenantId, date: { gte: start } } }),
-      this.prisma.document.findMany({ where: { tenantId, status: 'CONFIRMED', date: { gte: start }, type: { in: ['INVOICE_A', 'INVOICE_B', 'INVOICE_C'] } }, select: { total: true } }),
-      this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } }),
+    const [salesTodayAgg, salesMonthAgg, debtAgg, pendingPurchases, unconfirmedDocs] = await Promise.all([
+      this.prisma.document.aggregate({
+        where: { tenantId, status: 'CONFIRMED', date: { gte: today, lt: tomorrow } },
+        _sum: { total: true },
+      }),
+      this.prisma.document.aggregate({
+        where: { tenantId, status: 'CONFIRMED', date: { gte: monthStart, lt: nextMonth } },
+        _sum: { total: true },
+      }),
+      this.prisma.currentAccountEntry.aggregate({
+        where: { tenantId },
+        _sum: { amount: true },
+      }),
+      this.prisma.purchaseOrder.count({
+        where: { tenantId, status: { in: ['PENDING', 'SENT'] as any[] } },
+      }),
+      this.prisma.document.count({
+        where: { tenantId, status: 'DRAFT' },
+      }),
     ]);
 
+    const rawDebt = Number(debtAgg._sum.amount ?? 0);
+
     return {
-      totalProducts,
-      totalCustomers,
-      documentsThisMonth,
-      salesThisMonth: salesDocs.reduce((sum, doc) => sum + Number(doc.total), 0),
-      lowStockCount: lowStockRows.filter((row) => Number(row._sum.quantity ?? 0) > 0 && Number(row._sum.quantity ?? 0) < 5).length,
+      salesToday: Number(salesTodayAgg._sum.total ?? 0),
+      salesThisMonth: Number(salesMonthAgg._sum.total ?? 0),
+      customerDebt: rawDebt > 0 ? rawDebt : 0,
+      pendingPurchases,
+      unconfirmedDocs,
     };
   }
 

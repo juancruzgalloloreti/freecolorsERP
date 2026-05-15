@@ -57,16 +57,12 @@ api.interceptors.response.use(
 
     refreshing = true
     try {
-      const rt = Cookies.get('refresh_token')
       const savedUser = Cookies.get('user')
-      // BUG FIX: el endpoint /auth/refresh requiere userId además del refreshToken
       const userId = savedUser ? JSON.parse(savedUser)?.id : null
-      if (!rt || !userId) throw new Error('No refresh token or userId')
+      if (!userId) throw new Error('No userId')
 
-      const { data } = await axios.post(`${BASE}/api/v1/auth/refresh`, {
-        userId,
-        refreshToken: rt,
-      })
+      // Llama al Next.js route handler que lee refresh_token de la cookie httpOnly
+      const { data } = await axios.post('/api/auth/refresh', { userId })
       const newToken = data.accessToken
       Cookies.set('access_token', newToken, { expires: 1 })
       refreshQueue.forEach((cb) => cb(newToken))

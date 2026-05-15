@@ -91,9 +91,8 @@ model User {
   lastName           String
   role               UserRole  @default(EMPLOYEE)
   isActive           Boolean   @default(true)
-  // Refresh token hasheado (nunca el token crudo en DB)
-  refreshTokenHash   String?
-  refreshTokenExpiry DateTime?
+  // Refresh tokens — rotation + reuse detection (ver RefreshToken)
+  refreshTokens      RefreshToken[]
   lastLoginAt        DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -154,6 +153,27 @@ model UserPermission {
   @@unique([userId, permissionId])
   @@index([userId])
   @@map("user_permissions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// REFRESH TOKENS — Rotation + Reuse Detection
+// ─────────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  familyId   String                        // agrupa tokens de una misma sesión
+  tokenHash  String    @unique             // SHA-256 del token real, nunca el crudo
+  userId     String
+  expiresAt  DateTime
+  revokedAt  DateTime?                     // null = activo; !null = rotado o invalidado
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 // ─────────────────────────────────────────────────────────────

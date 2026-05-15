@@ -275,6 +275,7 @@ export default function VentasPage() {
   const [search, setSearch] = useState('')
   const [lines, setLines] = useState<CounterLine[]>([])
   const [resumeDocumentId, setResumeDocumentId] = useState<string | null>(null)
+  const isRetakingDraft = resumeDocumentId !== null
   const [lastDocument, setLastDocument] = useState<Record<string, unknown> | null>(null)
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null)
   const [printing, setPrinting] = useState(false)
@@ -1093,11 +1094,11 @@ export default function VentasPage() {
                 placeholder="Código / producto / marca"
                 autoComplete="off"
                 autoFocus
-                disabled={!canUseCounter}
+                disabled={!canUseCounter || isRetakingDraft}
               />
               {search && <button className="btn btn-icon btn-secondary" type="button" aria-label="Limpiar búsqueda" onClick={() => setSearch('')}><X size={14} /></button>}
             </div>
-            {search.trim() && (
+            {!isRetakingDraft && search.trim() && (
               <div className="product-results">
                 {searching ? (
                   <div className="product-result muted">Buscando productos...</div>
@@ -1237,7 +1238,7 @@ export default function VentasPage() {
                         <tr key={`${line.productId}-${index}`}>
                           <td className="mono-cell">{line.code}</td>
                           <td>
-                            {budgetMode ? (
+                            {budgetMode || isRetakingDraft ? (
                               <div className="readonly-line-description">{line.description}</div>
                             ) : (
                               <textarea className="fc-input line-description" value={line.description} onChange={(event) => updateLine(index, { description: event.target.value })} disabled={sensitiveLocked} rows={2} />
@@ -1248,11 +1249,11 @@ export default function VentasPage() {
                             </small>
                           </td>
                           <td><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></td>
-                          <td>{budgetMode ? <span className="readonly-number">{ARS.format(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
-                          <td>{budgetMode ? <span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>
-                          {includeVat && <td>{budgetMode ? <span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value), productTaxRate: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>}
+                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{ARS.format(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
+                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>
+                          {includeVat && <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value), productTaxRate: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>}
                           <td className="line-total">{ARS.format(lineSubtotal(line) + lineTax(line))}</td>
-                          <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter} title="Quitar item" aria-label={`Quitar ${line.description}`}><X size={13} /></button></td>
+                          <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter || isRetakingDraft} title="Quitar item" aria-label={`Quitar ${line.description}`}><X size={13} /></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -1267,7 +1268,7 @@ export default function VentasPage() {
                           <b>{line.code}</b>
                           <span>{line.description}</span>
                         </div>
-                        <button className="btn btn-icon btn-secondary btn-sm" type="button" aria-label={`Quitar ${line.description}`} onClick={() => removeLine(index)} disabled={!canUseCounter}><X size={13} /></button>
+                        <button className="btn btn-icon btn-secondary btn-sm" type="button" aria-label={`Quitar ${line.description}`} onClick={() => removeLine(index)} disabled={!canUseCounter || isRetakingDraft}><X size={13} /></button>
                       </header>
                       <small className={line.quantity > line.stock ? 'line-meta-danger' : ''}>
                         Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}

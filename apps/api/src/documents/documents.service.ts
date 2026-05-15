@@ -6,6 +6,7 @@ import { CashService } from '../cash/cash.service';
 import { maxDiscountForRole } from '../common/discount-utils';
 import { pageParams, paged } from '../common/pagination';
 import { parseMoney } from '../common/money';
+import { recalculateAverageCost } from '../common/cost-utils';
 
 type DocumentWriteData = {
   type?: DocumentType;
@@ -340,7 +341,7 @@ export class DocumentsService {
         }
 
         for (const productId of affectedProducts) {
-          await this.recalculateAverageCost(tx, tenantId, productId);
+          await recalculateAverageCost(tx, tenantId, productId);
         }
 
         await this.reverseCashMovements(tx, tenantId, userId, document.cashMovements, id, payload.reason);
@@ -659,7 +660,7 @@ export class DocumentsService {
 
   private async createSaleStockMovements(tx: any, tenantId: string, userId: string, document: any, depositId: string, role: string, allowNegativeStock: boolean): Promise<void> {
     for (const item of document.items) {
-      if (!item.productId) continue;
+      if (!item.productId) throw new BadRequestException(`Item sin producto vinculado: ${item.description || 'desconocido'}`);
       await this.lockProduct(tx, item.productId);
       const current = await tx.stockMovement.aggregate({
         where: { tenantId, productId: item.productId, depositId },
@@ -684,6 +685,7 @@ export class DocumentsService {
           notes: `Salida por ${document.type}`,
         },
       });
+      await recalculateAverageCost(tx, tenantId, item.productId);
     }
   }
 
@@ -750,7 +752,7 @@ export class DocumentsService {
           notes: `Entrada por ${document.type}`,
         },
       });
-      await this.recalculateAverageCost(tx, tenantId, item.productId);
+      await recalculateAverageCost(tx, tenantId, item.productId);
     }
   }
 
@@ -1305,22 +1307,5 @@ export class DocumentsService {
 
   private async lockProduct(tx: any, productId: string): Promise<void> {
     await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${productId}))`);
-  }
-
-  private async recalculateAverageCost(tx: any, tenantId: string, productId: string): Promise<void> {
-    const rows = await tx.$queryRaw(Prisma.sql`
-      SELECT
-        COALESCE(SUM("quantity"), 0)::float AS "quantity",
-        COALESCE(SUM("quantity" * "unitCost"), 0)::float AS "value"
-      FROM "stock_movements"
-      WHERE "tenantId" = ${tenantId}
-        AND "productId" = ${productId}
-    `) as Array<{ quantity: number; value: number }>;
-    const totalQty = Number(rows[0]?.quantity ?? 0);
-    if (totalQty <= 0) return;
-    await tx.product.update({
-      where: { id: productId },
-      data: { averageCost: this.roundMoney(Number(rows[0]?.value ?? 0) / totalQty) },
-    });
   }
 }

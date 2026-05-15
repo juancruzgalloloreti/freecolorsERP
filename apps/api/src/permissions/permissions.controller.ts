@@ -39,7 +39,7 @@ export class PermissionsController {
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string
   ) {
-    return this.permissionsService.grantPermissionToUser(req.user.tenantId, userId, permissionId, req.user.sub)
+    return this.permissionsService.grantPermissionToUser(req.user.tenantId, userId, permissionId, req.user.sub, req.user.role)
   }
 
   @Delete('user/:userId/revoke/:permissionId')
@@ -49,7 +49,7 @@ export class PermissionsController {
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string
   ) {
-    return this.permissionsService.revokePermissionFromUser(req.user.tenantId, userId, permissionId, req.user.sub)
+    return this.permissionsService.revokePermissionFromUser(req.user.tenantId, userId, permissionId, req.user.sub, req.user.role)
   }
 
   @Put('user/:userId/sync')
@@ -59,7 +59,7 @@ export class PermissionsController {
     @Param('userId') userId: string,
     @Body() data: { permissionCodes: string[] }
   ) {
-    return this.permissionsService.syncUserPermissions(req.user.tenantId, userId, data.permissionCodes, req.user.sub)
+    return this.permissionsService.syncUserPermissions(req.user.tenantId, userId, data.permissionCodes, req.user.sub, req.user.role)
   }
 
   @Post('seed')

@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
@@ -18,7 +19,6 @@ export class CurrentAccountService {
     }
     Object.keys(where).forEach((key) => where[key] === undefined && delete where[key]);
 
-    // Compute real balance from ALL entries (not just fetched subset)
     let realBalance: number | undefined;
     if (query.customerId) {
       const { _sum } = await this.prisma.currentAccountEntry.aggregate({
@@ -28,44 +28,78 @@ export class CurrentAccountService {
       realBalance = this.roundMoney(Number(_sum.amount ?? 0));
     }
 
-    const entries = await this.prisma.currentAccountEntry.findMany({
-      where,
-      include: { customer: true, document: true },
-      orderBy: { date: 'asc' },
-      skip: shouldPage ? skip : undefined,
-      take: (shouldPage || query.limit) ? limit : 200,
-    });
-    const total = shouldPage ? await this.prisma.currentAccountEntry.count({ where }) : entries.length;
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        customerId: string;
+        customerName: string;
+        description: string | null;
+        amount: number;
+        runningBalance: number;
+        type: string;
+        date: Date;
+        createdAt: Date;
+      }>
+    >`
+      WITH filtered AS (
+        SELECT
+          e.id,
+          e."customerId",
+          c.name as "customerName",
+          e.description,
+          e.amount,
+          e.type,
+          e.date,
+          e."createdAt"
+        FROM "current_account_entries" e
+        JOIN "customers" c ON c.id = e."customerId"
+        WHERE e."tenantId" = ${tenantId}
+          ${query.customerId ? Prisma.sql`AND e."customerId" = ${query.customerId}` : Prisma.empty}
+          ${query.dateFrom ? Prisma.sql`AND e."date" >= ${new Date(query.dateFrom)}` : Prisma.empty}
+          ${query.dateTo ? Prisma.sql`AND e."date" <= ${new Date(query.dateTo)}` : Prisma.empty}
+        ORDER BY e."customerId", e."date" ASC, e.id ASC
+      )
+      SELECT
+        f.id,
+        f."customerId",
+        f."customerName",
+        f.description,
+        f.amount,
+        f.type,
+        f.date,
+        f."createdAt",
+        SUM(f.amount) OVER (
+          PARTITION BY f."customerId"
+          ORDER BY f.date ASC, f.id ASC
+        )::float as "runningBalance"
+      FROM filtered f
+      ${shouldPage ? Prisma.sql`LIMIT ${limit} OFFSET ${skip}` : Prisma.sql`LIMIT 200 OFFSET 0`}
+    `;
 
-    // Compute running balance per entry (cumulative by date)
-    const runningBalance = new Map<string, number>();
-    const rows = entries.map((entry) => {
-      const prev = runningBalance.get(entry.customerId) ?? 0;
-      const amount = Number(entry.amount);
-      const balance = this.roundMoney(prev + amount);
-      runningBalance.set(entry.customerId, balance);
-      return {
-        id: entry.id,
-        customerId: entry.customerId,
-        customerName: entry.customer.name,
-        description: entry.description,
-        amount,
-        balance,
-        type: entry.type,
-        date: entry.date,
-        createdAt: entry.createdAt,
-      };
-    });
-    // Reverse to show most recent first (entries were fetched chronological)
-    rows.reverse();
+    const total = realBalance !== undefined
+      ? await this.prisma.currentAccountEntry.count({ where })
+      : rows.length;
+
+    const formatted = rows.map((row) => ({
+      id: row.id,
+      customerId: row.customerId,
+      customerName: row.customerName,
+      description: row.description,
+      amount: this.roundMoney(row.amount),
+      balance: this.roundMoney(row.runningBalance),
+      type: row.type,
+      date: row.date,
+      createdAt: row.createdAt,
+    }));
+
+    formatted.reverse();
 
     if (realBalance !== undefined) {
-      if (shouldPage) {
-        return { ...paged(rows, total, page, limit), balance: realBalance };
-      }
-      return { data: rows, balance: realBalance };
+      return shouldPage
+        ? { ...paged(formatted, total, page, limit), balance: realBalance }
+        : { data: formatted, balance: realBalance };
     }
-    return shouldPage ? paged(rows, total, page, limit) : rows;
+    return shouldPage ? paged(formatted, total, page, limit) : formatted;
   }
 
   private roundMoney(value: number): number {
@@ -91,5 +125,3 @@ export class CurrentAccountService {
     });
   }
 }
-
-
