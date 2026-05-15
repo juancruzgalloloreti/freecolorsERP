@@ -6,8 +6,8 @@
 BEGIN;
 
 -- Crear tabla RefreshToken
-CREATE TABLE "refresh_tokens" (
-    "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+CREATE TABLE IF NOT EXISTS "refresh_tokens" (
+    "id" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -21,9 +21,9 @@ CREATE TABLE "refresh_tokens" (
 );
 
 -- Índices para búsqueda eficiente
-CREATE INDEX "refresh_tokens_familyId_idx" ON "refresh_tokens"("familyId");
-CREATE INDEX "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");
-CREATE INDEX "refresh_tokens_expiresAt_idx" ON "refresh_tokens"("expiresAt");
+CREATE INDEX IF NOT EXISTS "refresh_tokens_familyId_idx" ON "refresh_tokens"("familyId");
+CREATE INDEX IF NOT EXISTS "refresh_tokens_userId_idx" ON "refresh_tokens"("userId");
+CREATE INDEX IF NOT EXISTS "refresh_tokens_expiresAt_idx" ON "refresh_tokens"("expiresAt");
 
 -- Eliminar columnas old del modelo User
 ALTER TABLE "users" DROP COLUMN IF EXISTS "refreshTokenHash";
