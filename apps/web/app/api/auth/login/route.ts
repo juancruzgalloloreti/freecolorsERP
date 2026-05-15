@@ -18,6 +18,10 @@ const httpOnlyOptions = {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
+  const loginBody = {
+    ...body,
+    tenantSlug: body.tenantSlug || process.env.NEXT_PUBLIC_TENANT_SLUG || 'pintureria-demo',
+  }
 
   if (!API_INTERNAL_URL) {
     return NextResponse.json({ message: 'Falta configurar la URL interna de la API' }, { status: 500 })
@@ -28,7 +32,7 @@ export async function POST(request: NextRequest) {
     response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(loginBody),
     })
   } catch {
     return NextResponse.json({ message: 'No se pudo conectar con la API' }, { status: 502 })
