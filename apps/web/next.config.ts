@@ -4,7 +4,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.0.132'],
   async rewrites() {
-    const apiUrl = process.env.API_INTERNAL_URL || 'http://localhost:3001'
+    const apiUrl = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001')
+    if (!apiUrl) return []
     return [
       {
         source: '/api/:path*',

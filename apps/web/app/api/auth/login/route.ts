@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_INTERNAL_URL = process.env.API_INTERNAL_URL || 'http://localhost:3001'
+const API_INTERNAL_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001')
 
 const cookieOptions = {
   httpOnly: false,
@@ -19,11 +19,20 @@ const httpOnlyOptions = {
 export async function POST(request: NextRequest) {
   const body = await request.json()
 
-  const response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  if (!API_INTERNAL_URL) {
+    return NextResponse.json({ message: 'Falta configurar la URL interna de la API' }, { status: 500 })
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${API_INTERNAL_URL}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    return NextResponse.json({ message: 'No se pudo conectar con la API' }, { status: 502 })
+  }
 
   const data = await response.json().catch(() => ({}))
 
