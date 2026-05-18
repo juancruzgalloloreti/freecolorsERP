@@ -18,6 +18,9 @@
     "db:generate": "pnpm --filter @erp/db db:generate",
     "db:seed": "pnpm --filter @erp/db db:seed"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@nestjs/core", "@prisma/client", "@prisma/engines", "@sentry/cli", "bcrypt", "msw", "prisma", "sharp", "unrs-resolver"]
+  },
   "devDependencies": {
     "dotenv": "^17.4.2"
   },
