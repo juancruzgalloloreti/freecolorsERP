@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit2, Save, ShieldCheck, Trash2, UserCog, X } from 'lucide-react'
 import { authApi, permissionsApi } from '@/lib/api'
