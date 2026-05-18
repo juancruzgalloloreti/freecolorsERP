@@ -52,6 +52,7 @@ model Tenant {
   priceLists     PriceList[]
   priceCoefficients PriceCoefficient[]
   puntoDeVentas  PuntoDeVenta[]
+  refreshTokens  RefreshToken[]
   stockMovements StockMovement[]
   auditLogs      AuditLog[]
   cashSessions   CashSession[]
