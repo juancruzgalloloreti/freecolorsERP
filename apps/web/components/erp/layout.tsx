@@ -48,6 +48,7 @@ export function EntitySheet({
   children,
   footer,
   onClose,
+  preventOutsideClose,
 }: {
   open: boolean
   title: string
