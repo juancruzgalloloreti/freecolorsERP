@@ -170,9 +170,11 @@ model RefreshToken {
   createdAt  DateTime  @default(now())
 
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([familyId])
   @@index([userId])
+  @@index([tenantId])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
@@ -655,7 +657,7 @@ model Payment {
   createdById  String?
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
   createdBy User?   @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   check    Check?
 
@@ -801,7 +803,7 @@ model AfipCredential {
   tenantId    String   @unique
   cuit        String
   cert        String
-  privateKey  String
+  privateKey  String  // TODO: Migrar a almacenamiento encriptado (AES-256-GCM)
   environment AfipEnv  @default(TESTING)
   expiresAt   DateTime
   createdAt   DateTime @default(now())
@@ -935,6 +937,7 @@ model Supplier {
   purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, cuit])
   @@index([tenantId, isActive])
   @@map("suppliers")
 }
@@ -1088,6 +1091,7 @@ model PurchaseOrderItem {
   product       Product       @relation(fields: [productId], references: [id])
   receptionItems PurchaseReceptionItem[]
 
+  @@unique([purchaseOrderId, productId])
   @@index([purchaseOrderId])
   @@index([productId])
   @@map("purchase_order_items")

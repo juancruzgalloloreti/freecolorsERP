@@ -61,7 +61,14 @@ export function EntitySheet({
   useBodyScrollLock(open)
   if (!open) return null
   return (
-    <div className="entity-sheet-overlay">
+    <div
+      className="entity-sheet-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !preventOutsideClose) {
+          onClose()
+        }
+      }}
+    >
       <section className="entity-sheet" ref={sheetRef} role="dialog" aria-modal="true" tabIndex={-1}>
         <header className="entity-sheet-header">
           <h2>{title}</h2>

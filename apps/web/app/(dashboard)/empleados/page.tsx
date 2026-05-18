@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit2, Save, ShieldCheck, Trash2, UserCog, X } from 'lucide-react'
 import { authApi, permissionsApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
 
 type ManagedUser = {
   id: string
@@ -53,7 +54,7 @@ function apiMessage(error: unknown, fallback: string) {
   return Array.isArray(message) ? message.join(', ') : message
 }
 
-export default function EmpleadosPage() {
+function EmpleadosPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const canManage = user?.role === 'OWNER'
@@ -86,16 +87,19 @@ export default function EmpleadosPage() {
     }, {})
   }, [permissions])
 
-  useQuery({
+  const { data: userPermissions = [] } = useQuery({
     queryKey: ['employee-permissions', selectedUser?.id],
     queryFn: async () => {
       if (!selectedUser) return []
-      const values = await permissionsApi.user(selectedUser.id) as Permission[]
-      setSelectedCodes(new Set(values.map((permission) => permission.code)))
-      return values
+      return permissionsApi.user(selectedUser.id) as Promise<Permission[]>
     },
     enabled: canManage && Boolean(selectedUser),
   })
+
+  useEffect(() => {
+    if (!selectedUser) return
+    setSelectedCodes(new Set((userPermissions as Permission[]).map((p) => p.code)))
+  }, [userPermissions, selectedUser?.id])
 
   const createMutation = useMutation({
     mutationFn: authApi.createUser,
@@ -291,4 +295,8 @@ export default function EmpleadosPage() {
       </div>
     </div>
   )
+}
+
+export default function EmpleadosPageWithErrorBoundary() {
+  return <ErrorBoundary><EmpleadosPage /></ErrorBoundary>
 }

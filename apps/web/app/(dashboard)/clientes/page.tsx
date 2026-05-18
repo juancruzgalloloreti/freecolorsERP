@@ -6,6 +6,8 @@ import { customersApi, priceListsApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
 import { Plus, Edit2, X, Search, CreditCard, Users, Upload, Download, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
+import { parseCsv, decodeCsv } from '@/lib/csv-parser'
 
 const IVA_CONDITIONS = [
   { value: 'CONSUMIDOR_FINAL',      label: 'Consumidor Final' },
@@ -26,52 +28,6 @@ function apiErrorMessage(error: unknown, fallback: string) {
   const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
   const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || fallback
   return Array.isArray(message) ? message.join(', ') : message
-}
-
-function parseCsv(text: string) {
-  const rows: string[][] = []
-  let cell = ''
-  let row: string[] = []
-  let quoted = false
-  const firstLine = text.split(/\r?\n/, 1)[0] || ''
-  const delimiter = (firstLine.match(/;/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0) ? ';' : ','
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i]
-    const next = text[i + 1]
-    if (char === '"' && quoted && next === '"') {
-      cell += '"'
-      i += 1
-    } else if (char === '"') {
-      quoted = !quoted
-    } else if (char === delimiter && !quoted) {
-      row.push(cell.trim())
-      cell = ''
-    } else if ((char === '\n' || char === '\r') && !quoted) {
-      if (char === '\r' && next === '\n') i += 1
-      row.push(cell.trim())
-      if (row.some(Boolean)) rows.push(row)
-      row = []
-      cell = ''
-    } else {
-      cell += char
-    }
-  }
-
-  row.push(cell.trim())
-  if (row.some(Boolean)) rows.push(row)
-  const [headers = [], ...data] = rows
-  return data.map((values) =>
-    headers.reduce<Record<string, unknown>>((acc, header, index) => {
-      acc[header.trim()] = values[index]?.trim() ?? ''
-      return acc
-    }, {})
-  )
-}
-
-function decodeCsv(buffer: ArrayBuffer) {
-  const utf8 = new TextDecoder('utf-8').decode(buffer)
-  return utf8.includes('\uFFFD') ? new TextDecoder('windows-1252').decode(buffer) : utf8
 }
 
 function CustomerModal({ customer, priceLists, onClose, onSave, error, saving }: {
@@ -221,7 +177,7 @@ function CCModal({ customer, onClose }: { customer: Customer; onClose: () => voi
   )
 }
 
-export default function ClientesPage() {
+function ClientesPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const canManageCustomers = user?.role === 'OWNER'
@@ -473,4 +429,8 @@ export default function ClientesPage() {
       )}
     </div>
   )
+}
+
+export default function ClientesPageWithErrorBoundary() {
+  return <ErrorBoundary><ClientesPage /></ErrorBoundary>
 }

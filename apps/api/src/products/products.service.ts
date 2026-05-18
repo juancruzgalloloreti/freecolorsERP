@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { PriceFormulaService } from '../common/price-formula.service';
 import { pageParams, paged } from '../common/pagination';
 
 const REQUIRED_AGUILA_PRICE_LISTS = [
@@ -32,7 +33,10 @@ type ProductForFormula = {
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private priceFormula: PriceFormulaService,
+  ) {}
 
   async findAll(tenantId: string, query: { search?: string; page?: number | string; limit?: number | string; includeInactive?: string | boolean }): Promise<any> {
     const includeInactive = query.includeInactive === true || query.includeInactive === 'true';
@@ -815,15 +819,7 @@ export class ProductsService {
   }
 
   private priceListCode(name: string): string | null {
-    const normalized = this.normalizeHeader(name);
-    if (normalized.startsWith('lp1')) return 'LP1';
-    if (normalized.startsWith('lp2')) return 'LP2';
-    if (normalized.startsWith('lp3')) return 'LP3';
-    if (normalized.startsWith('lp4')) return 'LP4';
-    if (normalized.startsWith('lp5')) return 'LP5';
-    if (normalized.startsWith('cr') || normalized.includes('costoreposicion')) return 'CR';
-    if (normalized.startsWith('cu') || normalized.includes('costoultimacompra') || normalized.includes('costoultcp')) return 'CU';
-    return null;
+    return this.priceFormula.priceListCode(name);
   }
 
   private priceListAliases(code: string): string[] {
@@ -901,40 +897,15 @@ export class ProductsService {
   }
 
   private basePriceByCode(product: ProductForFormula, priceLists: PriceListForFormula[], code: string): number | null {
-    const normalizedCode = this.priceListCode(code) || code;
-    if (normalizedCode === 'CR') {
-      return this.directListPrice(product, this.listByCode(priceLists, 'CR'))
-        ?? this.moneyValue(product.replacementCost)
-        ?? this.moneyValue(product.averageCost);
-    }
-    if (normalizedCode === 'CU') {
-      return this.directListPrice(product, this.listByCode(priceLists, 'CU'))
-        ?? this.moneyValue(product.lastPurchaseCost)
-        ?? this.moneyValue(product.replacementCost)
-        ?? this.moneyValue(product.averageCost);
-    }
-    return this.directListPrice(product, this.listByCode(priceLists, normalizedCode));
+    return this.priceFormula.basePriceByCode(product, priceLists, code);
   }
 
   private calculateFormulaPrice(basePrice: number, operation: string, coefficient: number, roundingMode: string, rounding: number): number {
-    let calculated = basePrice;
-    if (operation === 'add') calculated = basePrice + coefficient;
-    else if (operation === 'subtract') calculated = Math.max(basePrice - coefficient, 0);
-    else calculated = basePrice * coefficient;
-    if (rounding > 0) {
-      if (roundingMode === 'up') calculated = Math.ceil(calculated / rounding) * rounding;
-      else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding;
-      else calculated = Math.round(calculated / rounding) * rounding;
-    }
-    return Number(calculated.toFixed(4));
+    return this.priceFormula.calculateFormulaPrice(basePrice, operation, coefficient, roundingMode, rounding);
   }
 
   private defaultFormulaForCode(code: string | null) {
-    if (code === 'LP2') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.6, roundingMode: 'nearest', rounding: 10 };
-    if (code === 'LP3') return { baseCode: 'LP1', operation: 'multiply', coefficient: 0.8, roundingMode: 'nearest', rounding: 10 };
-    if (code === 'LP4') return { baseCode: 'CR', operation: 'multiply', coefficient: 1.2, roundingMode: 'nearest', rounding: 10 };
-    if (code === 'LP5') return { baseCode: 'CR', operation: 'multiply', coefficient: 1, roundingMode: 'nearest', rounding: 10 };
-    return null;
+    return this.priceFormula.defaultFormulaForCode(code);
   }
 
   private formulaLabel(operation: string, coefficient: number): string {
@@ -944,19 +915,15 @@ export class ProductsService {
   }
 
   private listByCode(priceLists: PriceListForFormula[], code: string): PriceListForFormula | undefined {
-    return priceLists.find((list) => this.priceListCode(list.name) === code);
+    return this.priceFormula.listByCode(priceLists, code);
   }
 
   private directListPrice(product: ProductForFormula, list?: PriceListForFormula): number | null {
-    if (!list) return null;
-    const item = product.priceListItems.find((price) => price.priceListId === list.id);
-    return item ? this.moneyValue(item.price) : null;
+    return this.priceFormula.directListPrice(product, list);
   }
 
   private moneyValue(value: unknown): number | null {
-    if (value === null || value === undefined || value === '') return null;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+    return this.priceFormula.moneyValue(value);
   }
 
   private async ensureAguilaPriceLists(tx: any, tenantId: string): Promise<void> {
@@ -1079,7 +1046,7 @@ export class ProductsService {
   }
 
   private roundMoney(value: number): number {
-    return Math.round(Number(value || 0) * 100) / 100;
+    return this.priceFormula.roundMoney(value);
   }
 
   private csvCell(value: unknown): string {

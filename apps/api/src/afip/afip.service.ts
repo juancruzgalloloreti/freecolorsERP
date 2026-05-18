@@ -76,19 +76,29 @@ export class AfipService {
 
   async testConnection(tenantId: string) {
     const credential = await this.requireCredential(tenantId)
-    
-    // TODO: Implement actual AFIP connection test
-    // For now, just check if credentials are present and not expired
     const isExpired = new Date(credential.expiresAt) < new Date()
-    
+
+    if (isExpired) {
+      return {
+        connected: false,
+        environment: credential.environment,
+        expiresAt: credential.expiresAt,
+        message: 'Credentials expired',
+      }
+    }
+
     return {
-      connected: !isExpired,
+      connected: true,
       environment: credential.environment,
       expiresAt: credential.expiresAt,
-      message: isExpired ? 'Credentials expired' : 'Connection test successful',
+      message: 'Connection test successful (stub — real SOAP not implemented)',
     }
   }
 
-  // TODO: Implement AFIP login, CAE generation, and receipt query methods
-  // These will require the AFIP SDK or direct SOAP integration
+  // NOT IMPLEMENTED: AFIP SOAP integration
+  // Requires AFIP WSAA/wsfev1 SOAP client:
+  // - login() → WSAA authentication (loginTicket)
+  // - requestCAE() → wsfev1.FECAESolicitar
+  // - getReceipt() → wsfev1.FECompConsultar
+  // When implementing, inject via interface to keep testability
 }

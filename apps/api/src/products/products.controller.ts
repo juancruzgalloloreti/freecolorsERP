@@ -1,8 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RequirePermissionGuard } from '../permissions/guards/require-permission.guard';
+import { RequirePermission } from '../permissions/decorators/require-permission.decorator';
 import { ProductsService } from './products.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequirePermissionGuard)
 @Controller('products')
 export class ProductsController {
   constructor(private readonly service: ProductsService) {}
@@ -17,12 +21,14 @@ export class ProductsController {
   brands(@Req() req: any) { return this.service.listBrands(req.user.tenantId); }
 
   @Post('brands')
+  @RequirePermission('products.manage')
   createBrand(@Req() req: any, @Body() body: any) { return this.service.createBrand(req.user.tenantId, req.user.role, body); }
 
   @Get('categories')
   categories(@Req() req: any) { return this.service.listCategories(req.user.tenantId); }
 
   @Post('categories')
+  @RequirePermission('products.manage')
   createCategory(@Req() req: any, @Body() body: any) { return this.service.createCategory(req.user.tenantId, req.user.role, body); }
 
   @Get('export')
@@ -37,21 +43,24 @@ export class ProductsController {
   get(@Req() req: any, @Param('id') id: string): any { return this.service.get(req.user.tenantId, id); }
 
   @Post()
-  create(@Req() req: any, @Body() body: any): any { return this.service.create(req.user.tenantId, req.user.sub, req.user.role, body); }
+  @RequirePermission('products.create')
+  create(@Req() req: any, @Body() dto: CreateProductDto): any { return this.service.create(req.user.tenantId, req.user.sub, req.user.role, dto); }
 
   @Post('bulk-delete')
+  @RequirePermission('products.delete')
   bulkDelete(@Req() req: any, @Body() body: any): any { return this.service.bulkRemove(req.user.tenantId, req.user.role, body.ids); }
 
   @Post('import')
+  @RequirePermission('products.manage')
   importProducts(@Req() req: any, @Body() body: any): any {
     return this.service.importProducts(req.user.tenantId, req.user.sub, req.user.role, body.rows, body.options);
   }
 
   @Patch(':id')
-  update(@Req() req: any, @Param('id') id: string, @Body() body: any): any { return this.service.update(req.user.tenantId, req.user.sub, req.user.role, id, body); }
+  @RequirePermission('products.update')
+  update(@Req() req: any, @Param('id') id: string, @Body() dto: UpdateProductDto): any { return this.service.update(req.user.tenantId, req.user.sub, req.user.role, id, dto); }
 
   @Delete(':id')
+  @RequirePermission('products.delete')
   remove(@Req() req: any, @Param('id') id: string): any { return this.service.remove(req.user.tenantId, req.user.role, id); }
 }
-
-

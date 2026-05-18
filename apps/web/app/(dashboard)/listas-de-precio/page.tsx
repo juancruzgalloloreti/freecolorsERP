@@ -6,6 +6,7 @@ import { priceListsApi, productsApi } from '@/lib/api'
 import { Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { CORE_PRICE_LIST_CODES, isAutomaticPriceList, isCorePriceList, priceListCode } from '@/lib/price-list-rules'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
 
 interface PriceList {
   id: string
@@ -96,7 +97,7 @@ function pricedItemsCount(list?: PriceList) {
   return list?.items?.filter((item) => Number(item.price || 0) > 0).length || 0
 }
 
-export default function ListasDePrecioPage() {
+function ListasDePrecioPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const isOwner = user?.role === 'OWNER'
@@ -748,4 +749,8 @@ export default function ListasDePrecioPage() {
       `}</style>
     </div>
   )
+}
+
+export default function ListasDePrecioPageWithErrorBoundary() {
+  return <ErrorBoundary><ListasDePrecioPage /></ErrorBoundary>
 }

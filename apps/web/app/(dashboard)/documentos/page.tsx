@@ -17,6 +17,7 @@ import {
 import { ConfirmDialog, PageHeader } from '@/components/erp/layout'
 import { documentsApi } from '@/lib/api'
 import { printDocumentA4 } from '@/lib/print-document'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
 
 type DocumentStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
 type DocumentType = 'INVOICE_A' | 'INVOICE_B' | 'INVOICE_C' | 'REMITO' | 'BUDGET' | 'PURCHASE_ORDER' | 'CREDIT_NOTE_A' | 'CREDIT_NOTE_B'
@@ -152,7 +153,7 @@ function downloadDocumentCsv(detail: Detail) {
   window.URL.revokeObjectURL(url)
 }
 
-export default function DocumentosPage() {
+function DocumentosPage() {
   const qc = useQueryClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -573,6 +574,10 @@ export default function DocumentosPage() {
       />
     </div>
   )
+}
+
+export default function DocumentosPageWithErrorBoundary() {
+  return <ErrorBoundary><DocumentosPage /></ErrorBoundary>
 }
 
 function ReceiptIcon() {

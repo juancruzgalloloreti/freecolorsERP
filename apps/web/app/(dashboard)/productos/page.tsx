@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
 import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
 import * as XLSX from 'xlsx'
 
 interface Product {
@@ -394,7 +395,7 @@ function ProductModal({ product, brands, categories, priceLists, onClose, onSave
   )
 }
 
-export default function ProductosPage() {
+function ProductosPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const isOwner = user?.role === 'OWNER'
@@ -405,6 +406,10 @@ export default function ProductosPage() {
   const [modal, setModal] = useState<Product | null | 'new'>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
+  const bulkAbortRef = useRef<AbortController | null>(null)
+  useEffect(() => {
+    return () => { bulkAbortRef.current?.abort() }
+  }, [])
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null)
@@ -489,15 +494,21 @@ export default function ProductosPage() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async () => {
+      const abortController = new AbortController()
+      bulkAbortRef.current = abortController
+      const signal = abortController.signal
+
       const ids = Array.from(selectedProductIds)
       const summary = { deleted: 0, archived: 0, failed: [] as string[] }
 
       for (const id of ids) {
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
         try {
           const result = await productsApi.remove(id)
           if (result?.archived) summary.archived += 1
           else summary.deleted += 1
         } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') throw error
           const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
           const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || 'No se pudo eliminar'
           summary.failed.push(Array.isArray(message) ? message.join(', ') : message)
@@ -938,5 +949,9 @@ export default function ProductosPage() {
       )}
     </div>
   )
+}
+
+export default function ProductosPageWithErrorBoundary() {
+  return <ErrorBoundary><ProductosPage /></ErrorBoundary>
 }
 

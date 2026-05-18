@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { stockApi, productsApi } from '@/lib/api'
 import { Plus, X, Search, Layers3, ArrowUpDown, CheckSquare2, Square, Trash2, FileDown, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { ErrorBoundary } from '@/components/erp/error-boundary'
 
 const MOVEMENT_TYPES = [
   { value: 'PURCHASE',      label: 'Compra (entrada)',       in: true },
@@ -182,11 +183,15 @@ function MovementModal({ deposits, products, onClose, onSave }: {
   )
 }
 
-export default function StockPage() {
+function StockPage() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const isOwner = user?.role === 'OWNER'
   const canManageStock = isOwner
+  const bulkAbortRef = useRef<AbortController | null>(null)
+  useEffect(() => {
+    return () => { bulkAbortRef.current?.abort() }
+  }, [])
   const [modal, setModal] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'current' | 'movements'>('current')
@@ -254,6 +259,10 @@ export default function StockPage() {
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async () => {
+      const abortController = new AbortController()
+      bulkAbortRef.current = abortController
+      const signal = abortController.signal
+
       const summary = {
         total: selectedProductIds.length,
         deleted: 0,
@@ -262,11 +271,13 @@ export default function StockPage() {
       }
 
       for (const id of selectedProductIds) {
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
         try {
           const result = await productsApi.remove(id)
           if (result?.archived) summary.archived += 1
           else summary.deleted += 1
         } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') throw error
           summary.failed.push({ id, reason: apiMessage(error, 'No se pudo archivar') })
         }
       }
@@ -669,5 +680,9 @@ export default function StockPage() {
       )}
     </div>
   )
+}
+
+export default function StockPageWithErrorBoundary() {
+  return <ErrorBoundary><StockPage /></ErrorBoundary>
 }
 

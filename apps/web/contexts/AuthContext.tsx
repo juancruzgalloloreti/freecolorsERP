@@ -34,9 +34,9 @@ const cookieOptions = {
 }
 
 const clearAuthCookies = () => {
-  Cookies.remove('access_token', { path: '/' })
-  // refresh_token es httpOnly — la limpia el route handler /api/auth/logout via Set-Cookie server-side
+  Cookies.remove('session_hint', { path: '/' })
   Cookies.remove('user', { path: '/' })
+  // access_token y refresh_token son httpOnly — los limpia el route handler /api/auth/logout via Set-Cookie server-side
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -48,10 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queueMicrotask(() => {
       if (cancelled) return
       const saved = Cookies.get('user')
-      const token = Cookies.get('access_token')
-      if (saved && token) {
+      const hasSession = Cookies.get('session_hint')
+      if (saved && hasSession) {
         try { setUser(JSON.parse(saved)) } catch {}
-      } else if (saved || token) {
+      } else if (saved || hasSession) {
         clearAuthCookies()
       }
       setLoading(false)
@@ -69,15 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tenantId: data.tenant?.id ?? '',
     }
 
-    Cookies.set('access_token', data.accessToken, cookieOptions)
-    // refresh_token es httpOnly — ya lo setea el route handler /api/auth/login
-    // No escribir refresh_token desde JS: quedaría accesible a XSS
+    // access_token es httpOnly — ya lo setea el route handler /api/auth/login
+    // refresh_token es httpOnly — idem
+    // No escribir access_token/refresh_token desde JS: quedarían accesibles a XSS
 
     try {
       const permissions = await authApi.getMyPermissions()
       userToStore.permissions = permissions.map((p: { code: string }) => p.code)
     } catch (e) {
-      console.error('Failed to fetch user permissions', e)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch user permissions', e)
+      }
       userToStore.permissions = []
     }
 

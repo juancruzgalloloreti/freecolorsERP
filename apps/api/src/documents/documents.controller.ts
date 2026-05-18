@@ -8,10 +8,10 @@ import { DocumentsService } from './documents.service';
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}
-  @Get() findAll(@Req() req: any, @Query() query: any) { return this.service.findAll(req.user.tenantId, query); }
-  @Get('conversions') conversions(@Req() req: any, @Query() query: any) { return this.service.getConversions(req.user.tenantId, query.sourceId, query.status); }
-  @Get('puntos-de-venta') puntos(@Req() req: any) { return this.service.puntos(req.user.tenantId); }
-  @Get(':id') get(@Req() req: any, @Param('id') id: string) { return this.service.get(req.user.tenantId, id); }
+  @Get() @RequirePermission('document.list') findAll(@Req() req: any, @Query() query: any) { return this.service.findAll(req.user.tenantId, query); }
+  @Get('conversions') @RequirePermission('document.view') conversions(@Req() req: any, @Query() query: any) { return this.service.getConversions(req.user.tenantId, query.sourceId, query.status); }
+  @Get('puntos-de-venta') @RequirePermission('document.view') puntos(@Req() req: any) { return this.service.puntos(req.user.tenantId); }
+  @Get(':id') @RequirePermission('document.view') get(@Req() req: any, @Param('id') id: string) { return this.service.get(req.user.tenantId, id); }
   @Post() @RequirePermission('document.create') create(@Req() req: any, @Body() body: any) { return this.service.create(req.user.tenantId, req.user.sub, req.user.role, body); }
   @Post('confirm-sale') @RequirePermission('sale.create') confirmSale(@Req() req: any, @Body() body: any) { return this.service.confirmSale(req.user.tenantId, req.user.sub, req.user.role, body); }
   @Patch(':id') @RequirePermission('document.create') update(@Req() req: any, @Param('id') id: string, @Body() body: any) { return this.service.update(req.user.tenantId, req.user.role, id, body); }
