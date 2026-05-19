@@ -1,7 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma, PurchaseOrderStatus, StockMovementType } from '@erp/db'
 import { PrismaService } from '../common/prisma.service'
 import { recalculateAverageCost } from '../common/cost-utils'
+import { parseMoney } from '../common/money'
+
 
 @Injectable()
 export class PurchasesService {
@@ -87,16 +89,33 @@ export class PurchasesService {
   }, userId?: string) {
     if (!data.supplierId) throw new BadRequestException('La orden de compra requiere proveedor')
     if (!data.items?.length) throw new BadRequestException('La orden de compra requiere al menos un producto')
+    if (data.items.some((item) => !item.productId)) {
+      throw new BadRequestException('Todos los items requieren producto')
+    }
+
+    const productIds = [...new Set(data.items.map((item) => item.productId))]
+    const validProducts = await this.prisma.product.findMany({
+      where: { id: { in: productIds }, tenantId },
+      select: { id: true },
+    })
+    if (validProducts.length !== productIds.length) {
+      throw new ForbiddenException('Producto no pertenece al tenant')
+    }
 
     let subtotal = 0
     let taxAmount = 0
 
     const itemsData = data.items.map((item) => {
-      if (!item.productId) throw new BadRequestException('Todos los items requieren producto')
-      if (Number(item.quantity) <= 0) throw new BadRequestException('La cantidad debe ser mayor a cero')
-      if (Number(item.unitPrice) < 0) throw new BadRequestException('El precio no puede ser negativo')
-      const itemSubtotal = item.quantity * item.unitPrice * (1 - (item.discountPercent || 0) / 100)
-      const itemTax = itemSubtotal * ((item.taxRate || 21) / 100)
+      const quantity = parseMoney(item.quantity)
+      const unitPrice = parseMoney(item.unitPrice)
+      const discountPercent = parseMoney(item.discountPercent || 0)
+      const taxRate = parseMoney(item.taxRate || 21)
+
+      if (quantity <= 0) throw new BadRequestException('La cantidad debe ser mayor a cero')
+      if (unitPrice < 0) throw new BadRequestException('El precio no puede ser negativo')
+
+      const itemSubtotal = quantity * unitPrice * (1 - discountPercent / 100)
+      const itemTax = itemSubtotal * (taxRate / 100)
       const itemTotal = itemSubtotal + itemTax
 
       subtotal += itemSubtotal
@@ -104,11 +123,11 @@ export class PurchasesService {
 
       return {
         productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discountPercent: item.discountPercent || 0,
+        quantity,
+        unitPrice,
+        discountPercent,
         subtotal: itemSubtotal,
-        taxRate: item.taxRate || 21,
+        taxRate,
         taxAmount: itemTax,
         total: itemTotal,
       }

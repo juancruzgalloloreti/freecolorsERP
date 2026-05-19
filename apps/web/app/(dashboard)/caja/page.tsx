@@ -100,6 +100,14 @@ export default function CajaPage() {
     onError: (error) => setMessage(apiMessage(error, 'No se pudo registrar el movimiento')),
   })
 
+  const handleMoveSubmit = () => {
+    if (!move.description || !move.description.trim()) {
+      setMessage('No se pudo registrar: El concepto del movimiento es obligatorio.')
+      return
+    }
+    moveMutation.mutate()
+  }
+
   const closeMutation = useMutation({
     mutationFn: () => cashApi.close({ countedAmount, note: closingNote.trim() }),
     onSuccess: () => { refresh(); setCountedAmount(''); setClosingNote(''); setMessage('Caja cerrada.') },
@@ -194,7 +202,7 @@ export default function CajaPage() {
             <input id="cash-movement-description" className="fc-input" value={move.description} onChange={(event) => setMove((current) => ({ ...current, description: event.target.value }))} placeholder={move.type === 'CASH_OUT' ? 'Pago, retiro, gasto...' : 'Ingreso manual'} />
             <label className="fc-label" htmlFor="cash-movement-reference" style={{ marginTop: 10 }}>Referencia</label>
             <input id="cash-movement-reference" className="fc-input" value={move.reference} onChange={(event) => setMove((current) => ({ ...current, reference: event.target.value }))} placeholder="Opcional" />
-            <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!hasPermission('cash.move') || !move.amount || moveMutation.isPending} onClick={() => moveMutation.mutate()}>
+            <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={!hasPermission('cash.move') || !move.amount || moveMutation.isPending} onClick={handleMoveSubmit}>
               Registrar
             </button>
 

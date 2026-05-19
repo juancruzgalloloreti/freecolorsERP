@@ -292,6 +292,7 @@ export default function VentasPage() {
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
   const [quickProduct, setQuickProduct] = useState(() => emptyQuickProduct(''))
   const [resumeConfirm, setResumeConfirm] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedResumeIdRef = useRef<string | null>(null)
   const pendingResumeRef = useRef<ResumableDocument | null>(null)
@@ -1206,7 +1207,7 @@ export default function VentasPage() {
           <div className="counter-lines">
             <div className="counter-lines-header">
               <h2>Detalle de items</h2>
-              <button className="btn btn-secondary btn-sm" type="button" onClick={() => setLines([])} disabled={lines.length === 0 || !canUseCounter} title="Vaciar items">
+              <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowClearConfirm(true)} disabled={lines.length === 0 || !canUseCounter} title="Vaciar items">
                 <Trash2 size={13} /> Vaciar
               </button>
             </div>
@@ -1358,6 +1359,7 @@ export default function VentasPage() {
         open={Boolean(productDetail)}
         title="Detalle de producto"
         onClose={() => setProductDetail(null)}
+        preventOutsideClose={true}
         footer={productDetail && (
           <>
             <button className="btn btn-secondary" type="button" onClick={() => setProductDetail(null)}>Cerrar</button>
@@ -1410,6 +1412,7 @@ export default function VentasPage() {
         open={customerSheet}
         title="Cliente, datos fiscales y entrega"
         onClose={() => setCustomerSheet(false)}
+        preventOutsideClose={true}
         footer={(
           <>
             <button className="btn btn-secondary" type="button" onClick={() => setCustomerSheet(false)}>Cancelar</button>
@@ -1448,6 +1451,7 @@ export default function VentasPage() {
         open={productSheet}
         title="Alta rápida de producto"
         onClose={() => setProductSheet(false)}
+        preventOutsideClose={true}
         footer={(
           <>
             <button className="btn btn-secondary" type="button" onClick={() => setProductSheet(false)}>Cancelar</button>
@@ -1474,6 +1478,7 @@ export default function VentasPage() {
         open={cashSheet}
         title="Abrir caja"
         onClose={() => setCashSheet(false)}
+        preventOutsideClose={true}
         footer={(
           <>
             <button className="btn btn-secondary" type="button" onClick={() => setCashSheet(false)}>Cancelar</button>
@@ -1492,6 +1497,7 @@ export default function VentasPage() {
         open={discountSheet}
         title="Descuento del Comprobante"
         onClose={() => setDiscountSheet(false)}
+        preventOutsideClose={true}
         footer={(
           <>
             <button className="btn btn-secondary" type="button" onClick={() => { setGlobalDiscount(''); setDiscountSheet(false) }}>Quitar descuento</button>
@@ -1518,7 +1524,7 @@ export default function VentasPage() {
         open={paymentSheet}
         title="Cobrar venta"
         onClose={() => setPaymentSheet(false)}
-        preventOutsideClose
+        preventOutsideClose={true}
         footer={<button className="btn btn-primary" type="button" onClick={closePaymentSheet}>Aceptar</button>}
       >
         <div className="payment-summary-panel">
@@ -1581,6 +1587,18 @@ export default function VentasPage() {
         pending={false}
         onCancel={cancelResume}
         onConfirm={confirmResume}
+      />
+
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="¿Vaciar el mostrador?"
+        body="Se eliminarán todos los productos del comprobante actual."
+        confirmLabel="Confirmar"
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setLines([])
+          setShowClearConfirm(false)
+        }}
       />
     </div>
   )

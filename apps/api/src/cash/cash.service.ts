@@ -76,6 +76,9 @@ export class CashService {
   async move(tenantId: string, userId: string, role: string, data: { type: 'CASH_IN' | 'CASH_OUT'; amount: number | string; description?: string; reference?: string }) {
     const session = await this.current(tenantId);
     if (!session) throw new BadRequestException('No hay caja abierta');
+    if (!data.description || !data.description.trim()) {
+      throw new BadRequestException('El concepto del movimiento es obligatorio');
+    }
     const amount = this.toMoney(data.amount);
     if (amount <= 0) throw new BadRequestException('El importe debe ser mayor a cero');
     const signedAmount = data.type === 'CASH_OUT' ? amount * -1 : amount;

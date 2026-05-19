@@ -7,6 +7,7 @@ import { Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { CORE_PRICE_LIST_CODES, isAutomaticPriceList, isCorePriceList, priceListCode } from '@/lib/price-list-rules'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
+import { ConfirmDialog } from '@/components/erp/layout'
 
 interface PriceList {
   id: string
@@ -549,26 +550,16 @@ function ListasDePrecioPage() {
         </div>
       </details>
 
-      {deletingList && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: 380 }}>
-            <button className="btn btn-icon btn-secondary modal-x-close" disabled={deleteMutation.isPending} onClick={() => setDeletingList(null)} aria-label="Cerrar"><X size={14} /></button>
-            <div style={{ padding: '28px 24px' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'grid', placeItems: 'center', marginBottom: 14 }}>
-                <Trash2 size={18} color="#f87171" />
-              </div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>¿Eliminar lista?</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Se elimina la lista {deletingList.name} y sus precios asociados. No se borran productos ni se toca LP1/CR/CU.</p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
-                <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingList(null)}>Cancelar</button>
-                <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingList.id)}>
-                  {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(deletingList)}
+        title="¿Eliminar lista?"
+        body={`Se elimina la lista ${deletingList?.name || ''} y sus precios asociados. No se borran productos ni se toca LP1/CR/CU.`}
+        confirmLabel="Eliminar"
+        danger={true}
+        pending={deleteMutation.isPending}
+        onCancel={() => setDeletingList(null)}
+        onConfirm={() => deletingList && deleteMutation.mutate(deletingList.id)}
+      />
 
       <style>{`
         .price-summary {

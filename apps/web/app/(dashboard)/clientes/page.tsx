@@ -8,6 +8,7 @@ import { Plus, Edit2, X, Search, CreditCard, Users, Upload, Download, Trash2 } f
 import { useAuth } from '@/contexts/AuthContext'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import { parseCsv, decodeCsv } from '@/lib/csv-parser'
+import { ConfirmDialog } from '@/components/erp/layout'
 
 const IVA_CONDITIONS = [
   { value: 'CONSUMIDOR_FINAL',      label: 'Consumidor Final' },
@@ -372,25 +373,15 @@ function ClientesPage() {
       )}
       {ccModal && <CCModal customer={ccModal} onClose={() => setCCModal(null)} />}
 
-      {deletingCustomer && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: '380px' }}>
-            <div style={{ padding: '26px 24px' }}>
-              <Trash2 size={22} color="#f87171" style={{ marginBottom: 12 }} />
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Archivar cliente</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5 }}>
-                {deletingCustomer.name} quedará inactivo si tiene historial. Si no tiene movimientos, se eliminará.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-                <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingCustomer(null)}>Cancelar</button>
-                <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingCustomer.id)}>
-                  {deleteMutation.isPending ? 'Procesando...' : 'Archivar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(deletingCustomer)}
+        title="Archivar cliente"
+        body={`${deletingCustomer?.name || ''} quedará inactivo si tiene historial. Si no tiene movimientos, se eliminará.`}
+        confirmLabel="Archivar"
+        pending={deleteMutation.isPending}
+        onCancel={() => setDeletingCustomer(null)}
+        onConfirm={() => deletingCustomer && deleteMutation.mutate(deletingCustomer.id)}
+      />
 
       {importing && (
         <div className="modal-overlay">

@@ -8,6 +8,7 @@ import ImportCSVModal from '@/components/proveedores/ImportCSVModal'
 import type { Proveedor } from '@/types/proveedores'
 import { suppliersApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { ConfirmDialog } from '@/components/erp/layout'
 
 export type { Proveedor }
 
@@ -189,25 +190,16 @@ export default function ProveedoresPage() {
         />
       )}
 
-      {deletingId && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: '380px' }}>
-            <div style={{ padding: '26px 24px' }}>
-              <Trash2 size={22} color="#f87171" style={{ marginBottom: 12 }} />
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Eliminar proveedor</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5 }}>
-                ¿Estás seguro? Esta acción no se puede deshacer.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-                <button className="btn btn-secondary" disabled={deleteMutation.isPending} onClick={() => setDeletingId(null)}>Cancelar</button>
-                <button className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletingId)}>
-                  {deleteMutation.isPending ? 'Procesando...' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(deletingId)}
+        title="Eliminar proveedor"
+        body="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        danger={true}
+        pending={deleteMutation.isPending}
+        onCancel={() => setDeletingId(null)}
+        onConfirm={() => deletingId && deleteMutation.mutate(deletingId)}
+      />
     </div>
   )
 }

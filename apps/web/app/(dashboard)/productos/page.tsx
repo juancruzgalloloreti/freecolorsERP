@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import * as XLSX from 'xlsx'
+import { ConfirmDialog } from '@/components/erp/layout'
 
 interface Product {
   id: string; code: string; name: string; unit: string; isActive: boolean
@@ -896,57 +897,27 @@ function ProductosPage() {
         </div>
       )}
 
-      {bulkDeleting && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: '420px' }}>
-            <div style={{ padding: '28px 24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Trash2 size={18} color="#f87171" />
-              </div>
-              <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>¿Archivar productos seleccionados?</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                {selectedProducts.length} producto{selectedProducts.length === 1 ? '' : 's'} seleccionado{selectedProducts.length === 1 ? '' : 's'}. Si tienen historial, se archivan para no romper stock ni documentos.
-              </p>
-              {bulkDeleteError && (
-                <div style={{ marginTop: '12px', padding: '10px 12px', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', fontSize: '13px', color: '#fca5a5' }}>
-                  {bulkDeleteError}
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '22px' }}>
-                <button className="btn btn-secondary" onClick={() => { setBulkDeleting(false); setBulkDeleteError(null) }} disabled={bulkDeleteMutation.isPending}>Cancelar</button>
-                <button className="btn btn-danger" onClick={() => bulkDeleteMutation.mutate()} disabled={bulkDeleteMutation.isPending}>
-                  {bulkDeleteMutation.isPending ? 'Archivando...' : 'Archivar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(bulkDeleting)}
+        title="¿Archivar productos seleccionados?"
+        body={`${selectedProducts.length} producto${selectedProducts.length === 1 ? '' : 's'} seleccionado${selectedProducts.length === 1 ? '' : 's'}. Si tienen historial, se archivan para no romper stock ni documentos.${bulkDeleteError ? `\n\nError: ${bulkDeleteError}` : ''}`}
+        confirmLabel="Archivar"
+        danger={true}
+        pending={bulkDeleteMutation.isPending}
+        onCancel={() => { setBulkDeleting(false); setBulkDeleteError(null) }}
+        onConfirm={() => bulkDeleteMutation.mutate()}
+      />
 
-      {deletingId && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: '360px' }}>
-            <div style={{ padding: '28px 24px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                <Trash2 size={18} color="#f87171" />
-              </div>
-              <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '6px' }}>¿Eliminar producto?</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Si tiene historial, se archiva para no romper stock ni documentos.</p>
-              {deleteError && (
-                <div style={{ marginTop: '12px', padding: '10px 12px', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', fontSize: '13px', color: '#fca5a5' }}>
-                  {deleteError}
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '22px' }}>
-                <button className="btn btn-secondary" onClick={() => { setDeletingId(null); setDeleteError(null) }} disabled={deleteMutation.isPending}>Cancelar</button>
-                <button className="btn btn-danger" onClick={() => deleteMutation.mutate(deletingId)} disabled={deleteMutation.isPending}>
-                  {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(deletingId)}
+        title="¿Eliminar producto?"
+        body={`Si tiene historial, se archiva para no romper stock ni documentos.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        confirmLabel="Eliminar"
+        danger={true}
+        pending={deleteMutation.isPending}
+        onCancel={() => { setDeletingId(null); setDeleteError(null) }}
+        onConfirm={() => deletingId && deleteMutation.mutate(deletingId)}
+      />
     </div>
   )
 }

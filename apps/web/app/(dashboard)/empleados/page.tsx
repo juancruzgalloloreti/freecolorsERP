@@ -48,6 +48,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   users: 'Empleados y permisos',
 }
 
+const EMPTY_PERMISSIONS: Permission[] = []
+
 function apiMessage(error: unknown, fallback: string) {
   const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
   const message = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message || fallback
@@ -87,7 +89,7 @@ function EmpleadosPage() {
     }, {})
   }, [permissions])
 
-  const { data: userPermissions = [] } = useQuery({
+  const { data: rawUserPermissions } = useQuery({
     queryKey: ['employee-permissions', selectedUser?.id],
     queryFn: async () => {
       if (!selectedUser) return []
@@ -95,10 +97,15 @@ function EmpleadosPage() {
     },
     enabled: canManage && Boolean(selectedUser),
   })
+  const userPermissions = rawUserPermissions ?? EMPTY_PERMISSIONS
 
   useEffect(() => {
     if (!selectedUser) return
-    setSelectedCodes(new Set((userPermissions as Permission[]).map((p) => p.code)))
+    const nextCodes = new Set(userPermissions.map((p) => p.code))
+    setSelectedCodes((current) => {
+      if (current.size === nextCodes.size && [...current].every((code) => nextCodes.has(code))) return current
+      return nextCodes
+    })
   }, [userPermissions, selectedUser?.id])
 
   const createMutation = useMutation({

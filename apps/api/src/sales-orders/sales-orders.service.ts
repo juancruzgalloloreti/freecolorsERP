@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DocumentType, SalesOrderStatus } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -76,6 +76,16 @@ export class SalesOrdersService {
     const order = await this.prisma.$transaction(async (tx) => {
       const computed = this.computeItems(data.items ?? []);
       if (computed.length === 0) throw new BadRequestException('El pedido necesita al menos un item');
+
+      const productIds = [...new Set(computed.map((item) => item.productId))];
+      const validProducts = await tx.product.findMany({
+        where: { id: { in: productIds }, tenantId },
+        select: { id: true },
+      });
+      if (validProducts.length !== productIds.length) {
+        throw new ForbiddenException('Producto no pertenece al tenant');
+      }
+
       const totals = this.computeTotals(computed);
       const next = await tx.salesOrder.aggregate({ where: { tenantId }, _max: { number: true } });
       return tx.salesOrder.create({
@@ -116,6 +126,16 @@ export class SalesOrdersService {
       }
       const computed = this.computeItems(data.items ?? []);
       if (computed.length === 0) throw new BadRequestException('El pedido necesita al menos un item');
+
+      const productIds = [...new Set(computed.map((item) => item.productId))];
+      const validProducts = await tx.product.findMany({
+        where: { id: { in: productIds }, tenantId },
+        select: { id: true },
+      });
+      if (validProducts.length !== productIds.length) {
+        throw new ForbiddenException('Producto no pertenece al tenant');
+      }
+
       const totals = this.computeTotals(computed);
       await tx.salesOrderItem.deleteMany({ where: { salesOrderId: id } });
       const order = await tx.salesOrder.update({
