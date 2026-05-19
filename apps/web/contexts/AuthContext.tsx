@@ -17,7 +17,7 @@ interface AuthCtx {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   hasPermission: (permission: string) => boolean
   hasAnyPermission: (permissions: string[]) => boolean
   isOwner: () => boolean
@@ -34,6 +34,8 @@ const cookieOptions = {
 }
 
 const clearAuthCookies = () => {
+  Cookies.remove('access_token', { path: '/' })
+  Cookies.remove('refresh_token', { path: '/' })
   Cookies.remove('session_hint', { path: '/' })
   Cookies.remove('user', { path: '/' })
   // access_token y refresh_token son httpOnly — los limpia el route handler /api/auth/logout via Set-Cookie server-side
@@ -87,11 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userToStore)
   }
 
-  const logout = () => {
-    authApi.logout().catch(() => {})
-    clearAuthCookies()
-    setUser(null)
-    window.location.href = '/login'
+  const logout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // Si el backend no responde, igual se limpia la sesión local para no dejar al usuario atrapado.
+    } finally {
+      clearAuthCookies()
+      setUser(null)
+      window.location.assign('/login')
+    }
   }
 
   const hasPermission = (permission: string): boolean => {

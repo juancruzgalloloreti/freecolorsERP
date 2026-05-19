@@ -88,7 +88,7 @@ export const authApi = {
     axios
       .post('/api/auth/login', { email, password, tenantSlug: TENANT_SLUG })
       .then((r) => r.data),
-  logout: () => api.post('/auth/logout'),
+  logout: () => axios.post('/api/auth/logout'),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.post('/auth/change-password', data).then((r) => r.data),
   listUsers: () => api.get('/auth/users').then((r) => r.data),
