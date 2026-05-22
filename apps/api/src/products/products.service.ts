@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import pLimit from 'p-limit';
 import { PrismaService } from '../common/prisma.service';
 import { PriceFormulaService } from '../common/price-formula.service';
 import { pageParams, paged } from '../common/pagination';
@@ -12,6 +13,7 @@ const REQUIRED_AGUILA_PRICE_LISTS = [
   { name: 'CR - Costo Reposición', isDefault: false },
   { name: 'CU - Costo Ultima Compra', isDefault: false },
 ];
+const PRODUCT_SEARCH_DB_CONCURRENCY = 2;
 
 type PriceListForFormula = {
   id: string;
@@ -102,8 +104,9 @@ export class ProductsService {
     const productIds = products.map((product) => product.id);
     if (productIds.length === 0) return [];
 
-    const [stockByDeposit, priceLists] = await Promise.all([
-      this.prisma.stockMovement.groupBy({
+    const dbLimit = pLimit(PRODUCT_SEARCH_DB_CONCURRENCY);
+    const [stockByDeposit, priceLists, coefficients] = await Promise.all([
+      dbLimit(() => this.prisma.stockMovement.groupBy({
         by: ['productId', 'depositId'],
         where: {
           tenantId,
@@ -111,8 +114,8 @@ export class ProductsService {
           ...(query.depositId ? { depositId: query.depositId } : {}),
         },
         _sum: { quantity: true },
-      }),
-      this.prisma.priceList.findMany({
+      })),
+      dbLimit(() => this.prisma.priceList.findMany({
         where: { tenantId, isActive: true },
         orderBy: { name: 'asc' },
         select: {
@@ -125,12 +128,12 @@ export class ProductsService {
           formulaRoundingMode: true,
           formulaRoundingValue: true,
         },
-      }),
+      })),
+      dbLimit(() => this.activePriceCoefficients(tenantId, productIds, products.map((product) => product.categoryId).filter((id): id is string => Boolean(id)))),
     ]);
     const orderedPriceLists = this.sortPriceLists(priceLists);
     const defaultList = orderedPriceLists.find((list) => list.isDefault) || orderedPriceLists[0];
     const priceListId = query.priceListId || defaultList?.id;
-    const coefficients = await this.activePriceCoefficients(tenantId, productIds, products.map((product) => product.categoryId).filter((id): id is string => Boolean(id)));
     const stockMap = new Map<string, number>();
     const totalStockMap = new Map<string, number>();
     stockByDeposit.forEach((row) => {

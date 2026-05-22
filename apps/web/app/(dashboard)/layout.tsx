@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="mobile-header-spacer" aria-hidden="true" />
         </div>
 
-        <main className={isCounterPage ? 'counter-main' : undefined} style={{
+        <main className={isCounterPage ? 'app-main counter-main' : 'app-main'} style={{
           flex: 1,
           padding: '28px 32px',
           maxWidth: isCounterPage ? 'none' : '1440px',
@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <style>{`
         @media (max-width: 768px) {
           .main-content { margin-left: 0 !important; }
-          main { padding: 14px 12px 24px !important; }
+          .app-main { padding: 12px 10px 24px !important; }
         }
       `}</style>
     </div>

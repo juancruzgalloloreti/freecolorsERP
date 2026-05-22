@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import pLimit from 'p-limit';
 import { PrismaService } from '../common/prisma.service';
 
 type SalesSummaryGroup = 'month' | 'cuit' | 'document' | 'receipt' | 'pos' | 'locality' | 'account' | 'user' | 'userMl';
+const MANAGEMENT_REPORT_DB_CONCURRENCY = 2;
 
 @Injectable()
 export class ReportsService {
@@ -138,24 +140,25 @@ export class ReportsService {
     previousStart.setDate(previousStart.getDate() - periodDays);
 
     const invoiceTypes = ['INVOICE_A', 'INVOICE_B', 'INVOICE_C'];
+    const dbLimit = pLimit(MANAGEMENT_REPORT_DB_CONCURRENCY);
     const [docs, previousDocs, draftBudgets, pendingOrders, ccEntries, stockRows, products] = await Promise.all([
-      this.prisma.document.findMany({
+      dbLimit(() => this.prisma.document.findMany({
         where: { tenantId, status: 'CONFIRMED', type: { in: invoiceTypes as any[] }, date: { gte: start, lt: end } },
         include: { items: { include: { product: { include: { brand: true, category: true } } } }, payments: true },
-      }),
-      this.prisma.document.findMany({
+      })),
+      dbLimit(() => this.prisma.document.findMany({
         where: { tenantId, status: 'CONFIRMED', type: { in: invoiceTypes as any[] }, date: { gte: previousStart, lt: previousEnd } },
         select: { total: true },
-      }),
-      this.prisma.document.count({ where: { tenantId, status: 'DRAFT', type: 'BUDGET', date: { gte: start, lt: end } } }),
-      this.prisma.salesOrder.count({ where: { tenantId, status: { in: ['PENDING', 'PREPARATION', 'BILLABLE'] as any[] } } }),
-      this.prisma.currentAccountEntry.findMany({ where: { tenantId, date: { lt: end } }, select: { amount: true } }),
-      this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } }),
-      this.prisma.product.findMany({
+      })),
+      dbLimit(() => this.prisma.document.count({ where: { tenantId, status: 'DRAFT', type: 'BUDGET', date: { gte: start, lt: end } } })),
+      dbLimit(() => this.prisma.salesOrder.count({ where: { tenantId, status: { in: ['PENDING', 'PREPARATION', 'BILLABLE'] as any[] } } })),
+      dbLimit(() => this.prisma.currentAccountEntry.findMany({ where: { tenantId, date: { lt: end } }, select: { amount: true } })),
+      dbLimit(() => this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } })),
+      dbLimit(() => this.prisma.product.findMany({
         where: { tenantId, isActive: true },
         include: { brand: true, category: true },
         orderBy: { name: 'asc' },
-      }),
+      })),
     ]);
 
     const salesTotal = docs.reduce((sum, doc) => sum + Number(doc.total || 0), 0);

@@ -115,8 +115,8 @@ export const permissionsApi = {
 export const productsApi = {
   list: (params?: Record<string, unknown>) =>
     api.get('/products', { params }).then((r) => r.data),
-  search: (params?: Record<string, unknown>) =>
-    api.get('/products/search', { params }).then((r) => r.data),
+  search: (params?: Record<string, unknown>, signal?: AbortSignal) =>
+    api.get('/products/search', { params, signal }).then((r) => r.data),
   get: (id: string) => api.get(`/products/${id}`).then((r) => r.data),
   create: (data: Record<string, unknown>) =>
     api.post('/products', data).then((r) => r.data),

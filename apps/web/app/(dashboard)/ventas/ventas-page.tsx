@@ -10,13 +10,11 @@ import {
   DollarSign,
   LockKeyhole,
   FileText,
-  PackagePlus,
   Percent,
   Printer,
   ReceiptText,
   Search,
   Trash2,
-  UserPlus,
   X,
 } from 'lucide-react'
 import {
@@ -25,7 +23,6 @@ import {
   MoneyInput,
   PageHeader,
   QuantityInput,
-  RoleGate,
 } from '@/components/erp/layout'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBarcodeScan } from '@/hooks/use-barcode-scan'
@@ -214,21 +211,6 @@ function documentNumber(item: { number?: number | null; puntoDeVenta?: number | 
   return `${String(item.puntoDeVenta).padStart(4, '0')}-${String(item.number).padStart(8, '0')}`
 }
 
-function emptyQuickProduct(priceListId: string) {
-  return {
-    code: '',
-    name: '',
-    unit: 'un',
-    price: '',
-    stockQuantity: '',
-    brandId: '',
-    brandName: '',
-    categoryId: '',
-    categoryName: '',
-    priceListId,
-  }
-}
-
 function applyVatToLines(lines: CounterLine[], enabled: boolean) {
   return lines.map((line) => ({ ...line, taxRate: enabled ? line.productTaxRate : 0 }))
 }
@@ -273,6 +255,7 @@ export default function VentasPage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState('')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [lines, setLines] = useState<CounterLine[]>([])
   const [resumeDocumentId, setResumeDocumentId] = useState<string | null>(null)
   const isRetakingDraft = resumeDocumentId !== null
@@ -282,7 +265,6 @@ export default function VentasPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [customerSheet, setCustomerSheet] = useState(false)
-  const [productSheet, setProductSheet] = useState(false)
   const [discountSheet, setDiscountSheet] = useState(false)
   const [paymentSheet, setPaymentSheet] = useState(false)
   const [cashSheet, setCashSheet] = useState(false)
@@ -290,7 +272,6 @@ export default function VentasPage() {
   const [openingAmount, setOpeningAmount] = useState('')
   const [globalDiscount, setGlobalDiscount] = useState('')
   const [quickCustomer, setQuickCustomer] = useState({ name: '', cuit: '', phone: '', address: '', city: '', province: '', ivaCondition: 'CONSUMIDOR_FINAL', deliveryAddress: '' })
-  const [quickProduct, setQuickProduct] = useState(() => emptyQuickProduct(''))
   const [resumeConfirm, setResumeConfirm] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -301,8 +282,6 @@ export default function VentasPage() {
   const { data: priceListsRaw } = useQuery({ queryKey: ['price-lists-counter'], queryFn: priceListsApi.list })
   const { data: depositsRaw } = useQuery({ queryKey: ['deposits-counter'], queryFn: stockApi.deposits })
   const { data: puntosRaw } = useQuery({ queryKey: ['puntos-counter'], queryFn: documentsApi.puntos })
-  const { data: brandsRaw } = useQuery({ queryKey: ['brands-counter'], queryFn: productsApi.listBrands })
-  const { data: categoriesRaw } = useQuery({ queryKey: ['categories-counter'], queryFn: productsApi.listCategories })
   const { data: recentRaw } = useQuery({
     queryKey: ['counter-recent-documents'],
     queryFn: () => documentsApi.list({ types: 'INVOICE_A,INVOICE_B,INVOICE_C,REMITO,BUDGET' }),
@@ -318,8 +297,6 @@ export default function VentasPage() {
   const customers = asArray<Customer>(customersRaw)
   const deposits = asArray<Deposit>(depositsRaw)
   const puntos = asArray<Punto>(puntosRaw)
-  const brands = asArray<{ id: string; name: string }>(brandsRaw)
-  const categories = asArray<{ id: string; name: string }>(categoriesRaw)
   const recentDocs = asArray<RecentDoc>(recentRaw).slice(0, 8)
   const printableDocumentId = lastDocumentId || recentDocs[0]?.id || null
 
@@ -427,15 +404,22 @@ export default function VentasPage() {
     router.replace('/ventas', { scroll: false })
   }, [router])
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  const canSearchProducts = debouncedSearch.length >= 2
   const { data: hitsRaw, isFetching: searching } = useQuery({
-    queryKey: ['counter-products', search, effectivePriceListId, effectiveDepositId],
-    queryFn: () => productsApi.search({
-      q: search.trim(),
+    queryKey: ['counter-products', debouncedSearch, effectivePriceListId, effectiveDepositId],
+    queryFn: ({ signal }) => productsApi.search({
+      q: debouncedSearch,
       priceListId: effectivePriceListId,
       depositId: effectiveDepositId,
       limit: 60,
-    }),
-    enabled: search.trim().length > 0,
+    }, signal),
+    enabled: canSearchProducts,
+    retry: false,
   })
   const hits = asArray<ProductHit>(hitsRaw)
 
@@ -515,7 +499,7 @@ export default function VentasPage() {
   }, [canUseCounter, includeVat])
 
   useBarcodeScan(async (code) => {
-    if (!canUseCounter || productSheet || productDetail || customerSheet || paymentSheet || cashSheet || discountSheet) return
+    if (!canUseCounter || productDetail || customerSheet || paymentSheet || cashSheet || discountSheet) return
     setError(null)
     setMessage(null)
     const results = asArray<ProductHit>(await productsApi.search({
@@ -691,7 +675,6 @@ export default function VentasPage() {
     else if (discountSheet) setDiscountSheet(false)
     else if (cashSheet) setCashSheet(false)
     else if (productDetail) setProductDetail(null)
-    else if (productSheet) setProductSheet(false)
     else if (customerSheet) setCustomerSheet(false)
   }
 
@@ -849,47 +832,6 @@ export default function VentasPage() {
     quickCustomerMutation.mutate()
   }
 
-  const quickProductMutation = useMutation({
-    mutationFn: async () => {
-      let brandId = quickProduct.brandId || undefined
-      let categoryId = quickProduct.categoryId || undefined
-      if (!brandId && quickProduct.brandName.trim()) {
-        const brand = await productsApi.createBrand({ name: quickProduct.brandName.trim() })
-        brandId = brand.id
-      }
-      if (!categoryId && quickProduct.categoryName.trim()) {
-        const category = await productsApi.createCategory({ name: quickProduct.categoryName.trim() })
-        categoryId = category.id
-      }
-      return productsApi.create({
-        code: quickProduct.code.trim(),
-        name: quickProduct.name.trim(),
-        unit: quickProduct.unit || 'un',
-        brandId,
-        categoryId,
-        stockQuantity: numberInput(quickProduct.stockQuantity),
-        prices: effectivePriceListId ? { [effectivePriceListId]: numberInput(quickProduct.price) } : undefined,
-      })
-    },
-    onSuccess: (product: { id: string; code: string; name: string; unit?: string; stockQuantity?: number }) => {
-      qc.invalidateQueries({ queryKey: ['counter-products'] })
-      qc.invalidateQueries({ queryKey: ['products'] })
-      qc.invalidateQueries({ queryKey: ['brands-counter'] })
-      qc.invalidateQueries({ queryKey: ['categories-counter'] })
-      addLine({
-        id: product.id,
-        code: product.code,
-        name: product.name,
-        unit: product.unit || 'un',
-        price: numberInput(quickProduct.price),
-        stock: numberInput(quickProduct.stockQuantity),
-        stockTotal: numberInput(quickProduct.stockQuantity),
-      })
-      setQuickProduct(emptyQuickProduct(effectivePriceListId))
-      setProductSheet(false)
-    },
-  })
-
   const openCashMutation = useMutation({
     mutationFn: () => cashApi.open({ openingAmount, note: 'Apertura desde mostrador' }),
     onSuccess: () => {
@@ -911,18 +853,6 @@ export default function VentasPage() {
       <PageHeader
         title="Mostrador"
         subtitle="Presupuestos, remitos y facturas internas desde una sola pantalla"
-        actions={(
-          <>
-            <RoleGate role={user?.role} allow={['OWNER']}>
-              <button className="btn btn-secondary" type="button" data-customer-action="true" onClick={openCustomerSheet}>
-                <UserPlus size={14} /> Datos cliente
-              </button>
-              <button className="btn btn-secondary" type="button" data-create-action="true" onClick={() => { setQuickProduct(emptyQuickProduct(effectivePriceListId)); setProductSheet(true) }}>
-                <PackagePlus size={14} /> Producto
-              </button>
-            </RoleGate>
-          </>
-        )}
       />
 
       {message && (
@@ -969,18 +899,18 @@ export default function VentasPage() {
         <section className="counter-workspace">
           <div className="operation-panel">
             <div className="operation-grid">
-              <label>
+              <label className="operation-field operation-field-document">
                 <span>Documento</span>
                 <select className="fc-input" value={docType} onChange={(event) => setDocType(event.target.value as DocumentType)}>
                   {DOC_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
                 </select>
               </label>
-              <label>
+              <label className="operation-field operation-field-date">
                 <span>Fecha</span>
                 <input className="fc-input" type="date" value={date} onChange={(event) => setDate(event.target.value)} disabled={sensitiveLocked} />
               </label>
               {needsPv && (
-                <label>
+                <label className="operation-field operation-field-pv">
                   <span>Punto de venta</span>
                   <select className="fc-input" value={puntoDeVentaId} onChange={(event) => setPuntoDeVentaId(event.target.value)}>
                     <option value="">Seleccionar</option>
@@ -988,14 +918,14 @@ export default function VentasPage() {
                   </select>
                 </label>
               )}
-              <label>
+              <label className="operation-field operation-field-deposit">
                 <span>Depósito</span>
                 <select className="fc-input" value={depositId} onChange={(event) => setDepositId(event.target.value)} disabled={sensitiveLocked}>
                   <option value="">Predeterminado</option>
                   {deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}
                 </select>
               </label>
-              <label>
+              <label className="operation-field operation-field-customer">
                 <span>Cliente</span>
                 <select className="fc-input" value={customerId} onChange={(event) => {
                   const next = event.target.value
@@ -1007,17 +937,17 @@ export default function VentasPage() {
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
                 </select>
               </label>
-              <button className="btn btn-secondary" type="button" data-customer-action="true" onClick={openCustomerSheet} disabled={!canUseCounter}>
+              <button className="btn btn-secondary operation-customer-button" type="button" data-customer-action="true" onClick={openCustomerSheet} disabled={!canUseCounter}>
                 Datos fiscales / entrega
               </button>
-              <label>
+              <label className="operation-field operation-field-list">
                 <span>Lista</span>
                 <select className="fc-input" value={priceListId} onChange={(event) => setPriceListId(event.target.value)} disabled={sensitiveLocked}>
                   <option value="">Predeterminada</option>
                   {priceLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
                 </select>
               </label>
-              <label>
+              <label className="operation-field operation-field-payment">
                 <span>Pago</span>
                 <select
                   className="fc-input"
@@ -1103,7 +1033,7 @@ export default function VentasPage() {
               />
               {search && <button className="btn btn-icon btn-secondary" type="button" aria-label="Limpiar búsqueda" onClick={() => setSearch('')}><X size={14} /></button>}
             </div>
-            {!isRetakingDraft && search.trim() && (
+            {!isRetakingDraft && canSearchProducts && (
               <div className="product-results">
                 {searching ? (
                   <div className="product-result muted">Buscando productos...</div>
@@ -1219,11 +1149,6 @@ export default function VentasPage() {
               </div>
             ) : (
               <>
-                {budgetMode && (
-                  <div className="budget-readonly-note">
-                    Presupuesto protegido: podés sumar cantidades, buscar más productos y quitar ítems. Precio, descripción, descuento e IVA quedan bloqueados.
-                  </div>
-                )}
                 <div className="counter-lines-table">
                   <table className="fc-table aguila-items-table">
                     <thead>
@@ -1444,33 +1369,6 @@ export default function VentasPage() {
           <label><span>Localidad</span><input className="fc-input" value={quickCustomer.city} onChange={(event) => setQuickCustomer((current) => ({ ...current, city: event.target.value }))} /></label>
           <label><span>Provincia</span><input className="fc-input" value={quickCustomer.province} onChange={(event) => setQuickCustomer((current) => ({ ...current, province: event.target.value }))} /></label>
           <label><span>Domicilio de entrega</span><input className="fc-input" value={quickCustomer.deliveryAddress} onChange={(event) => setQuickCustomer((current) => ({ ...current, deliveryAddress: event.target.value }))} placeholder="Si es distinto al domicilio fiscal" /></label>
-        </div>
-      </EntitySheet>
-
-      <EntitySheet
-        open={productSheet}
-        title="Alta rápida de producto"
-        onClose={() => setProductSheet(false)}
-        preventOutsideClose={true}
-        footer={(
-          <>
-            <button className="btn btn-secondary" type="button" onClick={() => setProductSheet(false)}>Cancelar</button>
-            <button className="btn btn-primary" type="button" disabled={!quickProduct.code || !quickProduct.name || quickProductMutation.isPending} onClick={() => quickProductMutation.mutate()}>
-              {quickProductMutation.isPending ? 'Guardando...' : 'Crear y agregar'}
-            </button>
-          </>
-        )}
-      >
-        <div className="sheet-form-grid">
-          <label><span>Código</span><input className="fc-input" value={quickProduct.code} onChange={(event) => setQuickProduct((current) => ({ ...current, code: event.target.value }))} autoFocus /></label>
-          <label><span>Nombre</span><input className="fc-input" value={quickProduct.name} onChange={(event) => setQuickProduct((current) => ({ ...current, name: event.target.value }))} /></label>
-          <label><span>Marca existente</span><select className="fc-input" value={quickProduct.brandId} onChange={(event) => setQuickProduct((current) => ({ ...current, brandId: event.target.value, brandName: '' }))}><option value="">Crear / sin marca</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
-          <label><span>Nueva marca</span><input className="fc-input" value={quickProduct.brandName} disabled={Boolean(quickProduct.brandId)} onChange={(event) => setQuickProduct((current) => ({ ...current, brandName: event.target.value }))} /></label>
-          <label><span>Categoría existente</span><select className="fc-input" value={quickProduct.categoryId} onChange={(event) => setQuickProduct((current) => ({ ...current, categoryId: event.target.value, categoryName: '' }))}><option value="">Crear / sin categoría</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-          <label><span>Nueva categoría</span><input className="fc-input" value={quickProduct.categoryName} disabled={Boolean(quickProduct.categoryId)} onChange={(event) => setQuickProduct((current) => ({ ...current, categoryName: event.target.value }))} /></label>
-          <label><span>Unidad</span><input className="fc-input" value={quickProduct.unit} onChange={(event) => setQuickProduct((current) => ({ ...current, unit: event.target.value }))} /></label>
-          <label><span>Precio mostrador</span><MoneyInput value={quickProduct.price} onChange={(event) => setQuickProduct((current) => ({ ...current, price: event.target.value }))} /></label>
-          <label><span>Stock inicial</span><QuantityInput value={quickProduct.stockQuantity} onChange={(event) => setQuickProduct((current) => ({ ...current, stockQuantity: event.target.value }))} /></label>
         </div>
       </EntitySheet>
 
