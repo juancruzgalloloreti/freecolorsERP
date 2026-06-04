@@ -32,9 +32,18 @@ function isValidCuit(cuit: string): boolean {
 }
 
 function serialDateToDate(serial: number): Date {
-  const d = new Date(Date.UTC(1899, 11, 30));
-  d.setUTCDate(d.getUTCDate() + Math.floor(serial));
-  return d;
+  if (serial > 19000000) {
+    // Formato YYYYMMDD
+    const s = String(Math.floor(serial));
+    const y = parseInt(s.slice(0, 4), 10);
+    const m = parseInt(s.slice(4, 6), 10) - 1;
+    const d = parseInt(s.slice(6, 8), 10);
+    return new Date(Date.UTC(y, m, d));
+  }
+  // Excel serial date (fallback)
+  const dt = new Date(Date.UTC(1899, 11, 30));
+  dt.setUTCDate(dt.getUTCDate() + Math.floor(serial));
+  return dt;
 }
 
 function fiscalYear(date: Date): string {
@@ -146,27 +155,45 @@ function needsReview(comp: ComprobanteRow): boolean {
 export async function step1Cleanup() {
   console.log('\n📦 Paso 1: Limpiando datos demo...');
 
-  const tables = [
-    'stockMovement', 'documentItem', 'documentTax', 'currentAccountEntry',
-    'cashMovement', 'payment', 'document', 'product', 'customer', 'supplier',
-  ] as const;
+  type DeleteFn = () => Promise<{ count: number }>;
 
-  const deleteMap: Record<string, () => Promise<{ count: number }>> = {
-    stockMovement:       () => prisma.stockMovement.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    documentItem:        () => prisma.documentItem.deleteMany({ where: { document: { tenantId: CONFIG.TENANT_ID } } }),
-    documentTax:         () => prisma.documentTax.deleteMany({ where: { document: { tenantId: CONFIG.TENANT_ID } } }),
-    currentAccountEntry: () => prisma.currentAccountEntry.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    cashMovement:        () => prisma.cashMovement.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    payment:             () => prisma.payment.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    document:            () => prisma.document.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    product:             () => prisma.product.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    customer:            () => prisma.customer.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-    supplier:            () => prisma.supplier.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } }),
-  };
+  // Orden FK-safe: las tablas con FK a otras se borran primero
+  const deleteMap: [string, DeleteFn][] = [
+    ['check',                () => prisma.check.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['legacyImportError',    () => prisma.legacyImportError.deleteMany({ where: { batch: { tenantId: CONFIG.TENANT_ID } } })],
+    ['legacyImportBatch',    () => prisma.legacyImportBatch.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['approvalDecision',     () => prisma.approvalDecision.deleteMany({ where: { approvalRequest: { tenantId: CONFIG.TENANT_ID } } })],
+    ['approvalRequest',      () => prisma.approvalRequest.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['documentConversion',   () => prisma.documentConversion.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['purchaseReceptionItem',() => prisma.purchaseReceptionItem.deleteMany({ where: { purchaseReception: { tenantId: CONFIG.TENANT_ID } } })],
+    ['purchaseReception',    () => prisma.purchaseReception.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['purchaseOrderItem',    () => prisma.purchaseOrderItem.deleteMany({ where: { purchaseOrder: { tenantId: CONFIG.TENANT_ID } } })],
+    ['purchaseOrder',        () => prisma.purchaseOrder.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['salesOrderItem',       () => prisma.salesOrderItem.deleteMany({ where: { salesOrder: { tenantId: CONFIG.TENANT_ID } } })],
+    ['salesOrder',           () => prisma.salesOrder.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['supplierProduct',      () => prisma.supplierProduct.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['supplierAccountEntry', () => prisma.supplierAccountEntry.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['priceListItem',        () => prisma.priceListItem.deleteMany({ where: { priceList: { tenantId: CONFIG.TENANT_ID } } })],
+    ['priceCoefficient',     () => prisma.priceCoefficient.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['productVariant',       () => prisma.productVariant.deleteMany({ where: { product: { tenantId: CONFIG.TENANT_ID } } })],
+    ['stockMovement',        () => prisma.stockMovement.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['documentItem',         () => prisma.documentItem.deleteMany({ where: { document: { tenantId: CONFIG.TENANT_ID } } })],
+    ['documentTax',          () => prisma.documentTax.deleteMany({ where: { document: { tenantId: CONFIG.TENANT_ID } } })],
+    ['currentAccountEntry',  () => prisma.currentAccountEntry.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['cashMovement',         () => prisma.cashMovement.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['cashSession',          () => prisma.cashSession.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['legacyDocumentLink',   () => prisma.legacyDocumentLink.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['payment',              () => prisma.payment.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['document',             () => prisma.document.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['product',              () => prisma.product.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['customer',             () => prisma.customer.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['supplier',             () => prisma.supplier.deleteMany({ where: { tenantId: CONFIG.TENANT_ID } })],
+    ['puntoDeVenta',         () => prisma.puntoDeVenta.deleteMany({ where: { tenantId: CONFIG.TENANT_ID, isLegacy: { not: true } } })],
+  ];
 
-  for (const table of tables) {
-    const { count } = await deleteMap[table]();
-    console.log(`   ✓ ${table}: ${count} registros eliminados`);
+  for (const [name, fn] of deleteMap) {
+    const { count } = await fn();
+    if (count > 0) console.log(`   ✓ ${name}: ${count} registros eliminados`);
   }
 }
 
@@ -221,6 +248,7 @@ async function step2Setup() {
 async function step3Catalog(comprobantes: ComprobanteRow[], stock: StockRow[]) {
   console.log('\n🏷️  Paso 3: Importando catálogo...');
 
+  // Productos: createMany con batch, mucho más rápido que upsert individual
   const productCodes = new Map<string, string>();
   for (const s of stock) {
     if (s.CodigoStProducto && !productCodes.has(s.CodigoStProducto)) {
@@ -228,64 +256,70 @@ async function step3Catalog(comprobantes: ComprobanteRow[], stock: StockRow[]) {
     }
   }
 
-  let created = 0;
-  for (const [code, name] of productCodes) {
-    await prisma.product.upsert({
-      where: { tenantId_code: { tenantId: CONFIG.TENANT_ID, code } },
-      update: {},
-      create: { tenantId: CONFIG.TENANT_ID, code, name },
-    });
-    created++;
-  }
-  console.log(`   ✓ ${created} productos creados/actualizados`);
+  const productData = [...productCodes].map(([code, name]) => ({
+    tenantId: CONFIG.TENANT_ID, code, name,
+  }));
 
-  const customerSet = new Map<string, { name: string; cuit: string; address: string; city: string; province: string; ivaCondition: string }>();
+  let productCount = 0;
+  for (let i = 0; i < productData.length; i += CONFIG.BATCH_SIZE) {
+    const batch = productData.slice(i, i + CONFIG.BATCH_SIZE);
+    await prisma.product.createMany({ data: batch, skipDuplicates: true });
+    productCount += batch.length;
+  }
+  console.log(`   ✓ ${productCount} productos creados`);
+
+  // Clientes: deduplicar por CUIT válido o nombre normalizado
+  const cuitCustomers = new Map<string, typeof comprobantes[0]>();
+  const nameCustomers = new Map<string, typeof comprobantes[0]>();
+
   for (const c of comprobantes) {
     const name = c.RazonSocialComprobante.trim();
     if (!name) continue;
-    const cuit = normalizeCuit(c.CuitComprobante) || '';
-    const key = cuit || name.toLowerCase().replace(/\s+/g, ' ');
-    if (!customerSet.has(key)) {
-      customerSet.set(key, {
-        name, cuit,
-        address: c.DomicilioComprobante,
-        city: c.LocalidadComprobante,
-        province: c.ProvinciaComprobante,
-        ivaCondition: c.CondIVAComprobante,
-      });
+    const cuit = normalizeCuit(c.CuitComprobante);
+    if (cuit && isValidCuit(cuit)) {
+      if (!cuitCustomers.has(cuit)) {
+        cuitCustomers.set(cuit, c);
+      }
+    } else {
+      const key = name.toLowerCase().replace(/\s+/g, ' ');
+      if (!nameCustomers.has(key)) {
+        nameCustomers.set(key, c);
+      }
     }
   }
 
-  let custCreated = 0;
-  for (const [, data] of customerSet) {
-    const ivaCondition = mapIvaCondition(data.ivaCondition);
-    if (data.cuit && isValidCuit(data.cuit)) {
-      await prisma.customer.upsert({
-        where: { tenantId_cuit: { tenantId: CONFIG.TENANT_ID, cuit: data.cuit } },
-        update: {},
-        create: {
-          tenantId: CONFIG.TENANT_ID, name: data.name, cuit: data.cuit,
-          address: data.address, city: data.city, province: data.province,
-          ivaCondition,
-        },
-      });
-    } else {
-      const existing = await prisma.customer.findFirst({
-        where: { tenantId: CONFIG.TENANT_ID, name: { equals: data.name, mode: 'insensitive' } },
-      });
-      if (!existing) {
-        await prisma.customer.create({
-          data: {
-            tenantId: CONFIG.TENANT_ID, name: data.name,
-            address: data.address, city: data.city, province: data.province,
-            ivaCondition,
-          },
-        });
-      }
-    }
-    custCreated++;
+  const customerInserts: Prisma.CustomerCreateManyInput[] = [];
+
+  for (const [, c] of cuitCustomers) {
+    customerInserts.push({
+      tenantId: CONFIG.TENANT_ID,
+      name: c.RazonSocialComprobante.trim(),
+      cuit: normalizeCuit(c.CuitComprobante),
+      address: c.DomicilioComprobante || null,
+      city: c.LocalidadComprobante || null,
+      province: c.ProvinciaComprobante || null,
+      ivaCondition: mapIvaCondition(c.CondIVAComprobante) as any,
+    });
   }
-  console.log(`   ✓ ${custCreated} clientes procesados`);
+
+  for (const [, c] of nameCustomers) {
+    customerInserts.push({
+      tenantId: CONFIG.TENANT_ID,
+      name: c.RazonSocialComprobante.trim(),
+      address: c.DomicilioComprobante || null,
+      city: c.LocalidadComprobante || null,
+      province: c.ProvinciaComprobante || null,
+      ivaCondition: mapIvaCondition(c.CondIVAComprobante) as any,
+    });
+  }
+
+  let custCount = 0;
+  for (let i = 0; i < customerInserts.length; i += CONFIG.BATCH_SIZE) {
+    const batch = customerInserts.slice(i, i + CONFIG.BATCH_SIZE);
+    await prisma.customer.createMany({ data: batch, skipDuplicates: true });
+    custCount += batch.length;
+  }
+  console.log(`   ✓ ${custCount} clientes creados`);
 }
 
 function mapIvaCondition(raw: string): string {
@@ -381,15 +415,7 @@ export async function runImport() {
     stockByComprobante.get(s.idcomprobante)!.push(s);
   }
 
-  // Crear batch
-  const batch = await prisma.legacyImportBatch.create({
-    data: {
-      tenantId: CONFIG.TENANT_ID,
-      source: 'Aguila3G - XLSX 2026-06-04',
-      status: 'RUNNING',
-      startedAt: new Date(),
-    },
-  });
+  let batch: any = null;
 
   try {
     // Paso 1
@@ -400,6 +426,16 @@ export async function runImport() {
 
     // Paso 3
     await step3Catalog(comprobantes, stock);
+
+    // Crear batch (después de cleanup para que no lo borre)
+    batch = await prisma.legacyImportBatch.create({
+      data: {
+        tenantId: CONFIG.TENANT_ID,
+        source: 'Aguila3G - XLSX 2026-06-04',
+        status: 'RUNNING',
+        startedAt: new Date(),
+      },
+    });
 
     // Preparar mapeo de productos por código
     const allProducts = await prisma.product.findMany({ where: { tenantId: CONFIG.TENANT_ID } });
@@ -431,59 +467,50 @@ export async function runImport() {
 
     // Batch 1: Documentos con items
     for (let i = 0; i < importablesWithDoc.length; i += CONFIG.BATCH_SIZE) {
-      const batchItems = importablesWithDoc.slice(i, i + CONFIG.BATCH_SIZE);
+      const batchComprobantes = importablesWithDoc.slice(i, i + CONFIG.BATCH_SIZE);
 
-      await prisma.$transaction(async (tx) => {
-        for (const comp of batchItems) {
+      // Pre-generar IDs + acumular data para bulk insert
+      const docInserts: Prisma.DocumentCreateManyInput[] = [];
+      const itemInserts: Prisma.DocumentItemCreateManyInput[] = [];
+      const stockInserts: Prisma.StockMovementCreateManyInput[] = [];
+      const taxInserts: Prisma.DocumentTaxCreateManyInput[] = [];
+      const docErrors: Array<{ comp: ComprobanteRow; err: string }> = [];
+
+      for (const comp of batchComprobantes) {
+        try {
           const date = serialDateToDate(comp.FechaComprobante);
           const m = LEGACY_TYPE_MAP[comp.NombreDefComprobante];
           const docType = mapDocumentType(m!);
           const stockType = mapStockMovementType(m!);
 
-          // Resolver cliente/proveedor
           let customerId: string | null = null;
-          let supplierId: string | null = null;
           const name = comp.RazonSocialComprobante.trim();
           const cuit = normalizeCuit(comp.CuitComprobante);
 
-          if (cuit && isValidCuit(cuit)) {
-            customerId = customerByCuit.get(cuit) ?? null;
-          }
-          if (!customerId && name) {
-            customerId = customerByName.get(name.toLowerCase()) ?? null;
-          }
+          if (cuit && isValidCuit(cuit)) customerId = customerByCuit.get(cuit) ?? null;
+          if (!customerId && name) customerId = customerByName.get(name.toLowerCase()) ?? null;
 
           const neto = Math.abs(comp.wNeto);
           const iva = Math.abs(comp.wIVA);
           const subtotal = neto;
           const total = neto + iva;
 
-          // Crear Document
-          const doc = await tx.document.create({
-            data: {
-              tenantId: CONFIG.TENANT_ID,
-              type: docType as any,
-              status: 'CONFIRMED',
-              puntoDeVentaId: pvId,
-              number: comp.NumeroComprobante || undefined,
-              customerId: customerId || undefined,
-              supplierId: supplierId || undefined,
-              createdById: LEGACY_USER_ID,
-              date,
-              customerNameSnapshot: comp.RazonSocialComprobante || null,
-              customerCuitSnapshot: cuit || null,
-              customerAddressSnapshot: comp.DomicilioComprobante || null,
-              customerCitySnapshot: comp.LocalidadComprobante || null,
-              customerProvinceSnapshot: comp.ProvinciaComprobante || null,
-              customerIvaConditionSnapshot: comp.CondIVAComprobante || null,
-              subtotal,
-              taxAmount: iva,
-              total,
-            },
+          const docId = crypto.randomUUID();
+          docInserts.push({
+            id: docId, tenantId: CONFIG.TENANT_ID, type: docType as any,
+            status: 'CONFIRMED', puntoDeVentaId: pvId,
+            customerId: customerId || undefined, createdById: LEGACY_USER_ID, date,
+            customerNameSnapshot: comp.RazonSocialComprobante || null,
+            customerCuitSnapshot: cuit || null,
+            customerAddressSnapshot: comp.DomicilioComprobante || null,
+            customerCitySnapshot: comp.LocalidadComprobante || null,
+            customerProvinceSnapshot: comp.ProvinciaComprobante || null,
+            customerIvaConditionSnapshot: comp.CondIVAComprobante || null,
+            subtotal, taxAmount: iva, total,
           });
-          documentMap.set(comp.idcomprobante, doc.id);
+          documentMap.set(comp.idcomprobante, docId);
 
-          // Crear DocumentItems y StockMovements desde detalle
+          // Acumular items para bulk insert
           const items = stockByComprobante.get(comp.idcomprobante) ?? [];
           for (const item of items) {
             const qty = item.CantidadStMovimiento;
@@ -491,111 +518,114 @@ export async function runImport() {
             const unitCost = Math.abs(item.CostoStMovimiento);
             const itemSubtotal = Math.abs(qty) * unitPrice;
 
-            await tx.documentItem.create({
-              data: {
-                documentId: doc.id,
-                productId: productByCode.get(item.CodigoStProducto) ?? null,
-                description: item.NombreStProducto,
-                quantity: Math.abs(qty),
-                unitPrice,
-                taxRate: 0,
-                subtotal: itemSubtotal,
-                total: itemSubtotal,
-                taxAmount: 0,
-              },
+            itemInserts.push({
+              documentId: docId, productId: productByCode.get(item.CodigoStProducto) ?? null,
+              description: item.NombreStProducto, quantity: Math.abs(qty),
+              unitPrice, taxRate: 0, subtotal: itemSubtotal, total: itemSubtotal, taxAmount: 0,
             });
 
             if (stockType && item.CodigoStProducto) {
-              await tx.stockMovement.create({
-                data: {
-                  tenantId: CONFIG.TENANT_ID,
-                  productId: productByCode.get(item.CodigoStProducto)!,
-                  depositId,
-                  type: stockType as any,
-                  quantity: qty,
-                  unitCost,
-                  documentId: doc.id,
-                  createdById: LEGACY_USER_ID,
-                  notes: `Migración legacy idComprobante ${comp.idcomprobante}`,
-                },
+              stockInserts.push({
+                tenantId: CONFIG.TENANT_ID, productId: productByCode.get(item.CodigoStProducto)!,
+                depositId, type: stockType as any, quantity: qty, unitCost,
+                documentId: docId, createdById: LEGACY_USER_ID,
+                notes: `Migración legacy idComprobante ${comp.idcomprobante}`,
               });
             }
           }
 
-          // Crear DocumentTax
-          const taxEntries: { type: string; amount: number }[] = [
+          // Acumular taxes
+          for (const t of [
             { type: 'PERCEPCION_IIBB', amount: Math.abs(comp.wPercIIBB) },
             { type: 'RETENCION_IIBB', amount: Math.abs(comp.wRetIIBB) },
             { type: 'RETENCION_GANANCIAS', amount: Math.abs(comp.wPercGcias_1) },
             { type: 'PERCEPCION_IVA', amount: Math.abs(comp.wPercIVA) },
-          ];
-
-          for (const t of taxEntries) {
+          ]) {
             if (t.amount > 0) {
-              await tx.documentTax.create({
-                data: {
-                  documentId: doc.id,
-                  type: t.type as any,
-                  amount: t.amount,
-                  base: subtotal,
-                  rate: 0,
-                },
+              taxInserts.push({
+                documentId: docId, type: t.type as any, amount: t.amount, base: subtotal, rate: 0,
               });
             }
           }
 
           docProcessed++;
+        } catch (err) {
+          docErrors.push({ comp, err: String(err) });
         }
-      });
+      }
 
-      const pct = Math.round((i + CONFIG.BATCH_SIZE) / importablesWithDoc.length * 100);
-      if (pct % 20 === 0 || pct > 95) {
-        console.log(`   ... ${Math.min(i + CONFIG.BATCH_SIZE, importablesWithDoc.length)}/${importablesWithDoc.length} docs procesados (${Math.min(pct, 100)}%)`);
+      // Fase B: bulk inserts reales (chunked para evitar timeout)
+      const CHUNK_SIZE = 2000;
+      if (docInserts.length > 0) {
+        await prisma.document.createMany({ data: docInserts });
+      }
+      if (itemInserts.length > 0) {
+        for (let j = 0; j < itemInserts.length; j += CHUNK_SIZE) {
+          await prisma.documentItem.createMany({ data: itemInserts.slice(j, j + CHUNK_SIZE) });
+        }
+      }
+      if (stockInserts.length > 0) {
+        for (let j = 0; j < stockInserts.length; j += CHUNK_SIZE) {
+          await prisma.stockMovement.createMany({ data: stockInserts.slice(j, j + CHUNK_SIZE) });
+        }
+      }
+      if (taxInserts.length > 0) {
+        for (let j = 0; j < taxInserts.length; j += CHUNK_SIZE) {
+          await prisma.documentTax.createMany({ data: taxInserts.slice(j, j + CHUNK_SIZE) });
+        }
+      }
+
+      // Registrar errores
+      for (const { comp, err } of docErrors) {
+        await prisma.legacyImportError.create({
+          data: {
+            batchId: batch.id, idComprobante: String(comp.idcomprobante),
+            entityType: 'document', message: err,
+            rawJson: { comprobante: comp.idcomprobante, error: err },
+          },
+        });
+        console.error(`   ⚠ Error #${comp.idcomprobante}: ${err.slice(0, 80)}`);
+      }
+
+      const pct = Math.round(Math.min(i + CONFIG.BATCH_SIZE, importablesWithDoc.length) / importablesWithDoc.length * 100);
+      if (pct % 10 === 0 || i === 0) {
+        console.log(`   ... ${Math.min(i + CONFIG.BATCH_SIZE, importablesWithDoc.length)}/${importablesWithDoc.length} docs procesados (${pct}%)`);
       }
     }
 
     console.log(`   ✓ ${docProcessed} documentos con detalle creados`);
 
-    // Batch 2: Documentos financieros sin detalle → CurrentAccountEntry + CashMovement
+    // Batch 2: Financieros sin detalle → CurrentAccountEntry + CashMovement
     for (let i = 0; i < financialOnly.length; i += CONFIG.BATCH_SIZE) {
       const batchItems = financialOnly.slice(i, i + CONFIG.BATCH_SIZE);
 
-      await prisma.$transaction(async (tx) => {
-        for (const comp of batchItems) {
+      for (const comp of batchItems) {
+        try {
           const date = serialDateToDate(comp.FechaComprobante);
           const m = LEGACY_TYPE_MAP[comp.NombreDefComprobante];
 
-          // Resolver cliente
           let customerId: string | null = null;
           const name = comp.RazonSocialComprobante.trim();
           const cuit = normalizeCuit(comp.CuitComprobante);
           if (cuit && isValidCuit(cuit)) customerId = customerByCuit.get(cuit) ?? null;
           if (!customerId && name) customerId = customerByName.get(name.toLowerCase()) ?? null;
 
-          // CurrentAccountEntry
           if (comp.wCtaCte !== 0 && customerId) {
-            await tx.currentAccountEntry.create({
+            await prisma.currentAccountEntry.create({
               data: {
-                tenantId: CONFIG.TENANT_ID,
-                customerId,
-                type: 'PAYMENT',
-                amount: comp.wCtaCte,
+                tenantId: CONFIG.TENANT_ID, customerId, type: 'PAYMENT', amount: comp.wCtaCte,
                 description: `${comp.NombreDefComprobante} - ${comp.LetraComprobante}${comp.PVComprobante}-${comp.NumeroComprobante}`,
-                date,
-                createdById: LEGACY_USER_ID,
+                date, createdById: LEGACY_USER_ID,
               },
             });
           }
 
-          // CashMovement
           if (comp.wCaja !== 0) {
             const isSale = m === 'PAGOS' || m === 'PAGOS_PRESUPUESTO' || m === 'RECIBOS' || m === 'RECIBOS_PRESUPUESTOS';
-            await tx.cashMovement.create({
+            await prisma.cashMovement.create({
               data: {
-                tenantId: CONFIG.TENANT_ID,
-                sessionId,
-                type: isSale ? 'SALE_PAYMENT' : 'CASH_IN',
-                method: 'CASH',
+                tenantId: CONFIG.TENANT_ID, sessionId,
+                type: isSale ? 'SALE_PAYMENT' : 'CASH_IN', method: 'CASH',
                 amount: Math.abs(comp.wCaja),
                 description: `${comp.NombreDefComprobante} - legacy ${comp.idcomprobante}`,
                 createdById: LEGACY_USER_ID,
@@ -604,8 +634,17 @@ export async function runImport() {
           }
 
           financialProcessed++;
+        } catch (err) {
+          await prisma.legacyImportError.create({
+            data: {
+              batchId: batch.id, idComprobante: String(comp.idcomprobante),
+              entityType: 'financial', message: String(err),
+              rawJson: { comprobante: comp.idcomprobante, error: String(err) },
+            },
+          });
+          console.error(`   ⚠ Error financiero #${comp.idcomprobante}: ${(err as Error).message.slice(0, 100)}`);
         }
-      });
+      }
     }
 
     console.log(`   ✓ ${financialProcessed} comprobantes financieros procesados`);

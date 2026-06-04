@@ -245,6 +245,7 @@ model Product {
   isActive    Boolean  @default(true)
   // Notas internas
   notes       String?
+  imageUrl    String?   @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
