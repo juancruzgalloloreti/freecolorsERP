@@ -69,6 +69,8 @@ model Tenant {
   approvalFlows ApprovalFlow[]
   approvalRequests ApprovalRequest[]
   documentConversions DocumentConversion[]
+  legacyDocumentLinks LegacyDocumentLink[]
+  legacyImportBatches LegacyImportBatch[]
 
   @@map("tenants")
 }
@@ -343,6 +345,7 @@ model PuntoDeVenta {
   number    Int      // número AFIP (1, 2, 3...)
   name      String   // ej: "Local Principal", "Depósito"
   isActive  Boolean  @default(true)
+  isLegacy  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -401,6 +404,7 @@ model Document {
   cashMovements  CashMovement[]
   supplierAccountEntries SupplierAccountEntry[]
   salesOrders    SalesOrder[]
+  legacyLinks    LegacyDocumentLink[]
 
   @@unique([tenantId, puntoDeVentaId, type, number])
   @@index([tenantId, customerId, status])
@@ -894,8 +898,8 @@ model PriceCoefficient {
   multiplier Decimal               @db.Decimal(12, 6)
   validFrom  DateTime?
   validTo    DateTime?
-  isActive   Boolean               @default(true)
-  createdAt  DateTime              @default(now())
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
   updatedAt  DateTime              @updatedAt
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1251,4 +1255,65 @@ enum ConversionStatus {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+// ─────────────────────────────────────────────────────────────
+// MIGRACIÓN LEGACY — Trazabilidad de importación histórica
+// ─────────────────────────────────────────────────────────────
+
+model LegacyDocumentLink {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  documentId          String?
+  legacyIdComprobante String
+  legacyDocumentName  String?
+  legacyType          String?
+  legacyLetter        String?
+  legacyPos           Int?
+  legacyNumber        Int?
+  legacyDate          DateTime?
+  rawJson             Json
+  status              String    @default("OK")
+  statusNote          String?
+  createdAt           DateTime  @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id])
+
+  @@unique([tenantId, legacyIdComprobante])
+  @@index([tenantId, status])
+  @@map("legacy_document_links")
+}
+
+model LegacyImportBatch {
+  id          String   @id @default(cuid())
+  tenantId    String
+  source      String
+  status      String   @default("PENDING")
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  summaryJson Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  errors LegacyImportError[]
+
+  @@index([tenantId, status])
+  @@map("legacy_import_batches")
+}
+
+model LegacyImportError {
+  id            String   @id @default(cuid())
+  batchId       String
+  idComprobante String
+  entityType    String
+  field         String?
+  message       String
+  rawJson       Json     @default("{}")
+  createdAt     DateTime @default(now())
+
+  batch LegacyImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@map("legacy_import_errors")
 }
