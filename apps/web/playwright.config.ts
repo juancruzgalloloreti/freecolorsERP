@@ -1,21 +1,26 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e/tests',
-  fullyParallel: false,
-  workers: 1,
-  reporter: [['html', { open: 'never' }], ['list']],
+  timeout: 60000,
+  retries: 1,
   use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
+    baseURL: 'http://localhost:3002',
+    headless: true,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    actionTimeout: 15000,
   },
-  projects: [
+  webServer: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      command: 'node ../../apps/api/dist/main.js',
+      port: 3001,
+      cwd: '../../apps/api',
+      reuseExistingServer: true,
+    },
+    {
+      command: 'npx next dev -p 3002',
+      port: 3002,
+      cwd: '.',
+      reuseExistingServer: true,
     },
   ],
-});
+})

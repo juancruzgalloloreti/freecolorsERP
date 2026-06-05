@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma, PurchaseOrderStatus, StockMovementType } from '@erp/db'
 import { PrismaService } from '../common/prisma.service'
+import { pageParams, paged } from '../common/pagination'
 import { recalculateAverageCost } from '../common/cost-utils'
 import { parseMoney } from '../common/money'
 
@@ -9,32 +10,29 @@ import { parseMoney } from '../common/money'
 export class PurchasesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string, params?: { supplierId?: string; status?: string }) {
-    return this.prisma.purchaseOrder.findMany({
-      where: {
-        tenantId,
-        ...(params?.supplierId && { supplierId: params.supplierId }),
-        ...(params?.status && { status: params.status as any }),
-      },
-      include: {
-        supplier: true,
-        items: {
-          include: {
-            product: true,
-          },
+  async findAll(tenantId: string, query?: { supplierId?: string; status?: string; page?: number | string; limit?: number | string }) {
+    const shouldPage = query?.page !== undefined;
+    const { page, limit, skip } = pageParams(query || {}, 50, 200);
+    const where: any = {
+      tenantId,
+      ...(query?.supplierId && { supplierId: query.supplierId }),
+      ...(query?.status && { status: query.status as any }),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where,
+        include: {
+          supplier: true,
+          items: { include: { product: true } },
+          createdBy: { select: { id: true, firstName: true, lastName: true } },
         },
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        orderDate: 'desc',
-      },
-    })
+        orderBy: { orderDate: 'desc' },
+        skip: shouldPage ? skip : undefined,
+        take: shouldPage ? limit : 50,
+      }),
+      shouldPage ? this.prisma.purchaseOrder.count({ where }) : Promise.resolve(0),
+    ]);
+    return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 
   async findById(id: string, tenantId: string) {

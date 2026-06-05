@@ -76,9 +76,8 @@ function apiMessage(error: unknown, fallback: string) {
   return Array.isArray(message) ? message.join(', ') : message
 }
 
-function MovementModal({ deposits, products, onClose, onSave }: {
+function MovementModal({ deposits, onClose, onSave }: {
   deposits: { id: string; name: string }[]
-  products: { id: string; code: string; name: string; unit: string }[]
   onClose: () => void
   onSave: (d: Record<string, unknown>) => void
 }) {
@@ -95,7 +94,20 @@ function MovementModal({ deposits, products, onClose, onSave }: {
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
   const [search, setSearch] = useState('')
-  const filtered = products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.code.toLowerCase().includes(search.toLowerCase())).slice(0, 50)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+  const { data: searchResults } = useQuery({
+    queryKey: ['product-search-stock', debouncedSearch],
+    queryFn: () => debouncedSearch ? productsApi.search({ q: debouncedSearch, limit: 50 }) : Promise.resolve([]),
+    enabled: mode === 'existing',
+  })
+  const filtered: { id: string; code: string; name: string; unit: string }[] = useMemo(
+    () => Array.isArray(searchResults) ? searchResults : (searchResults as { data?: { id: string; code: string; name: string; unit: string }[] })?.data || [],
+    [searchResults]
+  )
   const canSave = Boolean(
     form.depositId &&
     form.quantity &&
@@ -194,6 +206,7 @@ function StockPage() {
   }, [])
   const [modal, setModal] = useState(false)
   const [search, setSearch] = useState('')
+  const [stockPage, setStockPage] = useState(1)
   const [tab, setTab] = useState<'current' | 'movements'>('current')
   const [movementPage, setMovementPage] = useState(1)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -202,10 +215,19 @@ function StockPage() {
   const [bulkError, setBulkError] = useState<string | null>(null)
   const [bulkResult, setBulkResult] = useState<string | null>(null)
 
+  useEffect(() => {
+    setStockPage(1)
+  }, [search])
+
   const { data: stockData, isLoading } = useQuery({
-    queryKey: ['stock-current', search],
-    queryFn: () => stockApi.current({ search: search || undefined }),
+    queryKey: ['stock-current', search, stockPage],
+    queryFn: () => stockApi.current({ search: search || undefined, page: stockPage, limit: 100 }),
     enabled: tab === 'current',
+  })
+  const { data: summaryData } = useQuery({
+    queryKey: ['stock-summary', search],
+    queryFn: () => stockApi.summary({ search: search || undefined }),
+    enabled: tab === 'current' && isOwner,
   })
   const { data: movementsData, isLoading: movLoading } = useQuery({
     queryKey: ['stock-movements', movementPage],
@@ -213,7 +235,6 @@ function StockPage() {
     enabled: tab === 'movements',
   })
   const { data: deposits } = useQuery({ queryKey: ['deposits'], queryFn: stockApi.deposits })
-  const { data: products } = useQuery({ queryKey: ['products-all'], queryFn: () => productsApi.list({ limit: 9999 }) })
 
   const recordMutation = useMutation({
     mutationFn: stockApi.record,
@@ -225,9 +246,9 @@ function StockPage() {
 
   function refreshStock() {
     qc.invalidateQueries({ queryKey: ['stock-current'] })
+    qc.invalidateQueries({ queryKey: ['stock-summary'] })
     qc.invalidateQueries({ queryKey: ['stock-movements'] })
     qc.invalidateQueries({ queryKey: ['products'] })
-    qc.invalidateQueries({ queryKey: ['products-all'] })
   }
 
   const stock: StockItem[] = useMemo(
@@ -237,10 +258,6 @@ function StockPage() {
   const movements = useMemo(
     () => Array.isArray(movementsData) ? movementsData : (movementsData as { data?: unknown[] } | undefined)?.data || [],
     [movementsData]
-  )
-  const prods = useMemo(
-    () => Array.isArray(products) ? products : (products as { data?: { id: string; code: string; name: string; unit: string }[] } | undefined)?.data || [],
-    [products]
   )
   const deps = useMemo(
     () => Array.isArray(deposits) ? deposits : [],
@@ -366,7 +383,7 @@ function StockPage() {
   const typeLabel = (t: string) => MOVEMENT_TYPES.find(m => m.value === t)?.label || t
   const typeIsIn = (t: string) => MOVEMENT_TYPES.find(m => m.value === t)?.in ?? true
 
-  const totalValue = isOwner ? stock.reduce((acc, s) => acc + Number(s.qty) * Number(s.avgCost || 0), 0) : 0
+  const totalValue = summaryData?.totalValue ?? 0
 
   return (
     <div>
@@ -403,7 +420,7 @@ function StockPage() {
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '10px', padding: '10px 16px' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Items en stock</span>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#4ade80', marginTop: '2px' }}>{stock.length}</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', color: '#4ade80', marginTop: '2px' }}>{stockData?.meta?.total ?? stock.length}</div>
           </div>
           {isOwner && (
             <div style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: '10px', padding: '10px 16px' }}>
@@ -519,17 +536,17 @@ function StockPage() {
                           <td style={{ fontWeight: '500' }}>{s.productName}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{s.depositName}</td>
                           <td style={{ textAlign: 'right' }}>
-                            <span className={`badge ${Number(s.qty) <= 0 ? 'badge-red' : Number(s.qty) < 5 ? 'badge-yellow' : 'badge-green'}`}>
+                            <span className={`badge ${Number(s.qty) < 0 ? 'badge-red' : Number(s.qty) === 0 ? 'badge-yellow' : 'badge-green'}`}>
                               {Number(s.qty).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                             </span>
                           </td>
                           {isOwner && (
-                            <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '13px' }}>
+                            <td className="tabular-nums" style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '13px' }}>
                               ${Number(s.avgCost || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
                           )}
                           {isOwner && (
-                            <td style={{ textAlign: 'right', fontWeight: '600', color: 'var(--fc-text)' }}>
+                            <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: '600', color: 'var(--fc-text)' }}>
                               {ARS.format(Number(s.totalValue ?? (Number(s.qty) * Number(s.avgCost || 0))))}
                             </td>
                           )}
@@ -559,7 +576,7 @@ function StockPage() {
                       <div className="stock-card-meta">
                         <span>{s.depositName}</span>
                         <span>{s.unit}</span>
-                        <span className={`badge ${Number(s.qty) <= 0 ? 'badge-red' : Number(s.qty) < 5 ? 'badge-yellow' : 'badge-green'}`}>
+                        <span className={`badge ${Number(s.qty) < 0 ? 'badge-red' : Number(s.qty) === 0 ? 'badge-yellow' : 'badge-green'}`}>
                           {Number(s.qty).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -572,6 +589,17 @@ function StockPage() {
                     </article>
                   )
                 })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
+                <button className="fc-button fc-button-secondary" disabled={stockPage <= 1} onClick={() => setStockPage(p => Math.max(1, p - 1))}>
+                  Anterior
+                </button>
+                <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Pág. {stockPage} {stockData?.meta?.pages ? `de ${stockData.meta.pages}` : ''}
+                </span>
+                <button className="fc-button fc-button-secondary" disabled={!stockData?.meta?.pages || stockPage >= stockData.meta.pages} onClick={() => setStockPage(p => p + 1)}>
+                  Siguiente
+                </button>
               </div>
               </>
             )}
@@ -673,7 +701,6 @@ function StockPage() {
       {modal && (
         <MovementModal
           deposits={deps as { id: string; name: string }[]}
-          products={prods as { id: string; code: string; name: string; unit: string }[]}
           onClose={() => setModal(false)}
           onSave={d => recordMutation.mutate(d)}
         />

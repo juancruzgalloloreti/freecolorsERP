@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { StockModule } from './stock/stock.module';
@@ -28,6 +29,9 @@ import { ChecksModule } from './checks/checks.module';
 
     // Rate limiting: 100 req / minuto por IP
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+
+    // Cache en memoria para endpoints read-only
+    CacheModule.register({ isGlobal: true, ttl: 3600_000 }),
 
     // Módulos de negocio
     HealthModule,

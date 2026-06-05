@@ -141,6 +141,8 @@ export const productsApi = {
 export const stockApi = {
   current: (params?: Record<string, unknown>) =>
     api.get('/stock', { params }).then((r) => r.data),
+  summary: (params?: Record<string, unknown>) =>
+    api.get('/stock/summary', { params }).then((r) => r.data),
   movements: (params?: Record<string, unknown>) =>
     api.get('/stock/movements', { params }).then((r) => r.data),
   record: (data: Record<string, unknown>) =>
@@ -152,6 +154,8 @@ export const stockApi = {
 export const documentsApi = {
   list: (params?: Record<string, unknown>) =>
     api.get('/documents', { params }).then((r) => r.data),
+  summary: (params?: Record<string, unknown>) =>
+    api.get('/documents/summary', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/documents/${id}`).then((r) => r.data),
   create: (data: Record<string, unknown>) =>
     api.post('/documents', data).then((r) => r.data),
@@ -201,8 +205,8 @@ export const customersApi = {
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/customers/${id}`, data).then((r) => r.data),
   remove: (id: string) => api.delete(`/customers/${id}`),
-  account: (id: string) =>
-    api.get(`/customers/${id}/account`).then((r) => r.data),
+  account: (id: string, params?: Record<string, unknown>) =>
+    api.get(`/customers/${id}/account`, { params }).then((r) => r.data),
 }
 
 // ─── Suppliers ──────────────────────────────────────────────

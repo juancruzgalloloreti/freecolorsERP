@@ -29,6 +29,14 @@ const statusLabels: Record<CheckRow['status'], string> = {
   ENDORSED: 'Endosado',
   CANCELLED: 'Cancelado',
 }
+const statusBadgeClass: Record<CheckRow['status'], string> = {
+  RECEIVED:  'badge-yellow',
+  DEPOSITED: 'badge-orange',
+  CLEARED:   'badge-green',
+  BOUNCED:   'badge-red',
+  ENDORSED:  'badge-gray',
+  CANCELLED: 'badge-gray',
+}
 
 function apiMessage(error: unknown, fallback: string) {
   const apiError = error as { response?: { data?: { message?: string | string[]; error?: string } }; message?: string }
@@ -175,12 +183,12 @@ export default function ChequesPage() {
                     <td>{check.bank}</td>
                     <td>{check.accountOwner}</td>
                     <td>{new Date(check.dueDate).toLocaleDateString('es-AR')}</td>
-                    <td className="money-cell strong">{ARS.format(Number(check.amount || 0))}</td>
+                    <td className="tabular-nums" style={{ textAlign: 'right' }}>{ARS.format(Number(check.amount || 0))}</td>
                     <td>
                       <div style={{ display: 'grid', gap: 3 }}>
-                        <span>{statusLabels[check.status]}</span>
-                        {check.endorsedTo && <small>Endosado a {check.endorsedTo}</small>}
-                        {check.rejectionReason && <small>Motivo: {check.rejectionReason}</small>}
+                        <span className={`badge ${statusBadgeClass[check.status]}`}>{statusLabels[check.status]}</span>
+                        {check.endorsedTo && <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>→ {check.endorsedTo}</small>}
+                        {check.rejectionReason && <small style={{ color: '#f87171', fontSize: '11px' }}>{check.rejectionReason}</small>}
                       </div>
                     </td>
                     <td>

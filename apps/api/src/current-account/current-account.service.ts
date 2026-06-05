@@ -7,7 +7,7 @@ import { pageParams, paged } from '../common/pagination';
 export class CurrentAccountService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string, query: { page?: number | string; limit?: number | string; customerId?: string; dateFrom?: string; dateTo?: string } = {}): Promise<any> {
+  async findAll(tenantId: string, query: { page?: number | string; limit?: number | string; customerId?: string; dateFrom?: string; dateTo?: string; search?: string } = {}): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);
     const where: any = { tenantId, customerId: query.customerId };
@@ -16,6 +16,13 @@ export class CurrentAccountService {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
         ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
       };
+    }
+    if (query.search) {
+      const q = query.search.trim();
+      where.OR = [
+        { description: { contains: q, mode: 'insensitive' } },
+        { customer: { name: { contains: q, mode: 'insensitive' } } },
+      ];
     }
     Object.keys(where).forEach((key) => where[key] === undefined && delete where[key]);
 
@@ -57,6 +64,7 @@ export class CurrentAccountService {
           ${query.customerId ? Prisma.sql`AND e."customerId" = ${query.customerId}` : Prisma.empty}
           ${query.dateFrom ? Prisma.sql`AND e."date" >= ${new Date(query.dateFrom)}` : Prisma.empty}
           ${query.dateTo ? Prisma.sql`AND e."date" <= ${new Date(query.dateTo)}` : Prisma.empty}
+          ${query.search ? Prisma.sql`AND (e.description ILIKE ${'%' + query.search + '%'} OR c.name ILIKE ${'%' + query.search + '%'})` : Prisma.empty}
         ORDER BY e."customerId", e."date" ASC, e.id ASC
       )
       SELECT
@@ -73,12 +81,11 @@ export class CurrentAccountService {
           ORDER BY f.date ASC, f.id ASC
         )::float as "runningBalance"
       FROM filtered f
+      ORDER BY f.date DESC, f.id DESC
       ${shouldPage ? Prisma.sql`LIMIT ${limit} OFFSET ${skip}` : Prisma.sql`LIMIT 200 OFFSET 0`}
     `;
 
-    const total = realBalance !== undefined
-      ? await this.prisma.currentAccountEntry.count({ where })
-      : rows.length;
+    const total = await this.prisma.currentAccountEntry.count({ where });
 
     const formatted = rows.map((row) => ({
       id: row.id,
@@ -91,8 +98,6 @@ export class CurrentAccountService {
       date: row.date,
       createdAt: row.createdAt,
     }));
-
-    formatted.reverse();
 
     if (realBalance !== undefined) {
       return shouldPage

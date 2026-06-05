@@ -131,12 +131,12 @@ export default function ProveedoresPage() {
             <p>No hay proveedores registrados</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="fc-table">
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table className="fc-table" style={{ minWidth: 700 }}>
               <thead>
                 <tr>
                   <th>Razón Social</th>
-                  <th>CUIT</th>
+                  <th style={{ minWidth: 120 }}>CUIT</th>
                   <th>Teléfono</th>
                   <th>Email</th>
                   <th>Localidad</th>
@@ -149,12 +149,12 @@ export default function ProveedoresPage() {
                 {suppliers.map((p) => (
                   <tr key={p.id}>
                     <td style={{ fontWeight: '500' }}>{p.razonSocial}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{p.cuit || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.direccion || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || ''}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || ''}</td>
+                    <td className="tabular-nums" style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>{p.cuit || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.direccion || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || '—'}</td>
                     {canManageSuppliers && (
                       <td>
                         <div style={{ display: 'flex', gap: '4px' }}>

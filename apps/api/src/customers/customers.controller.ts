@@ -12,7 +12,7 @@ export class CustomersController {
   constructor(private readonly service: CustomersService) {}
 
   @Get()
-  @RequirePermission('customers.list')
+  @RequirePermission('customer.view')
   findAll(@Req() req: any, @Query() query: any) { return this.service.findAll(req.user.tenantId, query); }
 
   @Get('export')
@@ -24,7 +24,7 @@ export class CustomersController {
   }
 
   @Get(':id/account')
-  @RequirePermission('customers.list')
+  @RequirePermission('customer.view')
   account(@Req() req: any, @Param('id') id: string, @Query() query: any) { return this.service.account(req.user.tenantId, id, query); }
 
   @Post()

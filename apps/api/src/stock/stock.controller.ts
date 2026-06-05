@@ -14,6 +14,10 @@ export class StockController {
   @RequirePermission('stock.view')
   current(@Req() req: any, @Query() query: any) { return this.service.current(req.user.tenantId, req.user.role, query); }
 
+  @Get('summary')
+  @RequirePermission('stock.view')
+  summary(@Req() req: any, @Query() query: any) { return this.service.summary(req.user.tenantId, req.user.role, query); }
+
   @Get('movements')
   @RequirePermission('stock.view')
   movements(@Req() req: any, @Query() query: any) { return this.service.movements(req.user.tenantId, req.user.role, query); }

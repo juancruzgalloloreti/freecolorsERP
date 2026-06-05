@@ -172,6 +172,70 @@ export class DocumentsService {
     return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 
+  async summary(tenantId: string, query: { types?: string; status?: string; type?: string; search?: string; dateFrom?: string; dateTo?: string; amountMin?: string | number; amountMax?: string | number }): Promise<any> {
+    const where: Prisma.DocumentWhereInput = { tenantId };
+    const documentTypes = new Set<string>(Object.values(DocumentType));
+    const documentStatuses = new Set<string>(Object.values(DocumentStatus));
+    if (query.types) {
+      const types = query.types.split(',').filter((value): value is DocumentType => documentTypes.has(value));
+      if (types.length) where.type = { in: types };
+    }
+    if (query.type && documentTypes.has(query.type)) where.type = query.type as DocumentType;
+    if (query.status && documentStatuses.has(query.status)) where.status = query.status as DocumentStatus;
+    if (query.dateFrom || query.dateTo) {
+      const dateTo = query.dateTo ? new Date(query.dateTo) : null;
+      if (dateTo) dateTo.setHours(23, 59, 59, 999);
+      where.date = {
+        ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+        ...(dateTo ? { lte: dateTo } : {}),
+      };
+    }
+    const amountMin = this.optionalNumber(query.amountMin);
+    const amountMax = this.optionalNumber(query.amountMax);
+    if (amountMin !== null || amountMax !== null) {
+      where.total = {
+        ...(amountMin !== null ? { gte: amountMin } : {}),
+        ...(amountMax !== null ? { lte: amountMax } : {}),
+      };
+    }
+    const q = query.search?.toLowerCase().trim();
+    if (q) {
+      const normalized = q.toUpperCase().replace(/\s+/g, '_');
+      const numberCandidate = Number(q.includes('-') ? q.split('-').pop() : q);
+      const typeMatches = Object.values(DocumentType).filter((value) => value.toLowerCase().includes(q) || value.includes(normalized));
+      const statusMatches = Object.values(DocumentStatus).filter((value) => value.toLowerCase().includes(q) || value.includes(normalized));
+      where.OR = [
+        { customerNameSnapshot: { contains: q, mode: 'insensitive' } },
+        { customerCuitSnapshot: { contains: q, mode: 'insensitive' } },
+        { notes: { contains: q, mode: 'insensitive' } },
+        { customer: { is: { name: { contains: q, mode: 'insensitive' } } } },
+        { customer: { is: { cuit: { contains: q, mode: 'insensitive' } } } },
+        { supplier: { is: { name: { contains: q, mode: 'insensitive' } } } },
+        { supplier: { is: { cuit: { contains: q, mode: 'insensitive' } } } },
+        ...(Number.isInteger(numberCandidate) ? [{ number: numberCandidate }] : []),
+        ...(typeMatches.length ? [{ type: { in: typeMatches } }] : []),
+        ...(statusMatches.length ? [{ status: { in: statusMatches } }] : []),
+      ];
+    }
+
+    const [totalCount, confirmedCount, draftCount, confirmedSum] = await Promise.all([
+      this.prisma.document.count({ where }),
+      this.prisma.document.count({ where: { ...where, status: DocumentStatus.CONFIRMED } }),
+      this.prisma.document.count({ where: { ...where, status: DocumentStatus.DRAFT } }),
+      this.prisma.document.aggregate({
+        where: { ...where, status: DocumentStatus.CONFIRMED },
+        _sum: { total: true },
+      }),
+    ]);
+
+    return {
+      totalCount,
+      confirmedCount,
+      draftCount,
+      confirmedRevenue: Number(confirmedSum._sum.total ?? 0),
+    };
+  }
+
   async get(tenantId: string, id: string): Promise<any> {
     const document = await this.prisma.document.findFirst({
       where: { id, tenantId },

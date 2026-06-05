@@ -22,7 +22,7 @@ async function main() {
   const raw = fs.readFileSync('/home/ten/Downloads/productos-ultimo.csv', 'latin1');
   const lines = raw.split('\n').filter(l => l.trim());
 
-  interface Row { codigo: string; nombre: string; precio_sin_iva: number; marca: string; costo_reposicion: number; costo_ult_cp: number; }
+  interface Row { codigo: string; nombre: string; precio_sin_iva: number; marca: string; costo_reposicion: number; costo_ult_cp: number; stock: number; }
   const csvRows: Row[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(';');
@@ -35,6 +35,7 @@ async function main() {
       marca: (cols[16] || '').trim(),
       costo_reposicion: parsePrice(cols[19] || '0'),
       costo_ult_cp: parsePrice(cols[20] || '0'),
+      stock: parseInt(cols[5] || '0', 10) || 0,
     });
   }
   console.log(`📄 CSV: ${csvRows.length} productos\n`);
@@ -58,7 +59,7 @@ async function main() {
   if (toUpdate.length > 0) {
     const values = toUpdate.map(r => {
       const bid = r.marca ? brandByName.get(r.marca.toLowerCase()) ?? null : null;
-      return `(${esc(r.codigo)}, ${esc(bid)}, ${esc(r.precio_sin_iva || null)}, ${esc(r.costo_reposicion || null)}, ${esc(r.costo_ult_cp || null)})`;
+      return `(${esc(r.codigo)}, ${esc(bid)}, ${esc(r.precio_sin_iva || null)}, ${esc(r.costo_reposicion || null)}, ${esc(r.costo_ult_cp || null)}, ${esc(r.stock)})`;
     }).join(',\n');
 
     await erp.$executeRawUnsafe(`
@@ -66,8 +67,9 @@ async function main() {
         "brandId" = v.brand_id,
         "basePrice" = v.base_price,
         "replacementCost" = v.replacement_cost,
-        "lastPurchaseCost" = v.last_purchase_cost
-      FROM (VALUES ${values}) AS v(code, brand_id, base_price, replacement_cost, last_purchase_cost)
+        "lastPurchaseCost" = v.last_purchase_cost,
+        "stock" = v.stock
+      FROM (VALUES ${values}) AS v(code, brand_id, base_price, replacement_cost, last_purchase_cost, stock)
       WHERE products."tenantId" = ${esc(T)}
         AND products.code = v.code
     `);
@@ -87,6 +89,7 @@ async function main() {
           basePrice: r.precio_sin_iva || undefined,
           replacementCost: r.costo_reposicion || undefined,
           lastPurchaseCost: r.costo_ult_cp || undefined,
+          stock: r.stock || 0,
           brandId: r.marca ? brandByName.get(r.marca.toLowerCase()) ?? undefined : undefined,
         })),
         skipDuplicates: true,
@@ -97,19 +100,31 @@ async function main() {
 
   // PriceList 2 → formula = basePrice * 0.60
   console.log('\n💰 Configurando Lista 2 = basePrice * 0.60...');
-  const priceList2 = await erp.priceList.upsert({
+  await erp.priceList.upsert({
     where: { tenantId_name: { tenantId: T, name: 'Lista 2' } },
-    create: { tenantId: T, name: 'Lista 2', formula: 'basePrice * 0.60' },
-    update: { formula: 'basePrice * 0.60' },
+    create: {
+      tenantId: T, name: 'Lista 2',
+      formulaBaseCode: 'basePrice',
+      formulaOperation: 'multiply',
+      formulaCoefficient: 0.60,
+      formulaRoundingMode: 'nearest',
+    },
+    update: {
+      formulaBaseCode: 'basePrice',
+      formulaOperation: 'multiply',
+      formulaCoefficient: 0.60,
+      formulaRoundingMode: 'nearest',
+    },
   });
-  console.log('   ✓ Lista 2 actualizada con formula = basePrice * 0.60');
+  console.log('   ✓ Lista 2: basePrice * 0.60');
 
   // Confirmación
   console.log('\n📊 Reconciliación...');
   const c = await erp.product.count({ where: { tenantId: T } });
   const cp = await erp.product.count({ where: { tenantId: T, basePrice: { not: null } } });
   const cc = await erp.product.count({ where: { tenantId: T, replacementCost: { not: null } } });
-  console.log(`   Productos: ${c} (con precio: ${cp}, con costo: ${cc})`);
+  const cs = await erp.product.count({ where: { tenantId: T, stock: { gt: 0 } } });
+  console.log(`   Productos: ${c} (con precio: ${cp}, con costo: ${cc}, con stock: ${cs})`);
 
   await erp.$disconnect();
   console.log('\n✅ COMPLETADO');

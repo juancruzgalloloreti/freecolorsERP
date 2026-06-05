@@ -246,6 +246,7 @@ model Product {
   // Notas internas
   notes       String?
   imageUrl    String?   @db.Text
+  stock       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

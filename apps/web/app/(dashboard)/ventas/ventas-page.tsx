@@ -278,7 +278,17 @@ export default function VentasPage() {
   const loadedResumeIdRef = useRef<string | null>(null)
   const pendingResumeRef = useRef<ResumableDocument | null>(null)
 
-  const { data: customersRaw } = useQuery({ queryKey: ['customers-counter'], queryFn: () => customersApi.list({ limit: 500 }) })
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerSearchDebounced, setCustomerSearchDebounced] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setCustomerSearchDebounced(customerSearch), 300)
+    return () => clearTimeout(t)
+  }, [customerSearch])
+
+  const { data: customersRaw } = useQuery({
+    queryKey: ['customers-counter', customerSearchDebounced],
+    queryFn: () => customersApi.list({ search: customerSearchDebounced || undefined, limit: 40 }),
+  })
   const { data: priceListsRaw } = useQuery({ queryKey: ['price-lists-counter'], queryFn: priceListsApi.list })
   const { data: depositsRaw } = useQuery({ queryKey: ['deposits-counter'], queryFn: stockApi.deposits })
   const { data: puntosRaw } = useQuery({ queryKey: ['puntos-counter'], queryFn: documentsApi.puntos })
@@ -542,6 +552,10 @@ export default function VentasPage() {
     setPayments([])
     setGlobalDiscount('')
     setIncludeVat(false)
+    setCustomerId('')
+    setPriceListId('')
+    setDepositId('')
+    setPuntoDeVentaId('')
   }
 
   const printLastDocument = async () => {
@@ -927,15 +941,44 @@ export default function VentasPage() {
               </label>
               <label className="operation-field operation-field-customer">
                 <span>Cliente</span>
-                <select className="fc-input" value={customerId} onChange={(event) => {
-                  const next = event.target.value
-                  setCustomerId(next)
-                  const customer = customers.find((item) => item.id === next)
-                  if (customer?.priceListId) setPriceListId(customer.priceListId)
-                }}>
-                  <option value="">Consumidor final</option>
-                  {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  {customerId && !customerSearch ? (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <span className="fc-input" style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {customers.find(c => c.id === customerId)?.name || 'Cliente seleccionado'}
+                      </span>
+                      <button type="button" className="btn btn-icon btn-secondary btn-sm" title="Cambiar cliente" onClick={() => { setCustomerId(''); setCustomerSearch('') }}>
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                      <input
+                        className="fc-input"
+                        style={{ paddingLeft: 26, fontSize: 13 }}
+                        placeholder="Consumidor final"
+                        value={customerSearch}
+                        onChange={e => setCustomerSearch(e.target.value)}
+                      />
+                      {customerSearch && customers.length > 0 && (
+                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--fc-bg)', border: '1px solid var(--fc-border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', maxHeight: 180, overflowY: 'auto', marginTop: 3 }}>
+                          {customers.map(c => (
+                            <button key={c.id} type="button"
+                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, background: 'none', border: 'none', color: 'var(--fc-text)', cursor: 'pointer' }}
+                              onMouseDown={() => {
+                                setCustomerId(c.id)
+                                setCustomerSearch('')
+                                if (c.priceListId) setPriceListId(c.priceListId)
+                              }}>
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </label>
               <button className="btn btn-secondary operation-customer-button" type="button" data-customer-action="true" onClick={openCustomerSheet} disabled={!canUseCounter}>
                 Datos fiscales / entrega
@@ -1068,7 +1111,7 @@ export default function VentasPage() {
                                   {[product.brandName, product.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}
                                 </small>
                               </td>
-                              <td className="counter-product-stock">{Number(product.stock || 0).toLocaleString('es-AR')}</td>
+                              <td className={`counter-product-stock tabular-nums ${Number(product.stock ?? 0) < 0 ? 'stock-negative' : Number(product.stock ?? 0) === 0 ? 'stock-zero' : ''}`}>{Number(product.stock ?? 0).toLocaleString('es-AR')}</td>
                               {COUNTER_PRICE_COLUMNS.map((code) => (
                                 <td className="counter-product-price" key={code}>{formatCounterListPrice(product, code)}</td>
                               ))}
@@ -1112,7 +1155,7 @@ export default function VentasPage() {
                                 {product.appliedCoefficientName}
                               </small>
                             )}
-                            <small>Stock {Number(product.stock || 0).toLocaleString('es-AR')}</small>
+                            <small className={Number(product.stock ?? 0) < 0 ? 'stock-negative' : Number(product.stock ?? 0) === 0 ? 'stock-zero' : ''}>Stock {Number(product.stock ?? 0).toLocaleString('es-AR')}</small>
                             {product.pricesByList && (
                               <small className="result-price-strip">
                                 {COUNTER_PRICE_COLUMNS.map((code) => (
@@ -1309,8 +1352,8 @@ export default function VentasPage() {
                 <strong>{productDetail.name}</strong>
                 <span>{[productDetail.brandName, productDetail.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</span>
               </div>
-              <span className={`badge ${Number(productDetail.stock || 0) > 0 ? 'badge-green' : 'badge-yellow'}`}>
-                Stock {Number(productDetail.stock || 0).toLocaleString('es-AR')}
+              <span className={`badge ${Number(productDetail.stock ?? 0) < 0 ? 'badge-red' : Number(productDetail.stock ?? 0) === 0 ? 'badge-yellow' : 'badge-green'}`}>
+                Stock {Number(productDetail.stock ?? 0).toLocaleString('es-AR')}
               </span>
             </div>
             <div className="detail-kv">

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermissionGuard } from '../permissions/guards/require-permission.guard';
 import { RequirePermission } from '../permissions/decorators/require-permission.decorator';
@@ -18,6 +19,8 @@ export class ProductsController {
   search(@Req() req: any, @Query() query: any): any { return this.service.search(req.user.tenantId, query); }
 
   @Get('brands')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(3600_000)
   brands(@Req() req: any) { return this.service.listBrands(req.user.tenantId); }
 
   @Post('brands')
@@ -25,6 +28,8 @@ export class ProductsController {
   createBrand(@Req() req: any, @Body() body: any) { return this.service.createBrand(req.user.tenantId, req.user.role, body); }
 
   @Get('categories')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(3600_000)
   categories(@Req() req: any) { return this.service.listCategories(req.user.tenantId); }
 
   @Post('categories')

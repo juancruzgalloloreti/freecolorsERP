@@ -8,7 +8,8 @@ import { DocumentsService } from './documents.service';
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}
-  @Get() @RequirePermission('document.list') findAll(@Req() req: any, @Query() query: any) { return this.service.findAll(req.user.tenantId, query); }
+  @Get() @RequirePermission('document.view') findAll(@Req() req: any, @Query() query: any) { return this.service.findAll(req.user.tenantId, query); }
+  @Get('summary') @RequirePermission('document.view') summary(@Req() req: any, @Query() query: any) { return this.service.summary(req.user.tenantId, query); }
   @Get('conversions') @RequirePermission('document.view') conversions(@Req() req: any, @Query() query: any) { return this.service.getConversions(req.user.tenantId, query.sourceId, query.status); }
   @Get('puntos-de-venta') @RequirePermission('document.view') puntos(@Req() req: any) { return this.service.puntos(req.user.tenantId); }
   @Get(':id') @RequirePermission('document.view') get(@Req() req: any, @Param('id') id: string) { return this.service.get(req.user.tenantId, id); }

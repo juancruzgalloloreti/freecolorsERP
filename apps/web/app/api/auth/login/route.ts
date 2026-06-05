@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
   const nextResponse = NextResponse.json(data)
   nextResponse.cookies.set('access_token', data.accessToken, {
-    ...secretCookieOptions,
+    ...hintCookieOptions,
     maxAge: 60 * 60 * 24,
   })
   nextResponse.cookies.set('refresh_token', data.refreshToken, {

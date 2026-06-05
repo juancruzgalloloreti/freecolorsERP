@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../common/prisma.service'
+import { pageParams, paged } from '../common/pagination'
 
 const CheckStatus = {
   RECEIVED: 'RECEIVED',
@@ -45,23 +46,30 @@ export class ChecksService {
     })
   }
 
-  async findAll(tenantId: string, params?: { status?: string; startDate?: string; endDate?: string }) {
-    return this.prisma.check.findMany({
-      where: {
-        tenantId,
-        ...(params?.status && { status: params.status as any }),
-        ...(params?.startDate && { dueDate: { gte: new Date(params.startDate) } }),
-        ...(params?.endDate && { dueDate: { lte: new Date(params.endDate) } }),
-      },
-      include: {
-        payment: {
-          include: {
-            document: true,
+  async findAll(tenantId: string, query: { search?: string; status?: string; startDate?: string; endDate?: string; page?: number | string; limit?: number | string }) {
+    const shouldPage = query.page !== undefined;
+    const { page, limit, skip } = pageParams(query, 50, 200);
+    const where: any = {
+      tenantId,
+      ...(query?.status && { status: query.status as any }),
+      ...(query?.startDate && { dueDate: { gte: new Date(query.startDate) } }),
+      ...(query?.endDate && { dueDate: { lte: new Date(query.endDate) } }),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.check.findMany({
+        where,
+        include: {
+          payment: {
+            include: { document: true },
           },
         },
-      },
-      orderBy: { dueDate: 'asc' },
-    })
+        orderBy: { dueDate: 'desc' },
+        skip: shouldPage ? skip : undefined,
+        take: shouldPage ? limit : 50,
+      }),
+      shouldPage ? this.prisma.check.count({ where }) : Promise.resolve(0),
+    ]);
+    return shouldPage ? paged(rows, total, page, limit) : rows;
   }
 
   async findById(id: string, tenantId: string) {

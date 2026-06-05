@@ -82,11 +82,24 @@ function EmpleadosPage() {
   const selectedUser = users.find((item) => item.id === selectedId) ?? users[0] ?? null
 
   const permissionGroups = useMemo(() => {
-    return permissions.reduce<Record<string, Permission[]>>((groups, permission) => {
+    const groups = permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
       const key = permission.category || 'otros'
-      groups[key] = [...(groups[key] ?? []), permission]
-      return groups
+      acc[key] = [...(acc[key] ?? []), permission]
+      return acc
     }, {})
+
+    // Sort each group so view/read permissions are first, then alphabetical by code
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => {
+        const aView = a.code.endsWith('.view') || a.code.endsWith('.read') || a.code === 'user.manage'
+        const bView = b.code.endsWith('.view') || b.code.endsWith('.read') || b.code === 'user.manage'
+        if (aView && !bView) return -1
+        if (!aView && bView) return 1
+        return a.code.localeCompare(b.code)
+      })
+    }
+
+    return groups
   }, [permissions])
 
   const { data: rawUserPermissions } = useQuery({
@@ -189,8 +202,25 @@ function EmpleadosPage() {
   function togglePermission(code: string, checked: boolean) {
     setSelectedCodes((current) => {
       const next = new Set(current)
-      if (checked) next.add(code)
-      else next.delete(code)
+      
+      const permObj = permissions.find((p) => p.code === code)
+      const category = permObj?.category || 'otros'
+      const catPerms = permissions.filter((p) => p.category === category)
+      const viewPerm = catPerms.find(
+        (p) => p.code.endsWith('.view') || p.code.endsWith('.read') || p.code === 'user.manage'
+      )
+
+      if (checked) {
+        next.add(code)
+        if (viewPerm) {
+          next.add(viewPerm.code)
+        }
+      } else {
+        next.delete(code)
+        if (viewPerm && code === viewPerm.code) {
+          catPerms.forEach((p) => next.delete(p.code))
+        }
+      }
       return next
     })
   }

@@ -15,7 +15,7 @@ export class SuppliersService {
         where,
         orderBy: { name: 'asc' },
         skip: shouldPage ? skip : undefined,
-        take: query.limit || shouldPage ? limit : 500,
+        take: query.limit || shouldPage ? limit : 80,
       }),
       shouldPage ? this.prisma.supplier.count({ where }) : Promise.resolve(0),
     ]);

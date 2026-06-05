@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, CheckCircle2, ClipboardList, PackagePlus, Search, ShoppingCart, Trash2, Warehouse } from 'lucide-react'
 import { productsApi, purchasesApi, stockApi, suppliersApi } from '@/lib/api'
@@ -76,6 +76,12 @@ export default function ComprasPage() {
   const [depositId, setDepositId] = useState('')
   const [expectedDate, setExpectedDate] = useState('')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350)
+    return () => clearTimeout(t)
+  }, [search])
   const [lines, setLines] = useState<Line[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -83,8 +89,9 @@ export default function ComprasPage() {
   const { data: suppliersRaw } = useQuery({ queryKey: ['suppliers-purchase'], queryFn: () => suppliersApi.list({ limit: 500 }) })
   const { data: depositsRaw } = useQuery({ queryKey: ['deposits-purchase'], queryFn: stockApi.deposits })
   const { data: productsRaw, isFetching } = useQuery({
-    queryKey: ['products-purchase', search],
-    queryFn: () => productsApi.list({ search: search || undefined, limit: 80 }),
+    queryKey: ['products-purchase', debouncedSearch],
+    queryFn: () => productsApi.list({ search: debouncedSearch || undefined, limit: 80 }),
+    enabled: debouncedSearch.length > 0 || true,
   })
   const { data: ordersRaw, isLoading: loadingOrders } = useQuery({
     queryKey: ['purchase-orders'],
@@ -110,7 +117,7 @@ export default function ComprasPage() {
         next[index] = { ...next[index], quantity: next[index].quantity + 1 }
         return next
       }
-      return [...current, { productId: product.id, code: product.code, name: product.name, quantity: 1, unitPrice: 0, taxRate: 21 }]
+      return [...current, { productId: product.id, code: product.code, name: product.name, quantity: 1, unitPrice: 0, taxRate: Number((product as unknown as { taxRate?: number }).taxRate ?? 21) }]
     })
     setSearch('')
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { customersApi, priceListsApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
@@ -129,7 +129,7 @@ function CustomerModal({ customer, priceLists, onClose, onSave, error, saving }:
 function CCModal({ customer, onClose }: { customer: Customer; onClose: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['cc', customer.id],
-    queryFn: () => customersApi.account(customer.id),
+    queryFn: () => customersApi.account(customer.id, { limit: 100 }),
   })
   const entries = Array.isArray(data) ? data : (data as { data?: unknown[] })?.data || []
   const saldo = (entries as { amount: number }[]).reduce((a, e) => a + Number(e.amount), 0)
@@ -183,6 +183,7 @@ function ClientesPage() {
   const { user } = useAuth()
   const canManageCustomers = user?.role === 'OWNER'
   const [search, setSearch] = useState('')
+  const [customerPage, setCustomerPage] = useState(1)
   const [modal, setModal] = useState<Customer | null | 'new'>(null)
   const [ccModal, setCCModal] = useState<Customer | null>(null)
   const [importing, setImporting] = useState(false)
@@ -193,7 +194,9 @@ function ClientesPage() {
   const [modalError, setModalError] = useState<string | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
 
-  const { data, isLoading } = useQuery({ queryKey: ['customers', search], queryFn: () => customersApi.list({ search: search || undefined }) })
+  useEffect(() => { setCustomerPage(1) }, [search])
+
+  const { data, isLoading } = useQuery({ queryKey: ['customers', search, customerPage], queryFn: () => customersApi.list({ search: search || undefined, page: customerPage, limit: 50 }) })
   const { data: priceLists = [] } = useQuery({ queryKey: ['priceLists'], queryFn: priceListsApi.list })
 
   const createMutation = useMutation({
@@ -293,7 +296,7 @@ function ClientesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Clientes</h1>
-          <p className="page-subtitle">{customers.length} cliente{customers.length !== 1 ? 's' : ''} registrado{customers.length !== 1 ? 's' : ''}</p>
+          <p className="page-subtitle">{(data as { meta?: { total?: number } })?.meta?.total ?? customers.length} cliente{((data as { meta?: { total?: number } })?.meta?.total ?? customers.length) !== 1 ? 's' : ''} registrado{((data as { meta?: { total?: number } })?.meta?.total ?? customers.length) !== 1 ? 's' : ''}</p>
         </div>
         {canManageCustomers && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -357,6 +360,13 @@ function ClientesPage() {
                 ))}
               </tbody>
             </table>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
+              <button className="fc-button fc-button-secondary" disabled={customerPage <= 1} onClick={() => setCustomerPage(p => Math.max(1, p - 1))}>Anterior</button>
+              <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                Pág. {customerPage}{(data as { meta?: { pages?: number } })?.meta?.pages ? ` de ${(data as { meta?: { pages?: number } }).meta!.pages}` : ''}
+              </span>
+              <button className="fc-button fc-button-secondary" disabled={!(data as { meta?: { pages?: number } })?.meta?.pages || customerPage >= (data as { meta?: { pages?: number } }).meta!.pages!} onClick={() => setCustomerPage(p => p + 1)}>Siguiente</button>
+            </div>
           </div>
         )}
       </div>

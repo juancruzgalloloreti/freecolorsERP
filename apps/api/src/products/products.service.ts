@@ -40,18 +40,22 @@ export class ProductsService {
     private priceFormula: PriceFormulaService,
   ) {}
 
-  async findAll(tenantId: string, query: { search?: string; page?: number | string; limit?: number | string; includeInactive?: string | boolean }): Promise<any> {
+  async findAll(tenantId: string, query: { search?: string; page?: number | string; limit?: number | string; includeInactive?: string | boolean; brandId?: string; categoryId?: string }): Promise<any> {
     const includeInactive = query.includeInactive === true || query.includeInactive === 'true';
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 80, 300);
     const where: any = { tenantId };
     if (!includeInactive) where.isActive = true;
+    if (query.brandId) where.brandId = query.brandId;
+    if (query.categoryId) where.categoryId = query.categoryId;
     if (query.search) {
       where.OR = [
         { name: { contains: query.search, mode: 'insensitive' } },
         { code: { contains: query.search, mode: 'insensitive' } },
         { barcode: { contains: query.search, mode: 'insensitive' } },
         { barcodeAlt: { contains: query.search, mode: 'insensitive' } },
+        { brand: { name: { contains: query.search, mode: 'insensitive' } } },
+        { category: { name: { contains: query.search, mode: 'insensitive' } } },
       ];
     }
     const [products, total] = await Promise.all([
@@ -60,7 +64,7 @@ export class ProductsService {
         include: { brand: true, category: true },
         orderBy: { name: 'asc' },
         skip: shouldPage ? skip : undefined,
-        take: query.limit || shouldPage ? limit : 500,
+        take: query.limit || shouldPage ? limit : 50,
       }),
       shouldPage ? this.prisma.product.count({ where }) : Promise.resolve(0),
     ]);

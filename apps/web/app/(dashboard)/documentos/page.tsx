@@ -167,7 +167,7 @@ function DocumentosPage() {
   const [amountMax, setAmountMax] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<'cancel' | 'convert-a' | 'convert-b' | 'convert-c' | null>(null)
-  const detailRef = useRef<HTMLElement>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -371,26 +371,32 @@ function DocumentosPage() {
             </>
           )}
         </section>
+      </div>
 
-        {activeId && <aside ref={detailRef} className="document-detail-panel" aria-label="Detalle de comprobante">
-          <button className="btn btn-icon btn-secondary document-detail-close" type="button" aria-label="Cerrar detalle" onClick={closeDetail}>
-            <X size={15} />
-          </button>
+      <>
+      {activeId && (
+        <div className="doc-modal-overlay" role="dialog" aria-modal="true" aria-label="Detalle de comprobante">
+          <div className="doc-modal" ref={detailRef}>
           {!activeId ? (
             <div className="empty-state"><FileText size={28} /><p>Seleccioná un documento.</p></div>
           ) : detailLoading || !selected ? (
             <div className="empty-state"><span className="spinner" /></div>
           ) : (
             <>
-              <div className="detail-header">
+              <div className="doc-modal-header">
                 <div>
                   <h2>{TYPE_LABEL[selected.type] ?? selected.type}</h2>
-                  <p>{documentNumber(selected)}</p>
+                  <p className="tabular-nums">{documentNumber(selected)}</p>
                 </div>
-                <span className={`badge ${statusClass(selected.status)}`}>{STATUS_LABEL[selected.status]}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className={`badge ${statusClass(selected.status)}`}>{STATUS_LABEL[selected.status]}</span>
+                  <button className="btn btn-icon btn-secondary" type="button" aria-label="Cerrar detalle" onClick={closeDetail}>
+                    <X size={15} />
+                  </button>
+                </div>
               </div>
 
-              <div className="detail-kv">
+              <div className="doc-modal-kv">
                 <div><span>Cliente</span><strong>{selected.customerSnapshot?.name || selected.customerName || 'Consumidor final'}</strong></div>
                 <div><span>CUIT</span><strong>{selected.customerSnapshot?.cuit || selected.customerCuit || 'Sin CUIT'}</strong></div>
                 <div><span>Fecha</span><strong>{DATE.format(new Date(selected.date))}</strong></div>
@@ -399,7 +405,7 @@ function DocumentosPage() {
                 <div><span>Pagado</span><strong>{ARS.format(Number(selected.paidAmount || 0))}</strong></div>
               </div>
 
-              <div className="document-customer-strip">
+              <div className="doc-modal-customer-strip">
                 {(() => {
                   const phone = selected.customerSnapshot?.phone || selected.customer?.phone
                   const address = [selected.customerSnapshot?.address || selected.customer?.address, selected.customerSnapshot?.city || selected.customer?.city, selected.customerSnapshot?.province || selected.customer?.province].filter(Boolean).join(', ')
@@ -409,7 +415,7 @@ function DocumentosPage() {
                 })()}
               </div>
 
-              <div className="detail-actions">
+              <div className="doc-modal-actions">
                 {selected.status === 'DRAFT' && (
                   <Link className="btn btn-primary" href={`/ventas?retomar=${selected.id}`}>
                     <FileText size={14} /> Retomar en Mostrador
@@ -441,7 +447,7 @@ function DocumentosPage() {
                 </button>
               </div>
 
-              <div className="detail-section">
+              <div className="doc-modal-section">
                 <h3>Items completos</h3>
                 {(selected.items ?? []).length === 0 ? (
                   <div className="empty-state"><p>Este documento no tiene items cargados.</p></div>
@@ -487,14 +493,14 @@ function DocumentosPage() {
               </div>
 
               {selected.notes && (
-                <div className="detail-section">
+                <div className="doc-modal-section">
                   <h3>Notas</h3>
                   <div className="document-notes">{selected.notes}</div>
                 </div>
               )}
 
               {(selected.payments ?? []).length > 0 && (
-                <div className="detail-section">
+                <div className="doc-modal-section">
                   <h3>Pagos</h3>
                   {selected.payments?.map((payment) => (
                     <div className="detail-line" key={payment.id}>
@@ -506,7 +512,7 @@ function DocumentosPage() {
               )}
 
               {(selected.stockMovements ?? []).length > 0 && (
-                <div className="detail-section">
+                <div className="doc-modal-section">
                   <h3>Stock</h3>
                   {selected.stockMovements?.map((movement) => (
                     <div className="detail-line" key={movement.id}>
@@ -518,9 +524,10 @@ function DocumentosPage() {
               )}
             </>
           )}
-        </aside>}
+        </div>
       </div>
-
+      )}
+      </>
       {pendingAction === 'cancel' && (
         <div className="entity-sheet-overlay">
           <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cancel-document-title" tabIndex={-1}>

@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
-import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
@@ -20,6 +20,7 @@ interface Product {
   replacementCost?: number | string | null
   averageCost?: number | string | null
   lastPurchaseCost?: number | string | null
+  basePrice?: number | string | null
 }
 
 interface PriceList {
@@ -130,6 +131,7 @@ function directPrice(lists: PriceList[], productId: string, code: string) {
 }
 
 function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
+  if (!list) return 0
   const code = priceListCode(list.name)
   const direct = priceOf(list, product.id)
   const cr = directPrice(lists, product.id, 'CR') || moneyValue(product.replacementCost) || moneyValue(product.averageCost)
@@ -140,7 +142,16 @@ function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
   const fallback = defaultFormulaForCode(code)
   const baseCode = list.formulaBaseCode || fallback?.baseCode
   if (baseCode) {
-    const basePrice = baseCode === 'CR' ? cr : baseCode === 'CU' ? cu : directPrice(lists, product.id, baseCode)
+    let basePrice: number
+    if (baseCode === 'CR') {
+      basePrice = cr
+    } else if (baseCode === 'CU') {
+      basePrice = cu
+    } else if (baseCode === 'LP1') {
+      basePrice = directPrice(lists, product.id, 'LP1') || moneyValue(product.basePrice)
+    } else {
+      basePrice = directPrice(lists, product.id, baseCode)
+    }
     if (!basePrice) return 0
     return calculateFormulaPrice(
       basePrice,
@@ -150,6 +161,8 @@ function computedPrice(product: Product, lists: PriceList[], list: PriceList) {
       moneyValue(list.formulaRoundingValue) || fallback?.rounding || 0,
     )
   }
+  const productBase = moneyValue(product.basePrice)
+  if (productBase > 0) return Math.round(productBase * 100) / 100
   return direct
 }
 
@@ -404,6 +417,23 @@ function ProductosPage() {
   const canImportProducts = isOwner
   const canDeleteProducts = isOwner
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [showAllPrices, setShowAllPrices] = useState(false)
+  const [filterBrand, setFilterBrand] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 300)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  const limit = 50
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+  useEffect(() => setPage(1), [debouncedSearch, filterBrand, filterCategory]) // eslint-disable-line react-hooks/set-state-in-effect
   const [modal, setModal] = useState<Product | null | 'new'>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -422,16 +452,28 @@ function ProductosPage() {
   const [importOptions, setImportOptions] = useState({ alternateCode: '', addNewCodes: true })
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const { data: rawProducts, isLoading } = useQuery({ queryKey: ['products', search], queryFn: () => productsApi.list({ search: search || undefined }) })
+  const { data: rawProducts, isLoading } = useQuery({
+    queryKey: ['products', debouncedSearch, page, filterBrand, filterCategory],
+    queryFn: () => productsApi.list({
+      search: debouncedSearch || undefined,
+      page,
+      limit,
+      ...(filterBrand ? { brandId: filterBrand } : {}),
+      ...(filterCategory ? { categoryId: filterCategory } : {}),
+    }),
+  })
   const { data: brands = [] } = useQuery({ queryKey: ['brands'], queryFn: () => productsApi.listBrands() })
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: () => productsApi.listCategories() })
   const { data: rawPriceLists = [] } = useQuery({ queryKey: ['price-lists'], queryFn: priceListsApi.list })
 
-  const refreshProductsAndStock = () => {
+  const refreshProductsAndStock = (keepPage = false) => {
     qc.invalidateQueries({ queryKey: ['products'] })
-    qc.invalidateQueries({ queryKey: ['products-all'] })
+    qc.invalidateQueries({ queryKey: ['brands'] })
+    qc.invalidateQueries({ queryKey: ['categories'] })
+    qc.invalidateQueries({ queryKey: ['price-lists'] })
     qc.invalidateQueries({ queryKey: ['stock-current'] })
     qc.invalidateQueries({ queryKey: ['stock-movements'] })
+    if (!keepPage) setPage(1)
   }
 
   const createMutation = useMutation({ mutationFn: productsApi.create, onSuccess: () => { refreshProductsAndStock(); setModal(null) } })
@@ -540,6 +582,16 @@ function ProductosPage() {
     () => Array.isArray(rawProducts) ? rawProducts : (rawProducts as { data?: Product[] } | undefined)?.data || [],
     [rawProducts]
   )
+  const total = useMemo(() => {
+    if (!rawProducts) return 0
+    if (Array.isArray(rawProducts)) return rawProducts.length
+    return (rawProducts as { meta?: { total?: number } })?.meta?.total ?? 0
+  }, [rawProducts])
+  const pages = useMemo(() => {
+    if (!rawProducts) return 1
+    if (Array.isArray(rawProducts)) return 1
+    return (rawProducts as { meta?: { pages?: number } })?.meta?.pages ?? 1
+  }, [rawProducts])
   const brs = Array.isArray(brands) ? brands : (brands as { data?: { id: string; name: string }[] }).data || []
   const cats = Array.isArray(categories) ? categories : (categories as { data?: { id: string; name: string }[] }).data || []
   const priceLists: PriceList[] = corePriceLists(Array.isArray(rawPriceLists) ? rawPriceLists : (rawPriceLists as { data?: PriceList[] }).data || [])
@@ -616,7 +668,7 @@ function ProductosPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Productos</h1>
-          <p className="page-subtitle">{products.length} producto{products.length !== 1 ? 's' : ''}, marcas, rubros y precios</p>
+          <p className="page-subtitle">{total} producto{total !== 1 ? 's' : ''}, {brands.length} marcas, {categories.length} rubros, {priceLists.length} listas de precio</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
@@ -661,9 +713,24 @@ function ProductosPage() {
         </div>
       )}
 
-      <div className="search-wrap">
-        <Search size={14} />
-        <input className="fc-input" placeholder="Buscar por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="search-wrap" style={{ gap: '8px', flexWrap: 'wrap' }}>
+        <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <input className="fc-input" placeholder="Buscar por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '32px', flex: '1 1 200px' }} />
+        <select className="fc-input" value={filterBrand} onChange={e => setFilterBrand(e.target.value)} style={{ width: 'auto', minWidth: '130px' }}>
+          <option value="">Todas las marcas</option>
+          {brs.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        <select className="fc-input" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ width: 'auto', minWidth: '150px' }}>
+          <option value="">Todos los rubros</option>
+          {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <button
+          className={`btn btn-sm ${showAllPrices ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setShowAllPrices(!showAllPrices)}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          {showAllPrices ? 'Vista simple' : 'Ver todos los precios'}
+        </button>
       </div>
 
       {isOwner && selectionMode && (
@@ -692,7 +759,18 @@ function ProductosPage() {
 
       <div className="fc-card" style={{ overflow: 'hidden' }}>
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '56px' }}><span className="spinner" /></div>
+          <div style={{ padding: '8px' }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="skeleton-row">
+                <div className="skeleton-cell skeleton-cell-sm" />
+                <div className="skeleton-cell skeleton-cell-lg" />
+                <div className="skeleton-cell skeleton-cell-md" />
+                <div className="skeleton-cell skeleton-cell-sm" />
+                <div className="skeleton-badge" />
+                <div className="skeleton-cell skeleton-cell-sm" />
+              </div>
+            ))}
+          </div>
         ) : products.length === 0 ? (
           <div className="empty-state">
             <Package size={32} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.4 }} />
@@ -713,11 +791,12 @@ function ProductosPage() {
                     </th>
                   )}
                   <th>Código</th><th>Nombre</th><th>Marca</th>
-                  <th>Categoría</th>
+                  {showAllPrices && <th>Categoría</th>}
                   <th style={{ textAlign: 'right' }}>Stock</th>
-                  <th style={{ textAlign: 'right' }}>IVA</th>
-                  <th style={{ textAlign: 'right' }}>Costo rep.</th>
-                  {priceLists.map((list) => <th key={list.id} style={{ textAlign: 'right' }}>{priceListCode(list.name) || list.name}</th>)}
+                  <th style={{ textAlign: 'right' }}>Precio</th>
+                  {showAllPrices && <th style={{ textAlign: 'right' }}>IVA</th>}
+                  {showAllPrices && <th style={{ textAlign: 'right' }}>Costo rep.</th>}
+                  {showAllPrices && priceLists.map((list) => <th key={list.id} style={{ textAlign: 'right' }}>{priceListCode(list.name) || list.name}</th>)}
                   <th>Estado</th>
                   {canManageCatalog && <th style={{ width: canDeleteProducts ? '90px' : '44px' }}></th>}
                 </tr>
@@ -725,6 +804,7 @@ function ProductosPage() {
               <tbody>
                 {products.map((p: Product) => {
                   const selected = selectedProductIds.has(p.id)
+                  const mainPrice = showAllPrices || !priceLists.length ? null : computedPrice(p, priceLists, priceLists[0])
                   return (
                     <tr key={p.id} style={selected ? { background: 'rgba(124,58,237,0.12)' } : undefined}>
                       {isOwner && selectionMode && (
@@ -741,19 +821,34 @@ function ProductosPage() {
                       </td>
                       <td style={{ fontWeight: '500' }}>{p.name}</td>
                       <td style={{ color: 'var(--text-muted)' }}>{p.brand?.name || '—'}</td>
-                      <td style={{ color: 'var(--text-muted)' }}>{p.category?.name || '—'}</td>
+                      {showAllPrices && <td style={{ color: 'var(--text-muted)' }}>{p.category?.name || '—'}</td>}
                       <td style={{ textAlign: 'right' }}>
-                        <span className={`badge ${Number(p.stockQuantity || 0) <= 0 ? 'badge-red' : Number(p.stockQuantity || 0) < 5 ? 'badge-yellow' : 'badge-green'}`}>
-                          {Number(p.stockQuantity || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                        <span className={`badge ${Number(p.stockQuantity ?? 0) < 0 ? 'badge-red' : Number(p.stockQuantity ?? 0) === 0 ? 'badge-yellow' : 'badge-green'}`}>
+                          {Number(p.stockQuantity ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                        {Number(p.taxRate ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%
+                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                        {showAllPrices ? (
+                          <span style={{ color: p.replacementCost ? 'var(--fc-text)' : 'var(--text-muted)' }}>
+                            {p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}
+                          </span>
+                        ) : (
+                          <span style={{ color: mainPrice ? 'var(--fc-text)' : 'var(--text-muted)' }}>
+                            {mainPrice ? money.format(mainPrice) : '—'}
+                          </span>
+                        )}
                       </td>
-                      <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: p.replacementCost ? 'var(--fc-text)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}
-                      </td>
-                      {priceLists.map((list) => {
+                      {showAllPrices && (
+                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          {Number(p.taxRate ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%
+                        </td>
+                      )}
+                      {showAllPrices && (
+                        <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: p.replacementCost ? 'var(--fc-text)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}
+                        </td>
+                      )}
+                      {showAllPrices && priceLists.map((list) => {
                         const price = computedPrice(p, priceLists, list)
                         return (
                           <td key={list.id} style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: price ? 'var(--fc-text)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -781,6 +876,7 @@ function ProductosPage() {
           <div className="catalog-mobile-cards">
             {products.map((p: Product) => {
               const selected = selectedProductIds.has(p.id)
+              const mainPrice = showAllPrices ? null : computedPrice(p, priceLists, priceLists[0])
               return (
                 <article className={`catalog-card ${selected ? 'selected' : ''}`} key={p.id}>
                   <header>
@@ -796,19 +892,25 @@ function ProductosPage() {
                   </header>
                   <div className="catalog-card-meta">
                     <span>{p.brand?.name || 'Sin marca'}</span>
-                    <span>{p.category?.name || 'Sin categoría'}</span>
-                    <span className={`badge ${Number(p.stockQuantity || 0) <= 0 ? 'badge-red' : Number(p.stockQuantity || 0) < 5 ? 'badge-yellow' : 'badge-green'}`}>
-                      Stock {Number(p.stockQuantity || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
+                    {showAllPrices && <span>{p.category?.name || 'Sin categoría'}</span>}
+                    <span className={`badge ${Number(p.stockQuantity ?? 0) < 0 ? 'badge-red' : Number(p.stockQuantity ?? 0) === 0 ? 'badge-yellow' : 'badge-green'}`}>
+                      Stock {Number(p.stockQuantity ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="catalog-card-prices">
-                    <span>IVA: <b>{Number(p.taxRate ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%</b></span>
-                    <span>Costo rep.: <b>{p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}</b></span>
-                    {priceLists.map((list) => {
-                      const price = computedPrice(p, priceLists, list)
-                      return <span key={list.id}>{priceListCode(list.name) || list.name}: <b>{price ? money.format(price) : '—'}</b></span>
-                    })}
-                  </div>
+                  {showAllPrices ? (
+                    <div className="catalog-card-prices">
+                      <span>IVA: <b>{Number(p.taxRate ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}%</b></span>
+                      <span>Costo rep.: <b>{p.replacementCost ? money.format(Number(p.replacementCost)) : '—'}</b></span>
+                      {priceLists.map((list) => {
+                        const price = computedPrice(p, priceLists, list)
+                        return <span key={list.id}>{priceListCode(list.name) || list.name}: <b>{price ? money.format(price) : '—'}</b></span>
+                      })}
+                    </div>
+                  ) : (
+                    <div className="catalog-card-prices" style={{ borderTop: 'none', paddingTop: 0 }}>
+                      <span>Precio: <b style={{ fontSize: '15px', color: 'var(--accent-purple)' }}>{mainPrice ? money.format(mainPrice) : '—'}</b></span>
+                    </div>
+                  )}
                   <footer>
                     <span className={`badge ${p.isActive ? 'badge-green' : 'badge-red'}`}>{p.isActive ? 'Activo' : 'Inactivo'}</span>
                     {canManageCatalog && (
@@ -824,6 +926,19 @@ function ProductosPage() {
               )
             })}
           </div>
+          {pages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '16px', borderTop: '1px solid var(--fc-border)' }}>
+              <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                ← Anterior
+              </button>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                Pág. {page} de {pages}
+              </span>
+              <button className="btn btn-secondary btn-sm" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>
+                Siguiente →
+              </button>
+            </div>
+          )}
           </>
         )}
       </div>
@@ -918,6 +1033,25 @@ function ProductosPage() {
         onCancel={() => { setDeletingId(null); setDeleteError(null) }}
         onConfirm={() => deletingId && deleteMutation.mutate(deletingId)}
       />
+
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{
+            position: 'fixed', bottom: '24px', right: '24px', zIndex: 50,
+            width: '42px', height: '42px', borderRadius: '50%',
+            background: 'var(--accent-purple)', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(124,58,237,0.4)',
+            transition: 'opacity 0.2s, transform 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+          aria-label="Volver arriba"
+        >
+          <ChevronUp size={20} color="#fff" />
+        </button>
+      )}
     </div>
   )
 }

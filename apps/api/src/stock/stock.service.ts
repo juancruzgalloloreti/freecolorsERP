@@ -65,6 +65,48 @@ export class StockService {
     return paged(rows, total, page, limit);
   }
 
+  async summary(tenantId: string, role: string, query: { search?: string }): Promise<any> {
+    const isOwner = role === 'OWNER';
+    if (!isOwner) return { totalValue: 0 };
+    const q = query.search?.toLowerCase().trim();
+
+    const productFilter: any = { tenantId, isActive: true };
+    if (q) {
+      productFilter.OR = [
+        { code: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: productFilter,
+      select: {
+        id: true,
+        averageCost: true,
+      },
+    });
+
+    if (products.length === 0) return { totalValue: 0 };
+
+    const productIds = products.map((p) => p.id);
+    const movements = await this.prisma.stockMovement.groupBy({
+      by: ['productId'],
+      where: { tenantId, productId: { in: productIds } },
+      _sum: { quantity: true },
+    });
+
+    const movementMap = new Map(movements.map((m) => [m.productId, Number(m._sum.quantity ?? 0)]));
+
+    let totalValue = 0;
+    for (const product of products) {
+      const quantity = movementMap.get(product.id) ?? 0;
+      const unitCost = Number(product.averageCost ?? 0);
+      totalValue += quantity * unitCost;
+    }
+
+    return { totalValue: Math.round(totalValue * 100) / 100 };
+  }
+
   async movements(tenantId: string, role: string, query: { page?: number | string; limit?: number | string; productId?: string; depositId?: string; type?: string; dateFrom?: string; dateTo?: string }): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);

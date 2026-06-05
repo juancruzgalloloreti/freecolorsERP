@@ -37,7 +37,11 @@ export class ReportsService {
         where: { tenantId, status: { in: ['PENDING', 'SENT'] as any[] } },
       }),
       this.prisma.document.count({
-        where: { tenantId, status: 'DRAFT' },
+        where: {
+          tenantId,
+          status: 'DRAFT',
+          type: { notIn: ['BUDGET'] as any[] },
+        },
       }),
     ]);
 

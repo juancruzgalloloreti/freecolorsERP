@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermission } from '../permissions/decorators/require-permission.decorator';
 import { RequirePermissionGuard } from '../permissions/guards/require-permission.guard';
@@ -9,7 +10,10 @@ import { PriceListsService } from './price-lists.service';
 export class PriceListsController {
   constructor(private readonly service: PriceListsService) {}
   @RequirePermission('stock.view', 'price.update')
-  @Get() findAll(@Req() req: any) { return this.service.findAll(req.user.tenantId, req.user.role); }
+  @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(3600_000)
+  findAll(@Req() req: any) { return this.service.findAll(req.user.tenantId, req.user.role); }
   @RequirePermission('price.update')
   @Post() create(@Req() req: any, @Body() body: any) { return this.service.create(req.user.tenantId, req.user.role, body); }
   @RequirePermission('price.update')

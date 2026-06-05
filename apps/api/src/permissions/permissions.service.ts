@@ -14,12 +14,12 @@ export class PermissionsService {
     ADMIN: [
       'sale.create', 'sale.discount', 'sale.discount.apply', 'sale.discount.override', 'sale.cancel', 'sale.view',
       'stock.view', 'stock.adjust', 'stock.transfer',
-      'cash.open', 'cash.close', 'cash.move',
-      'customer.create', 'customer.edit', 'customer.delete', 'customer.credit_limit',
-      'supplier.create', 'supplier.edit', 'supplier.delete',
-      'product.create', 'product.edit', 'product.delete',
-      'document.create', 'document.confirm', 'document.cancel', 'document.approve_large_amount',
-      'price.update',
+      'cash.open', 'cash.close', 'cash.move', 'cash.view',
+      'customer.create', 'customer.edit', 'customer.delete', 'customer.credit_limit', 'customer.view',
+      'supplier.create', 'supplier.edit', 'supplier.delete', 'supplier.view',
+      'product.create', 'product.edit', 'product.delete', 'product.view',
+      'document.create', 'document.confirm', 'document.cancel', 'document.approve_large_amount', 'document.view',
+      'price.update', 'price.view',
       'audit.read',
       'purchase.view', 'purchase.create', 'purchase.edit', 'purchase.receive', 'purchase.cancel',
       'check.view', 'check.manage',
@@ -30,11 +30,13 @@ export class PermissionsService {
     EMPLOYEE: [
       'sale.create', 'sale.view',
       'stock.view',
-      'customer.create',
-      'document.create',
+      'customer.create', 'customer.view',
+      'product.view',
+      'document.create', 'document.view',
     ],
     READONLY: [
       'sale.view', 'stock.view', 'purchase.view', 'report.view',
+      'customer.view', 'product.view', 'supplier.view', 'document.view', 'price.view', 'cash.view',
     ],
   }
 
@@ -303,15 +305,18 @@ export class PermissionsService {
       { code: 'cash.open', description: 'Abrir caja', category: 'cash' },
       { code: 'cash.close', description: 'Cerrar caja', category: 'cash' },
       { code: 'cash.move', description: 'Registrar movimientos de caja', category: 'cash' },
+      { code: 'cash.view', description: 'Ver caja', category: 'cash' },
       // Customers permissions
       { code: 'customer.create', description: 'Crear clientes', category: 'customers' },
       { code: 'customer.edit', description: 'Editar clientes', category: 'customers' },
       { code: 'customer.delete', description: 'Eliminar clientes', category: 'customers' },
       { code: 'customer.credit_limit', description: 'Modificar límite de crédito', category: 'customers' },
+      { code: 'customer.view', description: 'Ver clientes', category: 'customers' },
       // Suppliers permissions
       { code: 'supplier.create', description: 'Crear proveedores', category: 'suppliers' },
       { code: 'supplier.edit', description: 'Editar proveedores', category: 'suppliers' },
       { code: 'supplier.delete', description: 'Eliminar proveedores', category: 'suppliers' },
+      { code: 'supplier.view', description: 'Ver proveedores', category: 'suppliers' },
       // Purchases permissions
       { code: 'purchase.view', description: 'Ver compras', category: 'purchases' },
       { code: 'purchase.create', description: 'Crear órdenes de compra', category: 'purchases' },
@@ -329,16 +334,19 @@ export class PermissionsService {
       { code: 'product.create', description: 'Crear productos', category: 'products' },
       { code: 'product.edit', description: 'Editar productos', category: 'products' },
       { code: 'product.delete', description: 'Eliminar productos', category: 'products' },
+      { code: 'product.view', description: 'Ver productos', category: 'products' },
       // Documents permissions
       { code: 'document.create', description: 'Crear documentos', category: 'documents' },
       { code: 'document.confirm', description: 'Confirmar documentos', category: 'documents' },
       { code: 'document.cancel', description: 'Anular documentos', category: 'documents' },
       { code: 'document.approve_large_amount', description: 'Aprobar documentos de monto elevado', category: 'documents' },
+      { code: 'document.view', description: 'Ver comprobantes', category: 'documents' },
       // Reports permissions
       { code: 'report.view', description: 'Ver reportes', category: 'reports' },
       { code: 'report.export', description: 'Exportar reportes', category: 'reports' },
       // Price permissions
       { code: 'price.update', description: 'Actualizar precios', category: 'prices' },
+      { code: 'price.view', description: 'Ver precios', category: 'prices' },
       // Audit permissions
       { code: 'audit.read', description: 'Ver registro de auditoría', category: 'audit' },
       // Users permissions

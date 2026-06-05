@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsObject, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
@@ -63,4 +63,49 @@ export class CreateProductDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  replacementCost?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  averageCost?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  lastPurchaseCost?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  stockQuantity?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  minStock?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  maxStock?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  purchaseUnitCoefficient?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  prices?: Record<string, number>;
 }
