@@ -294,7 +294,7 @@ export default function VentasPage() {
   const { data: puntosRaw } = useQuery({ queryKey: ['puntos-counter'], queryFn: documentsApi.puntos })
   const { data: recentRaw } = useQuery({
     queryKey: ['counter-recent-documents'],
-    queryFn: () => documentsApi.list({ types: 'INVOICE_A,INVOICE_B,INVOICE_C,REMITO,BUDGET' }),
+    queryFn: () => documentsApi.list({ types: 'INVOICE_A,INVOICE_B,INVOICE_C,REMITO,BUDGET', limit: 8 }),
   })
   const { data: currentCash, isLoading: cashLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
   const { data: resumeDocumentRaw } = useQuery({

@@ -2,9 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ccApi, customersApi } from '@/lib/api'
-import { CreditCard, Plus, Search, X } from 'lucide-react'
+import { CreditCard, Download, Plus, Search, X } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
+import { exportToExcel } from '@/lib/export-excel'
+import { formatFecha, formatPesos } from '@/lib/format'
 
 interface AccountRow {
   id?: string
@@ -13,8 +16,13 @@ interface AccountRow {
   description?: string
   amount?: number
   balance?: number
+  runningBalance?: number
   createdAt?: string
   date?: string
+  documentId?: string | null
+  documentType?: string | null
+  documentNumber?: number | null
+  puntoDeVentaNumber?: number | null
 }
 
 const DOCUMENT_LABELS: Record<string, string> = {
@@ -112,16 +120,19 @@ export default function CuentaCorrientePage() {
   const { user } = useAuth()
   const isOwner = user?.role === 'OWNER'
   const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [ccPage, setCcPage] = useState(1)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ customerId: '', customerName: '', kind: 'PAYMENT', amount: '', description: '', date: new Date().toISOString().slice(0, 10) })
   const [message, setMessage] = useState<string | null>(null)
+  const [documentId, setDocumentId] = useState<string | null>(null)
 
-  useEffect(() => { setCcPage(1) }, [search])
+  useEffect(() => { setCcPage(1) }, [search, dateFrom, dateTo])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['current-account', search, ccPage],
-    queryFn: () => ccApi.list({ search: search || undefined, page: ccPage, limit: 100 }),
+    queryKey: ['current-account', search, dateFrom, dateTo, ccPage],
+    queryFn: () => ccApi.list({ search: search || undefined, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, page: ccPage, limit: 100 }),
   })
 
   const rows: AccountRow[] = Array.isArray(data) ? data : (data as { data?: AccountRow[] })?.data || []
@@ -152,6 +163,14 @@ export default function CuentaCorrientePage() {
   })
 
   const totalPages = (data as { meta?: { pages?: number } })?.meta?.pages
+  const exportRows = () => exportToExcel(`cuenta-corriente-${new Date().toISOString().slice(0, 10)}`, rows.map((row) => ({
+    Fecha: formatFecha(row.date || row.createdAt),
+    Cliente: row.customerName || row.customer?.name || '',
+    Descripcion: descriptionLabel(row.description),
+    Comprobante: row.documentId ? `${row.documentType || ''} ${row.puntoDeVentaNumber || ''}-${row.documentNumber || ''}` : '',
+    Importe: Number(row.amount || 0),
+    Saldo: Number(row.runningBalance ?? row.balance ?? 0),
+  })), 'Cuenta Corriente')
 
   return (
     <div>
@@ -165,6 +184,9 @@ export default function CuentaCorrientePage() {
             <Plus size={14} /> Movimiento
           </button>
         )}
+        <button className="btn btn-secondary" type="button" onClick={exportRows} disabled={rows.length === 0}>
+          <Download size={14} /> Exportar Excel
+        </button>
       </div>
 
       {message && <div className="counter-alert success">{message}</div>}
@@ -172,6 +194,10 @@ export default function CuentaCorrientePage() {
       <div className="search-wrap">
         <Search size={14} />
         <input className="fc-input" placeholder="Buscar cliente o movimiento..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+        <label><span className="fc-label">Desde</span><input className="fc-input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
+        <label><span className="fc-label">Hasta</span><input className="fc-input" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
       </div>
 
       <div className="fc-card" style={{ overflow: 'hidden' }}>
@@ -186,14 +212,22 @@ export default function CuentaCorrientePage() {
           <>
             <div style={{ overflowX: 'auto' }}>
               <table className="fc-table">
-                <thead><tr><th>Fecha</th><th>Cliente</th><th>Descripción</th><th style={{ textAlign: 'right' }}>Importe</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
+                <thead><tr><th>Fecha</th><th>Cliente</th><th>Descripción</th><th>Comprobante</th><th style={{ textAlign: 'right' }}>Importe</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
                 <tbody>{rows.map((row, index) => (
                   <tr key={row.id ?? index}>
-                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{row.date || row.createdAt ? new Date(row.date || row.createdAt || '').toLocaleDateString('es-AR') : ''}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatFecha(row.date || row.createdAt)}</td>
                     <td style={{ fontWeight: 600 }}>{row.customerName || row.customer?.name || ''}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{descriptionLabel(row.description)}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(row.amount ?? 0) >= 0 ? '#fca5a5' : '#86efac' }}>${Number(row.amount ?? 0).toLocaleString('es-AR')}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>${Number(row.balance ?? 0).toLocaleString('es-AR')}</td>
+                    <td>
+                      {row.documentId ? (
+                        <DocumentLink
+                          document={{ id: row.documentId, type: row.documentType, number: row.documentNumber, puntoDeVenta: { number: row.puntoDeVentaNumber } }}
+                          onOpen={setDocumentId}
+                        />
+                      ) : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(row.amount ?? 0) >= 0 ? '#fca5a5' : '#86efac' }}>{formatPesos(row.amount)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{formatPesos(row.runningBalance ?? row.balance)}</td>
                   </tr>
                 ))}</tbody>
               </table>
@@ -237,6 +271,7 @@ export default function CuentaCorrientePage() {
           </div>
         </div>
       )}
+      <DocumentDetailModal documentId={documentId} onClose={() => setDocumentId(null)} />
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '@/lib/api'
 import { BarChart3, Download, Printer } from 'lucide-react'
 import { printReportA4 } from '@/lib/print-report'
+import { exportToExcel } from '@/lib/export-excel'
+import { formatFecha } from '@/lib/format'
 
 type SalesGroup = 'month' | 'cuit' | 'document' | 'receipt' | 'pos' | 'locality' | 'account' | 'user' | 'userMl'
 
@@ -83,36 +85,29 @@ function monthStart() {
   return isoDate(new Date(now.getFullYear(), now.getMonth(), 1))
 }
 
-function csvCell(value: unknown) {
-  const text = String(value ?? '')
-  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
-}
-
-function downloadCsv(rows: SalesRow[], totals: SalesRow, dateFrom: string, dateTo: string) {
-  const header = ['Concepto', 'Cta. Cte.', 'Contado', 'Neto', 'IVA', 'Otros Imp.', 'Total', 'Comprobantes']
-  const lines = [
-    header.map(csvCell).join(';'),
-    ...rows.map((row) => [
-      row.concept,
-      row.currentAccount,
-      row.cash,
-      row.net,
-      row.tax,
-      row.otherTaxes,
-      row.total,
-      row.count,
-    ].map(csvCell).join(';')),
-    ['Totales', totals.currentAccount, totals.cash, totals.net, totals.tax, totals.otherTaxes, totals.total, totals.count].map(csvCell).join(';'),
-  ]
-  const blob = new Blob([`\uFEFF${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8;' })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `resumen-ventas-${dateFrom}-${dateTo}.csv`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.URL.revokeObjectURL(url)
+function downloadExcel(rows: SalesRow[], totals: SalesRow, dateFrom: string, dateTo: string) {
+  exportToExcel(`resumen-ventas-${dateFrom}-${dateTo}`, [
+    ...rows.map((row) => ({
+      Concepto: row.concept,
+      'Cta. Cte.': row.currentAccount,
+      Contado: row.cash,
+      Neto: row.net,
+      IVA: row.tax,
+      'Otros Imp.': row.otherTaxes,
+      Total: row.total,
+      Comprobantes: row.count,
+    })),
+    {
+      Concepto: 'Totales',
+      'Cta. Cte.': totals.currentAccount,
+      Contado: totals.cash,
+      Neto: totals.net,
+      IVA: totals.tax,
+      'Otros Imp.': totals.otherTaxes,
+      Total: totals.total,
+      Comprobantes: totals.count,
+    },
+  ], 'Ventas')
 }
 
 export default function ReportesPage() {
@@ -171,8 +166,8 @@ export default function ReportesPage() {
           <p className="page-subtitle">Consulta de ventas por periodo</p>
         </div>
         <div className="report-actions">
-          <button className="btn btn-secondary" type="button" onClick={() => downloadCsv(rows, totals, dateFrom, dateTo)} disabled={rows.length === 0}>
-            <Download size={14} /> Exportar CSV
+          <button className="btn btn-secondary" type="button" onClick={() => downloadExcel(rows, totals, dateFrom, dateTo)} disabled={rows.length === 0}>
+            <Download size={14} /> Exportar Excel
           </button>
           <button className="btn btn-secondary" type="button" onClick={() => printReportA4(management, summary, dateFrom, dateTo, groupBy)} disabled={isLoading || rows.length === 0}>
             <Printer size={14} /> Imprimir
@@ -186,7 +181,7 @@ export default function ReportesPage() {
             <h2>Resumen mensual para decidir</h2>
             <p>Ventas, cobros, pendientes y alertas operativas del periodo seleccionado.</p>
           </div>
-          <span>{dateFrom} / {dateTo}</span>
+          <span>{formatFecha(dateFrom)} / {formatFecha(dateTo)}</span>
         </div>
         <div className="decision-kpis">
           <div><span>Venta periodo</span><strong>{ARS.format(kpis.salesTotal)}</strong><small>{kpis.salesVariationPct === null ? 'Sin periodo anterior' : `${kpis.salesVariationPct >= 0 ? '+' : ''}${kpis.salesVariationPct}% vs anterior`}</small></div>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RequirePermission } from '../permissions/decorators/require-permission.decorator';
 import { RequirePermissionGuard } from '../permissions/guards/require-permission.guard';
@@ -17,8 +17,8 @@ export class CashController {
 
   @Get('sessions')
   @RequirePermission('cash.open')
-  sessions(@Req() req: any) {
-    return this.service.list(req.user.tenantId);
+  sessions(@Req() req: any, @Query('includeLegacy') includeLegacy?: string) {
+    return this.service.list(req.user.tenantId, includeLegacy === 'true');
   }
 
   @Post('open')

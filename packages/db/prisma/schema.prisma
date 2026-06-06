@@ -708,10 +708,26 @@ model CashSession {
 
   tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   movements CashMovement[]
+  counts    CashSessionValueCount[]
 
   @@index([tenantId, status])
   @@index([tenantId, openedAt])
   @@map("cash_sessions")
+}
+
+model CashSessionValueCount {
+  id            String        @id @default(cuid())
+  sessionId     String
+  method        PaymentMethod
+  currency      String        @default("ARS")
+  countedAmount Decimal       @db.Decimal(18, 2)
+  createdAt     DateTime      @default(now())
+
+  session CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, method, currency])
+  @@index([sessionId])
+  @@map("cash_session_counts")
 }
 
 enum CashSessionStatus {

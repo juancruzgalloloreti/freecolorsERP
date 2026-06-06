@@ -78,6 +78,7 @@ export class ReportsService {
         payments: true,
       },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      take: 5000,
     });
 
     const rows = new Map<string, any>();
@@ -145,7 +146,7 @@ export class ReportsService {
 
     const invoiceTypes = ['INVOICE_A', 'INVOICE_B', 'INVOICE_C'];
     const dbLimit = pLimit(MANAGEMENT_REPORT_DB_CONCURRENCY);
-    const [docs, previousDocs, draftBudgets, pendingOrders, ccEntries, stockRows, products] = await Promise.all([
+    const [docs, previousDocs, draftBudgets, pendingOrders, ccBalanceAgg, stockRows, products] = await Promise.all([
       dbLimit(() => this.prisma.document.findMany({
         where: { tenantId, status: 'CONFIRMED', type: { in: invoiceTypes as any[] }, date: { gte: start, lt: end } },
         include: { items: { include: { product: { include: { brand: true, category: true } } } }, payments: true },
@@ -156,7 +157,7 @@ export class ReportsService {
       })),
       dbLimit(() => this.prisma.document.count({ where: { tenantId, status: 'DRAFT', type: 'BUDGET', date: { gte: start, lt: end } } })),
       dbLimit(() => this.prisma.salesOrder.count({ where: { tenantId, status: { in: ['PENDING', 'PREPARATION', 'BILLABLE'] as any[] } } })),
-      dbLimit(() => this.prisma.currentAccountEntry.findMany({ where: { tenantId, date: { lt: end } }, select: { amount: true } })),
+      dbLimit(() => this.prisma.currentAccountEntry.aggregate({ where: { tenantId }, _sum: { amount: true } })),
       dbLimit(() => this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } })),
       dbLimit(() => this.prisma.product.findMany({
         where: { tenantId, isActive: true },
@@ -176,7 +177,7 @@ export class ReportsService {
     const accountTotal = docs.reduce((sum, doc) => sum + doc.payments
       .filter((payment: any) => payment.method === 'CURRENT_ACCOUNT')
       .reduce((inner: number, payment: any) => inner + Number(payment.amount || 0), 0), 0);
-    const currentAccountBalance = ccEntries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+    const currentAccountBalance = Number(ccBalanceAgg._sum.amount ?? 0);
 
     const productSales = new Map<string, any>();
     for (const doc of docs) {
@@ -397,5 +398,3 @@ export class ReportsService {
     return labels[type] || type;
   }
 }
-
-

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ban, CheckCircle2, Landmark, Plus, RefreshCw, Save, Send, X } from 'lucide-react'
+import { Ban, CheckCircle2, Landmark, Plus, Save, Send, X, XCircle } from 'lucide-react'
 import { checksApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -18,6 +18,11 @@ type CheckRow = {
   status: 'RECEIVED' | 'DEPOSITED' | 'CLEARED' | 'BOUNCED' | 'ENDORSED' | 'CANCELLED'
   endorsedTo?: string | null
   rejectionReason?: string | null
+}
+
+type PagedChecks = {
+  data?: CheckRow[]
+  meta?: { total?: number; page?: number; limit?: number; pages?: number }
 }
 
 const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })
@@ -49,6 +54,7 @@ export default function ChequesPage() {
   const { hasPermission } = useAuth()
   const canManage = hasPermission('check.manage')
   const [status, setStatus] = useState('')
+  const [checkPage, setCheckPage] = useState(1)
   const [message, setMessage] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [pendingAction, setPendingAction] = useState<{ check: CheckRow; fn: CheckAction } | null>(null)
@@ -63,8 +69,17 @@ export default function ChequesPage() {
     isEcheq: false,
     notes: '',
   })
-  const { data: checks = [], isLoading } = useQuery<CheckRow[]>({ queryKey: ['checks', status], queryFn: () => checksApi.list({ status: status || undefined }) })
+  useEffect(() => {
+    setCheckPage(1)
+  }, [status])
+
+  const { data: checksRaw, isLoading } = useQuery<PagedChecks | CheckRow[]>({
+    queryKey: ['checks', status, checkPage],
+    queryFn: () => checksApi.list({ status: status || undefined, page: checkPage, limit: 50 }),
+  })
   const { data: summary } = useQuery({ queryKey: ['checks-summary'], queryFn: checksApi.summary })
+  const checks = Array.isArray(checksRaw) ? checksRaw : checksRaw?.data || []
+  const checksMeta = Array.isArray(checksRaw) ? undefined : checksRaw?.meta
 
   const createMutation = useMutation({
     mutationFn: () => checksApi.create({ ...form, amount: Number(String(form.amount).replace(',', '.')) }),
@@ -198,16 +213,29 @@ export default function ChequesPage() {
                           {check.status === 'DEPOSITED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Acreditar cheque ${check.number}`} title="Acreditar" onClick={() => openAction(check, 'clear')}><CheckCircle2 size={13} /></button>}
                           {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Endosar cheque ${check.number}`} title="Endosar" onClick={() => openAction(check, 'endorse')}><Send size={13} /></button>}
                           {!['CLEARED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-danger btn-sm" aria-label={`Rechazar cheque ${check.number}`} title="Rechazar" onClick={() => openAction(check, 'bounce')}><Ban size={13} /></button>}
-                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Cancelar cheque ${check.number}`} title="Cancelar" onClick={() => openAction(check, 'cancel')}><RefreshCw size={13} /></button>}
+                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Cancelar cheque ${check.number}`} title="Cancelar" onClick={() => openAction(check, 'cancel')}><XCircle size={13} /></button>}
                         </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        )}
+	            </table>
+	            {checksMeta && (
+	              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 12, borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
+	                <button className="fc-button fc-button-secondary" type="button" disabled={checkPage <= 1} onClick={() => setCheckPage((page) => Math.max(1, page - 1))}>
+	                  Anterior
+	                </button>
+	                <span style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+	                  Pág. {checkPage}{checksMeta.pages ? ` de ${checksMeta.pages}` : ''} · {Number(checksMeta.total || 0).toLocaleString('es-AR')} cheques
+	                </span>
+	                <button className="fc-button fc-button-secondary" type="button" disabled={!checksMeta.pages || checkPage >= checksMeta.pages} onClick={() => setCheckPage((page) => page + 1)}>
+	                  Siguiente
+	                </button>
+	              </div>
+	            )}
+	          </div>
+	        )}
       </section>
 
       {creating && (

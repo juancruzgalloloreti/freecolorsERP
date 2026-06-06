@@ -6,6 +6,9 @@ import { stockApi, productsApi } from '@/lib/api'
 import { Plus, X, Search, Layers3, ArrowUpDown, CheckSquare2, Square, Trash2, FileDown, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
+import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
+import { exportToExcel } from '@/lib/export-excel'
+import { formatFecha } from '@/lib/format'
 
 const MOVEMENT_TYPES = [
   { value: 'PURCHASE',      label: 'Compra (entrada)',       in: true },
@@ -209,6 +212,12 @@ function StockPage() {
   const [stockPage, setStockPage] = useState(1)
   const [tab, setTab] = useState<'current' | 'movements'>('current')
   const [movementPage, setMovementPage] = useState(1)
+  const [movementSearch, setMovementSearch] = useState('')
+  const [movementDepositId, setMovementDepositId] = useState('')
+  const [movementType, setMovementType] = useState('')
+  const [movementDateFrom, setMovementDateFrom] = useState('')
+  const [movementDateTo, setMovementDateTo] = useState('')
+  const [documentId, setDocumentId] = useState<string | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState<'delete' | 'zero' | null>(null)
@@ -218,6 +227,9 @@ function StockPage() {
   useEffect(() => {
     setStockPage(1)
   }, [search])
+  useEffect(() => {
+    setMovementPage(1)
+  }, [movementSearch, movementDepositId, movementType, movementDateFrom, movementDateTo])
 
   const { data: stockData, isLoading } = useQuery({
     queryKey: ['stock-current', search, stockPage],
@@ -230,8 +242,16 @@ function StockPage() {
     enabled: tab === 'current' && isOwner,
   })
   const { data: movementsData, isLoading: movLoading } = useQuery({
-    queryKey: ['stock-movements', movementPage],
-    queryFn: () => stockApi.movements({ limit: 100, page: movementPage }),
+    queryKey: ['stock-movements', movementSearch, movementDepositId, movementType, movementDateFrom, movementDateTo, movementPage],
+    queryFn: () => stockApi.movements({
+      limit: 100,
+      page: movementPage,
+      productSearch: movementSearch || undefined,
+      depositId: movementDepositId || undefined,
+      type: movementType || undefined,
+      dateFrom: movementDateFrom || undefined,
+      dateTo: movementDateTo || undefined,
+    }),
     enabled: tab === 'movements',
   })
   const { data: deposits } = useQuery({ queryKey: ['deposits'], queryFn: stockApi.deposits })
@@ -259,6 +279,7 @@ function StockPage() {
     () => Array.isArray(movementsData) ? movementsData : (movementsData as { data?: unknown[] } | undefined)?.data || [],
     [movementsData]
   )
+  const movementsMeta = (movementsData as { meta?: { total?: number; pages?: number } } | undefined)?.meta
   const deps = useMemo(
     () => Array.isArray(deposits) ? deposits : [],
     [deposits]
@@ -378,6 +399,19 @@ function StockPage() {
     if (selectedItems.length === 0) return
     exportStockCsv(selectedItems)
     setBulkResult(`${selectedItems.length} item${selectedItems.length === 1 ? '' : 's'} exportado${selectedItems.length === 1 ? '' : 's'} a CSV.`)
+  }
+
+  function exportMovements() {
+    exportToExcel(`movimientos-stock-${new Date().toISOString().slice(0, 10)}`, (movements as Record<string, unknown>[]).map((m) => ({
+      Fecha: formatFecha(m.createdAt as string),
+      Tipo: typeLabel(m.type as string),
+      Producto: (m.product as { name?: string })?.name || '',
+      Deposito: (m.deposit as { name?: string })?.name || '',
+      Comprobante: m.document ? `${(m.document as { type?: string }).type || ''} ${(m.document as { number?: number }).number || ''}` : '',
+      Cantidad: Number(m.quantity || 0),
+      Costo: Number(m.unitCost || 0),
+      Notas: (m.notes as string) || '',
+    })), 'Movimientos')
   }
 
   const typeLabel = (t: string) => MOVEMENT_TYPES.find(m => m.value === t)?.label || t
@@ -608,6 +642,19 @@ function StockPage() {
       )}
 
       {tab === 'movements' && (
+        <>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 12 }}>
+          <label><span className="fc-label">Producto</span><input className="fc-input" value={movementSearch} onChange={(event) => setMovementSearch(event.target.value)} placeholder="Código o nombre" /></label>
+          <label><span className="fc-label">Depósito</span><select className="fc-input" value={movementDepositId} onChange={(event) => setMovementDepositId(event.target.value)}><option value="">Todos</option>{deps.map((d: { id: string; name: string }) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+          <label><span className="fc-label">Tipo</span><select className="fc-input" value={movementType} onChange={(event) => setMovementType(event.target.value)}><option value="">Todos</option>{MOVEMENT_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
+          <label><span className="fc-label">Desde</span><input className="fc-input" type="date" value={movementDateFrom} onChange={(event) => setMovementDateFrom(event.target.value)} /></label>
+          <label><span className="fc-label">Hasta</span><input className="fc-input" type="date" value={movementDateTo} onChange={(event) => setMovementDateTo(event.target.value)} /></label>
+          <div style={{ display: 'flex', alignItems: 'end' }}>
+            <button className="btn btn-secondary" type="button" onClick={exportMovements} disabled={(movements as unknown[]).length === 0}>
+              <FileDown size={13} /> Exportar Excel
+            </button>
+          </div>
+        </div>
         <div className="fc-card" style={{ overflow: 'hidden' }}>
           {movLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '56px' }}><span className="spinner" /></div>
@@ -619,6 +666,7 @@ function StockPage() {
                 <thead>
                   <tr>
                     <th>Fecha</th><th>Tipo</th><th>Producto</th>
+                    <th>Comprobante</th>
                     <th>Depósito</th><th style={{ textAlign: 'right' }}>Cantidad</th>
                     {isOwner && <th style={{ textAlign: 'right' }}>Costo unit.</th>}<th>Notas</th>
                   </tr>
@@ -635,6 +683,14 @@ function StockPage() {
                         </span>
                       </td>
                       <td style={{ fontSize: '13px' }}>{(m.product as { name?: string })?.name || '—'}</td>
+                      <td>
+                        {m.document ? (
+                          <DocumentLink
+                            document={m.document as { id?: string; type?: string; number?: number | null; puntoDeVenta?: number | { number?: number | null } | null }}
+                            onOpen={setDocumentId}
+                          />
+                        ) : '—'}
+                      </td>
                       <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{(m.deposit as { name?: string })?.name || '—'}</td>
                       <td style={{ textAlign: 'right', fontWeight: '600' }}>
                         {Number(m.quantity).toLocaleString('es-AR', { maximumFractionDigits: 2 })}
@@ -655,12 +711,15 @@ function StockPage() {
             <button className="fc-button fc-button-secondary" disabled={movementPage <= 1} onClick={() => setMovementPage(p => Math.max(1, p - 1))}>
               Anterior
             </button>
-            <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>Pág. {movementPage}</span>
-            <button className="fc-button fc-button-secondary" disabled={(movementsData as { total?: number } | undefined)?.total !== undefined && movementPage * 100 >= Number((movementsData as { total?: number })?.total ?? 0)} onClick={() => setMovementPage(p => p + 1)}>
+            <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              Pág. {movementPage}{movementsMeta?.pages ? ` de ${movementsMeta.pages}` : ''}{movementsMeta?.total !== undefined ? ` · ${movementsMeta.total.toLocaleString('es-AR')} movimientos` : ''}
+            </span>
+            <button className="fc-button fc-button-secondary" disabled={!movementsMeta?.pages || movementPage >= movementsMeta.pages} onClick={() => setMovementPage(p => p + 1)}>
               Siguiente
             </button>
           </div>
         </div>
+        </>
       )}
 
       {bulkConfirm && (
@@ -698,6 +757,7 @@ function StockPage() {
         </div>
       )}
 
+      <DocumentDetailModal documentId={documentId} onClose={() => setDocumentId(null)} />
       {modal && (
         <MovementModal
           deposits={deps as { id: string; name: string }[]}
@@ -712,4 +772,3 @@ function StockPage() {
 export default function StockPageWithErrorBoundary() {
   return <ErrorBoundary><StockPage /></ErrorBoundary>
 }
-

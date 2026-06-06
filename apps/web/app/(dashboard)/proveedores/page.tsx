@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Download, Upload, Search, Edit2, Trash2, Building2 } from 'lucide-react'
 import NuevoProveedorModal from '@/components/proveedores/NuevoProveedorModal'
@@ -9,6 +9,15 @@ import type { Proveedor } from '@/types/proveedores'
 import { suppliersApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { ConfirmDialog } from '@/components/erp/layout'
+import { CONDICION_IVA_DISPLAY, formatFecha, formatPesos } from '@/lib/format'
+
+const IVA_CONDITIONS = [
+  'RESPONSABLE_INSCRIPTO',
+  'MONOTRIBUTISTA',
+  'CONSUMIDOR_FINAL',
+  'EXENTO',
+  'NO_CATEGORIZADO',
+]
 
 export type { Proveedor }
 
@@ -23,13 +32,27 @@ export default function ProveedoresPage() {
   const { user } = useAuth()
   const canManageSuppliers = user?.role === 'OWNER'
   const [search, setSearch] = useState('')
+  const [ivaCondition, setIvaCondition] = useState('')
+  const [pendingOrdersOnly, setPendingOrdersOnly] = useState(false)
+  const [supplierPage, setSupplierPage] = useState(1)
   const [modal, setModal] = useState<Proveedor | null | 'new'>(null)
   const [showImport, setShowImport] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [modalError, setModalError] = useState<string | null>(null)
 
-  const { data, isLoading } = useQuery({ queryKey: ['suppliers', search], queryFn: () => suppliersApi.list({ search: search || undefined }) })
+  useEffect(() => { setSupplierPage(1) }, [search, ivaCondition, pendingOrdersOnly])
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['suppliers', search, ivaCondition, pendingOrdersOnly, supplierPage],
+    queryFn: () => suppliersApi.list({
+      search: search || undefined,
+      ivaCondition: ivaCondition || undefined,
+      pendingOrdersOnly: pendingOrdersOnly || undefined,
+      page: supplierPage,
+      limit: 50,
+    }),
+  })
 
   const createMutation = useMutation({
     mutationFn: suppliersApi.create,
@@ -111,15 +134,26 @@ export default function ProveedoresPage() {
         )}
       </div>
 
-      {message && (
-        <div style={{ marginBottom: '12px', padding: '10px 12px', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '8px', color: '#86efac', background: 'rgba(34,197,94,0.08)', fontSize: '13px' }}>
-          {message}
-        </div>
-      )}
+      {message && <div className={`counter-alert ${message.includes('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
 
       <div className="search-wrap">
         <Search size={14} />
         <input className="fc-input" placeholder="Buscar proveedor…" value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12, alignItems: 'end' }}>
+        <label>
+          <span className="fc-label">Condición IVA</span>
+          <select className="fc-input" value={ivaCondition} onChange={(event) => setIvaCondition(event.target.value)}>
+            <option value="">Todas</option>
+            {IVA_CONDITIONS.map((condition) => (
+              <option key={condition} value={condition}>{CONDICION_IVA_DISPLAY[condition] || condition}</option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={pendingOrdersOnly} onChange={(event) => setPendingOrdersOnly(event.target.checked)} />
+          <span style={{ fontSize: 13 }}>Solo con OC pendientes</span>
+        </label>
       </div>
 
       <div className="fc-card" style={{ overflow: 'hidden' }}>
@@ -138,10 +172,10 @@ export default function ProveedoresPage() {
                   <th>Razón Social</th>
                   <th style={{ minWidth: 120 }}>CUIT</th>
                   <th>Teléfono</th>
-                  <th>Email</th>
-                  <th>Localidad</th>
                   <th>Cond. IVA</th>
-                  <th>Cond. Pago</th>
+                  <th style={{ textAlign: 'right' }}>Saldo CC</th>
+                  <th>Última OC</th>
+                  <th style={{ textAlign: 'right' }}>OC pendientes</th>
                   {canManageSuppliers && <th style={{ width: '90px' }}></th>}
                 </tr>
               </thead>
@@ -151,10 +185,10 @@ export default function ProveedoresPage() {
                     <td style={{ fontWeight: '500' }}>{p.razonSocial}</td>
                     <td className="tabular-nums" style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>{p.cuit || '—'}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.email || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.direccion || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionPago || '—'}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva ? CONDICION_IVA_DISPLAY[p.condicionIva] || p.condicionIva : '—'}</td>
+                    <td className="money-cell strong">{formatPesos(p.ccBalance)}</td>
+                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{formatFecha(p.lastOrderDate) || '—'}</td>
+                    <td className="money-cell">{p.pendingOrders || 0}</td>
                     {canManageSuppliers && (
                       <td>
                         <div style={{ display: 'flex', gap: '4px' }}>
@@ -170,6 +204,15 @@ export default function ProveedoresPage() {
           </div>
         )}
       </div>
+      {(data as { meta?: { pages?: number } })?.meta && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', alignItems: 'center' }}>
+          <button className="fc-button fc-button-secondary" disabled={supplierPage <= 1} onClick={() => setSupplierPage((page) => Math.max(1, page - 1))}>Anterior</button>
+          <span style={{ padding: '6px 12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+            Pág. {supplierPage} de {(data as { meta?: { pages?: number } }).meta?.pages || 1}
+          </span>
+          <button className="fc-button fc-button-secondary" disabled={supplierPage >= ((data as { meta?: { pages?: number } }).meta?.pages || 1)} onClick={() => setSupplierPage((page) => page + 1)}>Siguiente</button>
+        </div>
+      )}
 
       {modal && (
         <NuevoProveedorModal

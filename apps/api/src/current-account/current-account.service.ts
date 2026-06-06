@@ -46,9 +46,13 @@ export class CurrentAccountService {
         type: string;
         date: Date;
         createdAt: Date;
+        documentId: string | null;
+        documentType: string | null;
+        documentNumber: number | null;
+        puntoDeVentaNumber: number | null;
       }>
     >`
-      WITH filtered AS (
+      WITH running AS (
         SELECT
           e.id,
           e."customerId",
@@ -57,31 +61,42 @@ export class CurrentAccountService {
           e.amount,
           e.type,
           e.date,
-          e."createdAt"
+          e."createdAt",
+          e."documentId",
+          d.type::text as "documentType",
+          d.number as "documentNumber",
+          pv.number as "puntoDeVentaNumber",
+          SUM(e.amount) OVER (
+            PARTITION BY e."customerId"
+            ORDER BY e.date ASC, e.id ASC
+          )::float as "runningBalance"
         FROM "current_account_entries" e
         JOIN "customers" c ON c.id = e."customerId"
+        LEFT JOIN "documents" d ON d.id = e."documentId"
+        LEFT JOIN "puntos_de_venta" pv ON pv.id = d."puntoDeVentaId"
         WHERE e."tenantId" = ${tenantId}
           ${query.customerId ? Prisma.sql`AND e."customerId" = ${query.customerId}` : Prisma.empty}
-          ${query.dateFrom ? Prisma.sql`AND e."date" >= ${new Date(query.dateFrom)}` : Prisma.empty}
-          ${query.dateTo ? Prisma.sql`AND e."date" <= ${new Date(query.dateTo)}` : Prisma.empty}
           ${query.search ? Prisma.sql`AND (e.description ILIKE ${'%' + query.search + '%'} OR c.name ILIKE ${'%' + query.search + '%'})` : Prisma.empty}
-        ORDER BY e."customerId", e."date" ASC, e.id ASC
       )
       SELECT
-        f.id,
-        f."customerId",
-        f."customerName",
-        f.description,
-        f.amount,
-        f.type,
-        f.date,
-        f."createdAt",
-        SUM(f.amount) OVER (
-          PARTITION BY f."customerId"
-          ORDER BY f.date ASC, f.id ASC
-        )::float as "runningBalance"
-      FROM filtered f
-      ORDER BY f.date DESC, f.id DESC
+        r.id,
+        r."customerId",
+        r."customerName",
+        r.description,
+        r.amount,
+        r.type,
+        r.date,
+        r."createdAt",
+        r."documentId",
+        r."documentType",
+        r."documentNumber",
+        r."puntoDeVentaNumber",
+        r."runningBalance"
+      FROM running r
+      WHERE 1=1
+        ${query.dateFrom ? Prisma.sql`AND r."date" >= ${new Date(query.dateFrom)}` : Prisma.empty}
+        ${query.dateTo ? Prisma.sql`AND r."date" <= ${new Date(query.dateTo)}` : Prisma.empty}
+      ORDER BY r.date DESC, r.id DESC
       ${shouldPage ? Prisma.sql`LIMIT ${limit} OFFSET ${skip}` : Prisma.sql`LIMIT 200 OFFSET 0`}
     `;
 
@@ -97,6 +112,10 @@ export class CurrentAccountService {
       type: row.type,
       date: row.date,
       createdAt: row.createdAt,
+      documentId: row.documentId,
+      documentType: row.documentType,
+      documentNumber: row.documentNumber,
+      puntoDeVentaNumber: row.puntoDeVentaNumber,
     }));
 
     if (realBalance !== undefined) {

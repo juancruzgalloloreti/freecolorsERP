@@ -1,24 +1,67 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
 @Injectable()
 export class SuppliersService {
   constructor(private prisma: PrismaService) {}
-  async findAll(tenantId: string, query: { search?: string; page?: number | string; limit?: number | string }): Promise<any> {
+  async findAll(tenantId: string, query: { search?: string; ivaCondition?: string; pendingOrdersOnly?: string | boolean; page?: number | string; limit?: number | string }): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 80, 300);
-    const where: any = { tenantId };
-    if (query.search) where.OR = [{ name: { contains: query.search, mode: 'insensitive' } }, { cuit: { contains: query.search, mode: 'insensitive' } }];
-    const [rows, total] = await Promise.all([
-      this.prisma.supplier.findMany({
-        where,
-        orderBy: { name: 'asc' },
-        skip: shouldPage ? skip : undefined,
-        take: query.limit || shouldPage ? limit : 80,
-      }),
-      shouldPage ? this.prisma.supplier.count({ where }) : Promise.resolve(0),
-    ]);
+    const searchPattern = query.search?.trim() ? `%${query.search.trim()}%` : null;
+    const ivaCondition = query.ivaCondition?.trim() || null;
+    const pendingOrdersOnly = this.isTruthy(query.pendingOrdersOnly);
+    const filters = Prisma.sql`
+      s."tenantId" = ${tenantId}
+      ${searchPattern ? Prisma.sql`AND (s.name ILIKE ${searchPattern} OR s.cuit ILIKE ${searchPattern})` : Prisma.empty}
+      ${ivaCondition ? Prisma.sql`AND s."ivaCondition"::text = ${ivaCondition}` : Prisma.empty}
+      ${pendingOrdersOnly ? Prisma.sql`AND COALESCE(po."pendingOrders", 0) > 0` : Prisma.empty}
+    `;
+    const rows = await this.prisma.$queryRaw<any[]>(Prisma.sql`
+      WITH cc AS (
+        SELECT "supplierId", SUM(amount)::float AS balance
+        FROM "supplier_account_entries"
+        WHERE "tenantId" = ${tenantId}
+        GROUP BY "supplierId"
+      ),
+      po AS (
+        SELECT
+          "supplierId",
+          MAX("orderDate") AS "lastOrderDate",
+          COUNT(*) FILTER (WHERE status IN ('PENDING', 'SENT', 'PARTIALLY_RECEIVED'))::int AS "pendingOrders"
+        FROM "purchase_orders"
+        WHERE "tenantId" = ${tenantId}
+        GROUP BY "supplierId"
+      )
+      SELECT
+        s.id, s.name, s.cuit, s.phone, s.email, s.address, s."ivaCondition", s."isActive", s.notes, s."createdAt",
+        COALESCE(cc.balance, 0)::float AS "ccBalance",
+        po."lastOrderDate",
+        COALESCE(po."pendingOrders", 0)::int AS "pendingOrders"
+      FROM "suppliers" s
+      LEFT JOIN cc ON cc."supplierId" = s.id
+      LEFT JOIN po ON po."supplierId" = s.id
+      WHERE ${filters}
+      ORDER BY s.name ASC
+      LIMIT ${limit} OFFSET ${shouldPage ? skip : 0}
+    `);
+    const [{ total } = { total: 0 }] = shouldPage
+      ? await this.prisma.$queryRaw<Array<{ total: number }>>(Prisma.sql`
+        WITH po AS (
+          SELECT
+            "supplierId",
+            COUNT(*) FILTER (WHERE status IN ('PENDING', 'SENT', 'PARTIALLY_RECEIVED'))::int AS "pendingOrders"
+          FROM "purchase_orders"
+          WHERE "tenantId" = ${tenantId}
+          GROUP BY "supplierId"
+        )
+        SELECT COUNT(*)::int AS total
+        FROM "suppliers" s
+        LEFT JOIN po ON po."supplierId" = s.id
+        WHERE ${filters}
+      `)
+      : [{ total: 0 }];
     const mapped = rows.map((s) => ({
       id: s.id,
       razonSocial: s.name,
@@ -30,6 +73,9 @@ export class SuppliersService {
       condicionPago: '',
       notas: s.notes,
       createdAt: s.createdAt,
+      ccBalance: Number(s.ccBalance || 0),
+      lastOrderDate: s.lastOrderDate,
+      pendingOrders: Number(s.pendingOrders || 0),
     }));
     return shouldPage ? paged(mapped, total, page, limit) : mapped;
   }
@@ -169,6 +215,10 @@ export class SuppliersService {
     return text || null;
   }
 
+  private isTruthy(value: unknown): boolean {
+    return value === true || value === 'true' || value === '1' || value === 'yes';
+  }
+
   private normalizeText(value: string): string {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
   }
@@ -185,5 +235,4 @@ export class SuppliersService {
     return 'RESPONSABLE_INSCRIPTO';
   }
 }
-
 

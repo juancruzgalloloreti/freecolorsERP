@@ -4,25 +4,50 @@ import { PrismaService } from '../common/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { parseMoney } from '../common/money';
 
+type CashCountInput = {
+  method?: PaymentMethod | string;
+  currency?: string;
+  countedAmount?: number | string;
+};
+
 @Injectable()
 export class CashService {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
 
   async current(tenantId: string) {
-    return this.prisma.cashSession.findFirst({
+    const session = await this.prisma.cashSession.findFirst({
       where: { tenantId, status: CashSessionStatus.OPEN },
-      include: { movements: { orderBy: { createdAt: 'desc' }, take: 50 } },
+      include: {
+        movements: { include: { document: true }, orderBy: { createdAt: 'desc' }, take: 300 },
+      },
       orderBy: { openedAt: 'desc' },
     });
+    if (!session) return null;
+    const counts = await this.readCounts([session.id]);
+    return this.withBreakdown({ ...session, counts: counts.get(session.id) ?? [] });
   }
 
-  list(tenantId: string) {
-    return this.prisma.cashSession.findMany({
-      where: { tenantId },
-      include: { movements: { orderBy: { createdAt: 'desc' }, take: 10 } },
+  async list(tenantId: string, includeLegacy = false) {
+    const legacyDescriptionFilter: Prisma.CashMovementWhereInput = {
+      OR: [
+        { description: { contains: 'legacy', mode: 'insensitive' } },
+        { description: { contains: 'migra', mode: 'insensitive' } },
+      ],
+    };
+    const movementWhere = includeLegacy ? undefined : { NOT: legacyDescriptionFilter };
+    const sessions = await this.prisma.cashSession.findMany({
+      where: {
+        tenantId,
+        ...(includeLegacy ? {} : { movements: { some: movementWhere } }),
+      },
+      include: {
+        movements: { where: movementWhere, include: { document: true }, orderBy: { createdAt: 'desc' }, take: 10 },
+      },
       orderBy: { openedAt: 'desc' },
       take: 60,
     });
+    const counts = await this.readCounts(sessions.map((session) => session.id));
+    return sessions.map((session) => this.withBreakdown({ ...session, counts: counts.get(session.id) ?? [] }));
   }
 
   async open(tenantId: string, userId: string, role: string, data: { openingAmount?: number | string; note?: string }) {
@@ -57,7 +82,7 @@ export class CashService {
             },
           },
         },
-        include: { movements: true },
+        include: { movements: { include: { document: true } } },
       });
     });
 
@@ -131,11 +156,11 @@ export class CashService {
     return movement;
   }
 
-  async close(tenantId: string, userId: string, role: string, data: { countedAmount?: number | string; note?: string }) {
+  async close(tenantId: string, userId: string, role: string, data: { countedAmount?: number | string; counts?: CashCountInput[]; note?: string }) {
     return this.prisma.$transaction(async (tx) => {
       const session = await tx.cashSession.findFirst({
         where: { tenantId, status: CashSessionStatus.OPEN },
-        include: { movements: { orderBy: { createdAt: 'desc' } } },
+      include: { movements: { include: { document: true }, orderBy: { createdAt: 'desc' } } },
       });
       if (!session) throw new BadRequestException('No hay caja abierta');
 
@@ -148,10 +173,21 @@ export class CashService {
         _sum: { amount: true },
       });
       const expectedAmount = this.roundMoney(Number(total._sum.amount ?? 0));
-      const countedAmount = this.toMoney(data.countedAmount);
+      const counts = this.normalizeCounts(data);
+      const countedAmount = this.roundMoney(counts.reduce((sum, count) => sum + count.countedAmount, 0));
       const difference = this.roundMoney(countedAmount - expectedAmount);
       if (Math.abs(difference) > 0.01 && !String(data.note || '').trim()) {
         throw new BadRequestException('El cierre con diferencia requiere observaciones');
+      }
+
+      await tx.$executeRaw(Prisma.sql`DELETE FROM "cash_session_counts" WHERE "sessionId" = ${session.id}`);
+      for (const count of counts) {
+        await tx.$executeRaw(Prisma.sql`
+          INSERT INTO "cash_session_counts" ("id", "sessionId", "method", "currency", "countedAmount", "createdAt")
+          VALUES (gen_random_uuid()::text, ${session.id}, ${count.method}::"PaymentMethod", ${count.currency}, ${count.countedAmount}, NOW())
+          ON CONFLICT ("sessionId", "method", "currency")
+          DO UPDATE SET "countedAmount" = EXCLUDED."countedAmount"
+        `);
       }
 
       const result = await tx.cashSession.updateMany({
@@ -172,7 +208,9 @@ export class CashService {
 
       const closed = await tx.cashSession.findUnique({
         where: { id: session.id },
-        include: { movements: { orderBy: { createdAt: 'desc' } } },
+        include: {
+          movements: { include: { document: true }, orderBy: { createdAt: 'desc' } },
+        },
       });
 
       await this.audit.record({
@@ -182,9 +220,9 @@ export class CashService {
         entityType: 'CashSession',
         entityId: session.id,
         summary: `Caja cerrada. Diferencia: ${difference}`,
-        metadata: { expectedAmount, countedAmount, difference },
+        metadata: { expectedAmount, countedAmount, difference, counts },
       });
-      return closed;
+      return closed ? this.withBreakdown({ ...closed, counts }) : closed;
     });
   }
 
@@ -237,6 +275,86 @@ export class CashService {
 
   private toMoney(value: unknown): number {
     return this.roundMoney(parseMoney(value));
+  }
+
+  private normalizeCounts(data: { countedAmount?: number | string; counts?: CashCountInput[] }) {
+    const rawCounts = Array.isArray(data.counts) && data.counts.length > 0
+      ? data.counts
+      : [{ method: PaymentMethod.CASH, currency: 'ARS', countedAmount: data.countedAmount ?? 0 }];
+    const allowedMethods = new Set(Object.values(PaymentMethod));
+    return rawCounts
+      .map((item) => {
+        const method = String(item.method || PaymentMethod.CASH) as PaymentMethod;
+        if (!allowedMethods.has(method)) {
+          throw new BadRequestException(`Método de caja inválido: ${method}`);
+        }
+        return {
+          method,
+          currency: String(item.currency || 'ARS').trim().toUpperCase() || 'ARS',
+          countedAmount: this.toMoney(item.countedAmount),
+        };
+      })
+      .filter((item) => item.countedAmount !== 0 || item.method === PaymentMethod.CASH);
+  }
+
+  private async readCounts(sessionIds: string[]) {
+    const counts = new Map<string, Array<{ method: PaymentMethod; currency: string; countedAmount: number }>>();
+    if (sessionIds.length === 0) return counts;
+    const rows = await this.prisma.$queryRaw<Array<{ sessionId: string; method: PaymentMethod; currency: string; countedAmount: number }>>(Prisma.sql`
+      SELECT "sessionId", method::text as method, currency, "countedAmount"::float as "countedAmount"
+      FROM "cash_session_counts"
+      WHERE "sessionId" IN (${Prisma.join(sessionIds)})
+    `);
+    for (const row of rows) {
+      const current = counts.get(row.sessionId) ?? [];
+      current.push(row);
+      counts.set(row.sessionId, current);
+    }
+    return counts;
+  }
+
+  private withBreakdown<T extends { movements?: any[]; counts?: any[] }>(session: T): T & { breakdown: any[] } {
+    const expected = new Map<string, { method: PaymentMethod; currency: string; opening: number; entries: number; exits: number; expected: number }>();
+    const counted = new Map<string, number>();
+    for (const count of session.counts ?? []) {
+      counted.set(this.breakdownKey(count.method, count.currency), this.roundMoney(Number(count.countedAmount || 0)));
+    }
+    for (const movement of session.movements ?? []) {
+      const method = movement.method as PaymentMethod;
+      const currency = 'ARS';
+      const key = this.breakdownKey(method, currency);
+      const current = expected.get(key) ?? { method, currency, opening: 0, entries: 0, exits: 0, expected: 0 };
+      const amount = this.roundMoney(Number(movement.amount || 0));
+      if (movement.type === CashMovementType.OPENING) current.opening += amount;
+      else if (amount >= 0) current.entries += amount;
+      else current.exits += Math.abs(amount);
+      current.expected += amount;
+      expected.set(key, current);
+    }
+
+    const methods = new Set([...expected.keys(), ...counted.keys()]);
+    const breakdown = [...methods].sort().map((key) => {
+      const row = expected.get(key);
+      const [method, currency] = key.split(':') as [PaymentMethod, string];
+      const countedAmount = counted.get(key) ?? 0;
+      const expectedAmount = this.roundMoney(row?.expected ?? 0);
+      return {
+        method: row?.method ?? method,
+        currency: row?.currency ?? currency,
+        opening: this.roundMoney(row?.opening ?? 0),
+        entries: this.roundMoney(row?.entries ?? 0),
+        exits: this.roundMoney(row?.exits ?? 0),
+        expectedAmount,
+        countedAmount,
+        difference: this.roundMoney(countedAmount - expectedAmount),
+      };
+    });
+
+    return { ...session, breakdown };
+  }
+
+  private breakdownKey(method: PaymentMethod | string, currency: string) {
+    return `${method}:${String(currency || 'ARS').toUpperCase()}`;
   }
 
   private roundMoney(value: number): number {

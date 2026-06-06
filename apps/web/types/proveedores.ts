@@ -9,4 +9,7 @@ export type Proveedor = {
   condicionPago?: string | null;
   notas?: string | null;
   createdAt?: string;
+  ccBalance?: number;
+  lastOrderDate?: string | null;
+  pendingOrders?: number;
 };

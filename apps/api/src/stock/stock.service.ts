@@ -107,7 +107,7 @@ export class StockService {
     return { totalValue: Math.round(totalValue * 100) / 100 };
   }
 
-  async movements(tenantId: string, role: string, query: { page?: number | string; limit?: number | string; productId?: string; depositId?: string; type?: string; dateFrom?: string; dateTo?: string }): Promise<any> {
+  async movements(tenantId: string, role: string, query: { page?: number | string; limit?: number | string; productId?: string; productSearch?: string; depositId?: string; type?: string; dateFrom?: string; dateTo?: string }): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 100, 300);
     const where: any = {
@@ -116,6 +116,15 @@ export class StockService {
       depositId: query.depositId,
       type: query.type,
     };
+    const productSearch = query.productSearch?.trim();
+    if (productSearch) {
+      where.product = {
+        OR: [
+          { code: { contains: productSearch, mode: 'insensitive' } },
+          { name: { contains: productSearch, mode: 'insensitive' } },
+        ],
+      };
+    }
     if (query.dateFrom || query.dateTo) {
       where.createdAt = {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
@@ -126,7 +135,7 @@ export class StockService {
     const [movements, total] = await Promise.all([
       this.prisma.stockMovement.findMany({
         where,
-        include: { product: true, deposit: true },
+        include: { product: true, deposit: true, document: true },
         orderBy: { createdAt: 'desc' },
         skip: shouldPage ? skip : undefined,
         take: shouldPage || query.limit ? limit : 100,
@@ -232,5 +241,3 @@ export class StockService {
     }
   }
 }
-
-

@@ -18,6 +18,8 @@ import { ConfirmDialog, PageHeader } from '@/components/erp/layout'
 import { documentsApi } from '@/lib/api'
 import { printDocumentA4 } from '@/lib/print-document'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
+import { exportToExcel } from '@/lib/export-excel'
+import { formatDocumentNumber } from '@/lib/format'
 
 type DocumentStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
 type DocumentType = 'INVOICE_A' | 'INVOICE_B' | 'INVOICE_C' | 'REMITO' | 'BUDGET' | 'PURCHASE_ORDER' | 'CREDIT_NOTE_A' | 'CREDIT_NOTE_B'
@@ -39,6 +41,18 @@ type DocumentRow = {
   itemCount: number
   createdByName: string
   notes?: string | null
+}
+
+type PagedDocuments = {
+  data?: DocumentRow[]
+  meta?: { total?: number; page?: number; limit?: number; pages?: number }
+}
+
+type DocumentSummary = {
+  totalCount: number
+  confirmedCount: number
+  draftCount: number
+  confirmedRevenue: number
 }
 
 type Detail = DocumentRow & {
@@ -99,16 +113,8 @@ function asArray<T>(value: unknown): T[] {
   return Array.isArray(data) ? data : []
 }
 
-function puntoDeVentaNumber(value?: number | { number?: number | null } | null) {
-  if (typeof value === 'number') return value
-  return value?.number ?? null
-}
-
 function documentNumber(item?: { number?: number | null; puntoDeVenta?: number | { number?: number | null } | null }) {
-  if (!item || item.number == null) return 'Borrador'
-  const puntoDeVenta = puntoDeVentaNumber(item.puntoDeVenta)
-  if (puntoDeVenta == null) return String(item.number).padStart(8, '0')
-  return `${String(puntoDeVenta).padStart(4, '0')}-${String(item.number).padStart(8, '0')}`
+  return formatDocumentNumber(item)
 }
 
 function statusClass(status: DocumentStatus) {
@@ -165,26 +171,39 @@ function DocumentosPage() {
   const [dateTo, setDateTo] = useState('')
   const [amountMin, setAmountMin] = useState('')
   const [amountMax, setAmountMax] = useState('')
+  const [documentPage, setDocumentPage] = useState(1)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<'cancel' | 'convert-a' | 'convert-b' | 'convert-c' | null>(null)
   const detailRef = useRef<HTMLDivElement>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const filters = useMemo(() => ({
+    search: search || undefined,
+    status: status === 'all' ? undefined : status,
+    type: type === 'all' ? undefined : type,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    amountMin: amountMin || undefined,
+    amountMax: amountMax || undefined,
+  }), [amountMax, amountMin, dateFrom, dateTo, search, status, type])
+
+  useEffect(() => {
+    setDocumentPage(1)
+  }, [filters])
+
   const { data: rowsRaw, isLoading } = useQuery({
-    queryKey: ['documents-history', search, status, type, dateFrom, dateTo, amountMin, amountMax],
-    queryFn: () => documentsApi.list({
-      search: search || undefined,
-      status: status === 'all' ? undefined : status,
-      type: type === 'all' ? undefined : type,
-      dateFrom: dateFrom || undefined,
-      dateTo: dateTo || undefined,
-      amountMin: amountMin || undefined,
-      amountMax: amountMax || undefined,
-    }),
+    queryKey: ['documents-history', filters, documentPage],
+    queryFn: () => documentsApi.list({ ...filters, page: documentPage, limit: 60 }),
+  })
+  const { data: summaryRaw } = useQuery({
+    queryKey: ['documents-summary', filters],
+    queryFn: () => documentsApi.summary(filters),
   })
   const rows = asArray<DocumentRow>(rowsRaw)
   const filteredRows = rows
+  const meta = (rowsRaw as PagedDocuments | undefined)?.meta
+  const summary = (summaryRaw || {}) as Partial<DocumentSummary>
   const activeFilterCount = [search, status !== 'all' ? status : '', type !== 'all' ? type : '', dateFrom, dateTo, amountMin, amountMax].filter(Boolean).length
 
   const activeId = selectedId || selectedParam || null
@@ -200,12 +219,25 @@ function DocumentosPage() {
   })
   const selected = detail as Detail | undefined
 
-  const totals = useMemo(() => ({
-    documents: filteredRows.length,
-    confirmed: filteredRows.filter((row) => row.status === 'CONFIRMED').length,
-    drafts: filteredRows.filter((row) => row.status === 'DRAFT').length,
-    revenue: filteredRows.filter((row) => row.status === 'CONFIRMED').reduce((sum, row) => sum + Number(row.total || 0), 0),
-  }), [filteredRows])
+  const totals = {
+    documents: Number(summary.totalCount ?? meta?.total ?? filteredRows.length),
+    confirmed: Number(summary.confirmedCount ?? filteredRows.filter((row) => row.status === 'CONFIRMED').length),
+    drafts: Number(summary.draftCount ?? filteredRows.filter((row) => row.status === 'DRAFT').length),
+    revenue: Number(summary.confirmedRevenue ?? filteredRows.filter((row) => row.status === 'CONFIRMED').reduce((sum, row) => sum + Number(row.total || 0), 0)),
+  }
+
+  const exportFilteredRows = () => exportToExcel(`comprobantes-${new Date().toISOString().slice(0, 10)}`, filteredRows.map((row) => ({
+    Fecha: DATE.format(new Date(row.date)),
+    Tipo: TYPE_LABEL[row.type] ?? row.type,
+    Numero: documentNumber(row),
+    Cliente: row.customerName || row.supplierName || 'Consumidor final',
+    CUIT: row.customerCuit || '',
+    Estado: STATUS_LABEL[row.status],
+    Items: row.itemCount,
+    Subtotal: Number(row.subtotal || 0),
+    IVA: Number(row.taxAmount || 0),
+    Total: Number(row.total || 0),
+  })), 'Comprobantes')
 
   const clearFilters = () => {
     setSearch('')
@@ -231,6 +263,7 @@ function DocumentosPage() {
     },
     onSuccess: (doc: { id?: string }) => {
       qc.invalidateQueries({ queryKey: ['documents-history'] })
+      qc.invalidateQueries({ queryKey: ['documents-summary'] })
       qc.invalidateQueries({ queryKey: ['document-detail'] })
       qc.invalidateQueries({ queryKey: ['counter-recent-documents'] })
       qc.invalidateQueries({ queryKey: ['stock-current'] })
@@ -306,6 +339,9 @@ function DocumentosPage() {
             <button className="btn btn-secondary" type="button" disabled={activeFilterCount === 0} onClick={clearFilters}>
               Limpiar filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </button>
+            <button className="btn btn-secondary" type="button" disabled={filteredRows.length === 0} onClick={exportFilteredRows}>
+              <Download size={14} /> Exportar Excel
+            </button>
           </div>
 
           <div className="stats-strip">
@@ -367,6 +403,17 @@ function DocumentosPage() {
                     <b>{ARS.format(Number(row.total || 0))}</b>
                   </button>
                 ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 12, borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
+                <button className="fc-button fc-button-secondary" type="button" disabled={documentPage <= 1} onClick={() => setDocumentPage((page) => Math.max(1, page - 1))}>
+                  Anterior
+                </button>
+                <span style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+                  Pág. {documentPage}{meta?.pages ? ` de ${meta.pages}` : ''} · {totals.documents.toLocaleString('es-AR')} comprobantes
+                </span>
+                <button className="fc-button fc-button-secondary" type="button" disabled={!meta?.pages || documentPage >= meta.pages} onClick={() => setDocumentPage((page) => page + 1)}>
+                  Siguiente
+                </button>
               </div>
             </>
           )}

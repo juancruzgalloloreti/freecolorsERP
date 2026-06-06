@@ -27,6 +27,14 @@ export class CustomersController {
   @RequirePermission('customer.view')
   account(@Req() req: any, @Param('id') id: string, @Query() query: any) { return this.service.account(req.user.tenantId, id, query); }
 
+  @Get(':id/products')
+  @RequirePermission('customer.view')
+  purchasedProducts(@Req() req: any, @Param('id') id: string) { return this.service.purchasedProducts(req.user.tenantId, id); }
+
+  @Get(':id')
+  @RequirePermission('customer.view')
+  findById(@Req() req: any, @Param('id') id: string) { return this.service.findById(req.user.tenantId, id); }
+
   @Post()
   @RequirePermission('customers.create')
   create(@Req() req: any, @Body() dto: CreateCustomerDto) { return this.service.create(req.user.tenantId, req.user.role, dto); }

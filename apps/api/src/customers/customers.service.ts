@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@erp/db';
 import { PrismaService } from '../common/prisma.service';
 import { pageParams, paged } from '../common/pagination';
 
@@ -6,25 +7,99 @@ import { pageParams, paged } from '../common/pagination';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string, query: { search?: string; page?: number | string; limit?: number | string }): Promise<any> {
+  async findAll(tenantId: string, query: { search?: string; ivaCondition?: string; hasCcBalance?: string | boolean; suspiciousName?: string | boolean; page?: number | string; limit?: number | string }): Promise<any> {
     const shouldPage = query.page !== undefined;
     const { page, limit, skip } = pageParams(query, 80, 300);
-    const where: any = { tenantId };
-    if (query.search) where.OR = [
-      { name: { contains: query.search, mode: 'insensitive' } },
-      { cuit: { contains: query.search, mode: 'insensitive' } },
-      { email: { contains: query.search, mode: 'insensitive' } },
-    ];
-    const [rows, total] = await Promise.all([
-      this.prisma.customer.findMany({
-        where,
-        orderBy: { name: 'asc' },
-        skip: shouldPage ? skip : undefined,
-        take: query.limit || shouldPage ? limit : 80,
-      }),
-      shouldPage ? this.prisma.customer.count({ where }) : Promise.resolve(0),
-    ]);
+    const searchPattern = query.search?.trim() ? `%${query.search.trim()}%` : null;
+    const ivaCondition = query.ivaCondition?.trim() || null;
+    const hasCcBalance = this.isTruthy(query.hasCcBalance);
+    const suspiciousName = this.isTruthy(query.suspiciousName);
+    const filters = Prisma.sql`
+      c."tenantId" = ${tenantId}
+      ${searchPattern ? Prisma.sql`AND (c.name ILIKE ${searchPattern} OR c.cuit ILIKE ${searchPattern} OR c.email ILIKE ${searchPattern})` : Prisma.empty}
+      ${ivaCondition ? Prisma.sql`AND c."ivaCondition"::text = ${ivaCondition}` : Prisma.empty}
+      ${hasCcBalance ? Prisma.sql`AND ABS(COALESCE(cc.balance, 0)) > 0.01` : Prisma.empty}
+      ${suspiciousName ? Prisma.sql`AND (
+        btrim(c.name) = ''
+        OR c.name ~ '^[0-9 .-]+$'
+        OR length(btrim(c.name)) <= 3
+        OR c.name ILIKE '%SIN NOMBRE%'
+        OR c.name ILIKE '%CLIENTE%'
+      )` : Prisma.empty}
+    `;
+    const rows = await this.prisma.$queryRaw<any[]>(Prisma.sql`
+      WITH cc AS (
+        SELECT "customerId", SUM(amount)::float AS balance
+        FROM "current_account_entries"
+        WHERE "tenantId" = ${tenantId}
+        GROUP BY "customerId"
+      )
+      SELECT
+        c.id, c."tenantId", c.name, c.email, c.phone, c.address, c.city, c.province, c.cuit,
+        c."ivaCondition", c."priceListId", c."creditLimit", c."isActive", c.notes, c."createdAt", c."updatedAt",
+        COALESCE(cc.balance, 0)::float AS "ccBalance"
+      FROM "customers" c
+      LEFT JOIN cc ON cc."customerId" = c.id
+      WHERE ${filters}
+      ORDER BY c.name ASC
+      LIMIT ${limit} OFFSET ${shouldPage ? skip : 0}
+    `);
+    const [{ total } = { total: 0 }] = shouldPage
+      ? await this.prisma.$queryRaw<Array<{ total: number }>>(Prisma.sql`
+        WITH cc AS (
+          SELECT "customerId", SUM(amount)::float AS balance
+          FROM "current_account_entries"
+          WHERE "tenantId" = ${tenantId}
+          GROUP BY "customerId"
+        )
+        SELECT COUNT(*)::int AS total
+        FROM "customers" c
+        LEFT JOIN cc ON cc."customerId" = c.id
+        WHERE ${filters}
+      `)
+      : [{ total: 0 }];
     return shouldPage ? paged(rows, total, page, limit) : rows;
+  }
+
+  async findById(tenantId: string, id: string): Promise<any> {
+    const customer = await this.prisma.customer.findFirst({
+      where: { id, tenantId },
+      include: { priceList: true },
+    });
+    if (!customer) throw new NotFoundException('Cliente inexistente');
+    const { _sum } = await this.prisma.currentAccountEntry.aggregate({
+      where: { tenantId, customerId: id },
+      _sum: { amount: true },
+    });
+    return { ...customer, ccBalance: this.roundMoney(Number(_sum.amount ?? 0)) };
+  }
+
+  async purchasedProducts(tenantId: string, customerId: string): Promise<any> {
+    await this.findById(tenantId, customerId);
+    const items = await this.prisma.documentItem.findMany({
+      where: { document: { tenantId, customerId } },
+      include: {
+        product: { include: { brand: true, category: true } },
+        document: true,
+      },
+      orderBy: { document: { date: 'desc' } },
+      take: 300,
+    });
+    return items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productCode: item.product?.code ?? '',
+      productName: item.product?.name ?? item.description,
+      brandName: item.product?.brand?.name ?? '',
+      categoryName: item.product?.category?.name ?? '',
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+      total: Number(item.total),
+      date: item.document.date,
+      documentNumber: item.document.number,
+      documentType: item.document.type,
+      documentId: item.document.id,
+    }));
   }
 
   async create(tenantId: string, role: string, data: any): Promise<any> {
@@ -232,6 +307,10 @@ export class CustomersService {
     return text || null;
   }
 
+  private isTruthy(value: unknown): boolean {
+    return value === true || value === 'true' || value === '1' || value === 'yes';
+  }
+
   private validateImportRows(rows: any[]): void {
     const headers = new Set(rows.flatMap((row) => Object.keys(row || {}).map((header) => this.normalizeHeader(header))));
     const hasName = ['name', 'nombre', 'razonsocial', 'cliente'].some((header) => headers.has(header));
@@ -331,5 +410,4 @@ export class CustomersService {
     return Math.round(value * 100) / 100;
   }
 }
-
 

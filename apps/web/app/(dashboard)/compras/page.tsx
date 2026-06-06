@@ -202,7 +202,7 @@ export default function ComprasPage() {
             <label>
               <span className="fc-label">Proveedor</span>
               <select className="fc-input" value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
-                <option value="">Seleccionar proveedor</option>
+                <option value="" disabled>Seleccioná un proveedor...</option>
                 {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
               </select>
             </label>

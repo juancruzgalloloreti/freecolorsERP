@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownCircle, ArrowUpCircle, Lock, Unlock, WalletCards } from 'lucide-react'
+import { ArrowDownCircle, ArrowUpCircle, Download, Lock, Unlock, WalletCards } from 'lucide-react'
 import { cashApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
+import { exportToExcel } from '@/lib/export-excel'
+import { formatFecha, formatPesos } from '@/lib/format'
 
 type CashMovement = {
   id: string
@@ -14,6 +17,18 @@ type CashMovement = {
   description: string
   reference?: string | null
   createdAt: string
+  document?: { id: string; type?: string; number?: number | null; puntoDeVenta?: number | { number?: number | null } | null } | null
+}
+
+type CashBreakdown = {
+  method: string
+  currency: string
+  opening: number
+  entries: number
+  exits: number
+  expectedAmount: number
+  countedAmount: number
+  difference: number
 }
 
 type CashSession = {
@@ -26,12 +41,7 @@ type CashSession = {
   openedAt: string
   closedAt?: string | null
   movements?: CashMovement[]
-}
-
-const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })
-
-function money(value: unknown) {
-  return ARS.format(Number(value || 0))
+  breakdown?: CashBreakdown[]
 }
 
 function parseMoney(value: unknown) {
@@ -51,16 +61,19 @@ export default function CajaPage() {
   const { hasPermission } = useAuth()
   const [openingAmount, setOpeningAmount] = useState('')
   const [move, setMove] = useState({ type: 'CASH_IN', amount: '', description: '', reference: '' })
-  const [countedAmount, setCountedAmount] = useState('')
+  const [counts, setCounts] = useState<Record<string, string>>({})
   const [closingNote, setClosingNote] = useState('')
   const [message, setMessage] = useState<string | null>(null)
+  const [documentId, setDocumentId] = useState<string | null>(null)
+  const [includeLegacy, setIncludeLegacy] = useState(false)
 
   const { data: current, isLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
-  const { data: sessionsRaw } = useQuery({ queryKey: ['cash-sessions'], queryFn: cashApi.sessions })
+  const { data: sessionsRaw } = useQuery({ queryKey: ['cash-sessions', includeLegacy], queryFn: () => cashApi.sessions({ includeLegacy }) })
   const currentSession = current as CashSession | null
   const sessions: CashSession[] = Array.isArray(sessionsRaw) ? sessionsRaw : []
   const inspectedSession = currentSession ?? sessions[0] ?? null
   const movements = useMemo(() => inspectedSession?.movements ?? [], [inspectedSession?.movements])
+  const breakdown = useMemo(() => inspectedSession?.breakdown ?? [], [inspectedSession?.breakdown])
   const totals = useMemo(() => ({
     income: movements.filter((item) => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0),
     outcome: Math.abs(movements.filter((item) => Number(item.amount) < 0).reduce((sum, item) => sum + Number(item.amount), 0)),
@@ -77,8 +90,9 @@ export default function CajaPage() {
       byMethod: Array.from(byMethod, ([label, amount]) => ({ label, amount })).sort((a, b) => a.label.localeCompare(b.label)),
     }
   }, [movements])
-  const closeDifference = currentSession && countedAmount
-    ? parseMoney(countedAmount) - Number(currentSession.expectedAmount || 0)
+  const closeCountedTotal = breakdown.reduce((sum, row) => sum + parseMoney(counts[`${row.method}:${row.currency}`] ?? row.countedAmount ?? row.expectedAmount), 0)
+  const closeDifference = currentSession
+    ? closeCountedTotal - Number(currentSession.expectedAmount || 0)
     : 0
   const closeHasDifference = Math.abs(closeDifference) > 0.01
   const closeNeedsNote = closeHasDifference && !closingNote.trim()
@@ -109,10 +123,27 @@ export default function CajaPage() {
   }
 
   const closeMutation = useMutation({
-    mutationFn: () => cashApi.close({ countedAmount, note: closingNote.trim() }),
-    onSuccess: () => { refresh(); setCountedAmount(''); setClosingNote(''); setMessage('Caja cerrada.') },
+    mutationFn: () => cashApi.close({
+      counts: breakdown.map((row) => ({
+        method: row.method,
+        currency: row.currency,
+        countedAmount: counts[`${row.method}:${row.currency}`] ?? row.countedAmount ?? row.expectedAmount,
+      })),
+      note: closingNote.trim(),
+    }),
+    onSuccess: () => { refresh(); setCounts({}); setClosingNote(''); setMessage('Caja cerrada.') },
     onError: (error) => setMessage(apiMessage(error, 'No se pudo cerrar caja')),
   })
+
+  const exportCash = () => exportToExcel(`caja-${new Date().toISOString().slice(0, 10)}`, movements.map((item) => ({
+    Fecha: formatFecha(item.createdAt),
+    Tipo: item.type,
+    Concepto: item.description,
+    Metodo: item.method,
+    Referencia: item.reference || '',
+    Comprobante: item.document ? `${item.document.type || ''} ${item.document.number || ''}` : '',
+    Importe: Number(item.amount || 0),
+  })), 'Caja')
 
   return (
     <div>
@@ -121,6 +152,9 @@ export default function CajaPage() {
           <h1 className="page-title">Caja</h1>
           <p className="page-subtitle">Apertura, ingresos, egresos, cierre y arqueo diario</p>
         </div>
+        <button className="btn btn-secondary" type="button" onClick={exportCash} disabled={movements.length === 0}>
+          <Download size={14} /> Exportar Excel
+        </button>
       </div>
 
       {message && <div className={`counter-alert ${message.startsWith('No se pudo') ? 'error' : 'success'}`}>{message}</div>}
@@ -133,9 +167,9 @@ export default function CajaPage() {
           </div>
           <div className="stat-label">Estado</div>
         </div>
-        <div className="stat-card"><div className="stat-value">{money(inspectedSession?.expectedAmount)}</div><div className="stat-label">Saldo esperado</div></div>
-        <div className="stat-card"><div className="stat-value">{money(totals.income)}</div><div className="stat-label">Entradas</div></div>
-        <div className="stat-card"><div className="stat-value">{money(totals.outcome)}</div><div className="stat-label">Salidas</div></div>
+        <div className="stat-card"><div className="stat-value">{formatPesos(inspectedSession?.expectedAmount)}</div><div className="stat-label">Saldo esperado</div></div>
+        <div className="stat-card"><div className="stat-value">{formatPesos(totals.income)}</div><div className="stat-label">Entradas</div></div>
+        <div className="stat-card"><div className="stat-value">{formatPesos(totals.outcome)}</div><div className="stat-label">Salidas</div></div>
       </div>
 
       {inspectedSession && (
@@ -150,10 +184,10 @@ export default function CajaPage() {
             <span className={`badge ${inspectedSession.status === 'OPEN' ? 'badge-green' : 'badge-yellow'}`}>{inspectedSession.status === 'OPEN' ? 'Abierta' : 'Cerrada'}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-            <div className="stat-card"><div className="stat-value">{money(inspectedSession.openingAmount)}</div><div className="stat-label">Apertura</div></div>
-            <div className="stat-card"><div className="stat-value">{money(inspectedSession.expectedAmount)}</div><div className="stat-label">Esperado</div></div>
-            <div className="stat-card"><div className="stat-value">{inspectedSession.countedAmount == null ? '-' : money(inspectedSession.countedAmount)}</div><div className="stat-label">Contado</div></div>
-            <div className="stat-card"><div className="stat-value">{inspectedSession.difference == null ? '-' : money(inspectedSession.difference)}</div><div className="stat-label">Diferencia</div></div>
+            <div className="stat-card"><div className="stat-value">{formatPesos(inspectedSession.openingAmount)}</div><div className="stat-label">Apertura</div></div>
+            <div className="stat-card"><div className="stat-value">{formatPesos(inspectedSession.expectedAmount)}</div><div className="stat-label">Esperado</div></div>
+            <div className="stat-card"><div className="stat-value">{inspectedSession.countedAmount == null ? '-' : formatPesos(inspectedSession.countedAmount)}</div><div className="stat-label">Contado</div></div>
+            <div className="stat-card"><div className="stat-value">{inspectedSession.difference == null ? '-' : formatPesos(inspectedSession.difference)}</div><div className="stat-label">Diferencia</div></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginTop: 12 }}>
             <div>
@@ -161,7 +195,7 @@ export default function CajaPage() {
               {dailyBreakdown.byType.length === 0 ? <p className="page-subtitle">Sin movimientos.</p> : dailyBreakdown.byType.map((item) => (
                 <div className="detail-line" key={item.label}>
                   <div><strong>{item.label}</strong></div>
-                  <b>{money(item.amount)}</b>
+                  <b>{formatPesos(item.amount)}</b>
                 </div>
               ))}
             </div>
@@ -170,7 +204,7 @@ export default function CajaPage() {
               {dailyBreakdown.byMethod.length === 0 ? <p className="page-subtitle">Sin movimientos.</p> : dailyBreakdown.byMethod.map((item) => (
                 <div className="detail-line" key={item.label}>
                   <div><strong>{item.label}</strong></div>
-                  <b>{money(item.amount)}</b>
+                  <b>{formatPesos(item.amount)}</b>
                 </div>
               ))}
             </div>
@@ -208,11 +242,26 @@ export default function CajaPage() {
 
             <div style={{ borderTop: '1px solid var(--fc-border)', marginTop: 18, paddingTop: 16 }}>
               <h2 style={{ fontSize: 16, marginBottom: 10 }}>Cerrar caja</h2>
-              <label className="fc-label" htmlFor="cash-counted-amount">Dinero contado</label>
-              <input id="cash-counted-amount" className="fc-input" inputMode="decimal" value={countedAmount} onChange={(event) => setCountedAmount(event.target.value)} placeholder={String(currentSession.expectedAmount || 0)} />
-              {countedAmount && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {breakdown.map((row) => {
+                  const key = `${row.method}:${row.currency}`
+                  return (
+                    <label key={key}>
+                      <span className="fc-label">{row.method} {row.currency} · esperado {formatPesos(row.expectedAmount)}</span>
+                      <input
+                        className="fc-input"
+                        inputMode="decimal"
+                        value={counts[key] ?? String(row.countedAmount || row.expectedAmount || '')}
+                        onChange={(event) => setCounts((current) => ({ ...current, [key]: event.target.value }))}
+                        placeholder={String(row.expectedAmount || 0)}
+                      />
+                    </label>
+                  )
+                })}
+              </div>
+              {breakdown.length > 0 && (
                 <div className={`counter-alert ${closeHasDifference ? 'warning' : 'success'}`} style={{ marginTop: 10 }}>
-                  Diferencia de arqueo: {money(closeDifference)}
+                  Diferencia de arqueo: {formatPesos(closeDifference)}
                 </div>
               )}
               {closeHasDifference && (
@@ -228,7 +277,7 @@ export default function CajaPage() {
                   />
                 </>
               )}
-              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!hasPermission('cash.close') || !countedAmount || closeNeedsNote || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
+              <button className="btn btn-danger" style={{ marginTop: 12 }} disabled={!hasPermission('cash.close') || breakdown.length === 0 || closeNeedsNote || closeMutation.isPending} onClick={() => closeMutation.mutate()}>
                 <Lock size={14} /> {closeMutation.isPending ? 'Cerrando...' : 'Cerrar caja'}
               </button>
             </div>
@@ -241,15 +290,16 @@ export default function CajaPage() {
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table className="fc-table">
-                  <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Método</th><th style={{ textAlign: 'right' }}>Importe</th></tr></thead>
+                  <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Comprobante</th><th>Método</th><th style={{ textAlign: 'right' }}>Importe</th></tr></thead>
                   <tbody>
                     {movements.map((item) => (
                       <tr key={item.id}>
                         <td>{new Date(item.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
                         <td><span className={`badge ${Number(item.amount) >= 0 ? 'badge-green' : 'badge-red'}`}>{item.type}</span></td>
                         <td>{item.description}</td>
+                        <td>{item.document ? <DocumentLink document={item.document} onOpen={setDocumentId} /> : '-'}</td>
                         <td>{item.method}</td>
-                        <td className="money-cell strong">{money(item.amount)}</td>
+                        <td className="money-cell strong">{formatPesos(item.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -261,7 +311,16 @@ export default function CajaPage() {
       )}
 
       <section className="fc-card" style={{ marginTop: 14, overflow: 'hidden' }}>
-        <h2 style={{ fontSize: 16, marginBottom: 12 }}>Últimas cajas</h2>
+        <div className="page-header" style={{ marginBottom: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 16, margin: 0 }}>Últimas cajas</h2>
+            <p className="page-subtitle" style={{ marginTop: 4 }}>{includeLegacy ? 'Incluye movimientos importados del sistema anterior' : 'Historial operativo actual'}</p>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 13 }}>
+            <input type="checkbox" checked={includeLegacy} onChange={(event) => setIncludeLegacy(event.target.checked)} />
+            Incluir historial legacy
+          </label>
+        </div>
         {sessions.length === 0 ? <div className="empty-state"><p>No hay cajas cerradas o abiertas.</p></div> : (
           <table className="fc-table">
             <thead><tr><th>Apertura</th><th>Cierre</th><th>Estado</th><th style={{ textAlign: 'right' }}>Esperado</th><th style={{ textAlign: 'right' }}>Contado</th><th style={{ textAlign: 'right' }}>Dif.</th></tr></thead>
@@ -270,14 +329,15 @@ export default function CajaPage() {
                 <td>{new Date(session.openedAt).toLocaleString('es-AR')}</td>
                 <td>{session.closedAt ? new Date(session.closedAt).toLocaleString('es-AR') : '-'}</td>
                 <td><span className={`badge ${session.status === 'OPEN' ? 'badge-green' : 'badge-yellow'}`}>{session.status === 'OPEN' ? 'Abierta' : 'Cerrada'}</span></td>
-                <td className="money-cell">{money(session.expectedAmount)}</td>
-                <td className="money-cell">{session.countedAmount == null ? '-' : money(session.countedAmount)}</td>
-                <td className="money-cell strong">{session.difference == null ? '-' : money(session.difference)}</td>
+                <td className="money-cell">{formatPesos(session.expectedAmount)}</td>
+                <td className="money-cell">{session.countedAmount == null ? '-' : formatPesos(session.countedAmount)}</td>
+                <td className="money-cell strong">{session.difference == null ? '-' : formatPesos(session.difference)}</td>
               </tr>
             ))}</tbody>
           </table>
         )}
       </section>
+      <DocumentDetailModal documentId={documentId} onClose={() => setDocumentId(null)} />
     </div>
   )
 }

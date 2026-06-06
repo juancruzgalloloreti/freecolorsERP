@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import { parseCsv, decodeCsv } from '@/lib/csv-parser'
 import { ConfirmDialog } from '@/components/erp/layout'
+import { CONDICION_IVA_DISPLAY, formatCuit, formatPesos } from '@/lib/format'
 
 const IVA_CONDITIONS = [
   { value: 'CONSUMIDOR_FINAL',      label: 'Consumidor Final' },
@@ -22,7 +23,7 @@ interface Customer {
   id: string; name: string; email?: string; phone?: string
   address?: string; city?: string; province?: string; cuit?: string
   ivaCondition: string; isActive: boolean
-  creditLimit?: number; priceListId?: string; notes?: string
+  creditLimit?: number; priceListId?: string; notes?: string; ccBalance?: number
 }
 
 function apiErrorMessage(error: unknown, fallback: string) {
@@ -183,6 +184,9 @@ function ClientesPage() {
   const { user } = useAuth()
   const canManageCustomers = user?.role === 'OWNER'
   const [search, setSearch] = useState('')
+  const [ivaCondition, setIvaCondition] = useState('')
+  const [hasCcBalance, setHasCcBalance] = useState(false)
+  const [suspiciousName, setSuspiciousName] = useState(false)
   const [customerPage, setCustomerPage] = useState(1)
   const [modal, setModal] = useState<Customer | null | 'new'>(null)
   const [ccModal, setCCModal] = useState<Customer | null>(null)
@@ -194,9 +198,19 @@ function ClientesPage() {
   const [modalError, setModalError] = useState<string | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
 
-  useEffect(() => { setCustomerPage(1) }, [search])
+  useEffect(() => { setCustomerPage(1) }, [search, ivaCondition, hasCcBalance, suspiciousName])
 
-  const { data, isLoading } = useQuery({ queryKey: ['customers', search, customerPage], queryFn: () => customersApi.list({ search: search || undefined, page: customerPage, limit: 50 }) })
+  const { data, isLoading } = useQuery({
+    queryKey: ['customers', search, ivaCondition, hasCcBalance, suspiciousName, customerPage],
+    queryFn: () => customersApi.list({
+      search: search || undefined,
+      ivaCondition: ivaCondition || undefined,
+      hasCcBalance: hasCcBalance || undefined,
+      suspiciousName: suspiciousName || undefined,
+      page: customerPage,
+      limit: 50,
+    }),
+  })
   const { data: priceLists = [] } = useQuery({ queryKey: ['priceLists'], queryFn: priceListsApi.list })
 
   const createMutation = useMutation({
@@ -321,7 +335,26 @@ function ClientesPage() {
 
       <div className="search-wrap">
         <Search size={14} />
-        <input className="fc-input" placeholder="Buscar cliente…" value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="fc-input" placeholder="Buscar cliente por nombre, CUIT o email…" value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12, alignItems: 'end' }}>
+        <label>
+          <span className="fc-label">Condición IVA</span>
+          <select className="fc-input" value={ivaCondition} onChange={(event) => setIvaCondition(event.target.value)}>
+            <option value="">Todas</option>
+            {IVA_CONDITIONS.map((condition) => (
+              <option key={condition.value} value={condition.value}>{condition.label}</option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasCcBalance} onChange={(event) => setHasCcBalance(event.target.checked)} />
+          <span style={{ fontSize: 13 }}>Solo con saldo CC</span>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, cursor: 'pointer' }}>
+          <input type="checkbox" checked={suspiciousName} onChange={(event) => setSuspiciousName(event.target.checked)} />
+          <span style={{ fontSize: 13 }}>Solo nombres sospechosos</span>
+        </label>
       </div>
 
       <div className="fc-card" style={{ overflow: 'hidden' }}>
@@ -336,18 +369,19 @@ function ClientesPage() {
           <div style={{ overflowX: 'auto' }}>
             <table className="fc-table">
               <thead>
-                <tr><th>Nombre</th><th>CUIT</th><th>Contacto</th><th>IVA</th><th>Estado</th><th style={{ width: canManageCustomers ? '124px' : '48px' }}></th></tr>
+                <tr><th>Nombre</th><th>CUIT</th><th>Contacto</th><th>IVA</th><th style={{ textAlign: 'right' }}>Saldo CC</th><th>Estado</th><th style={{ width: canManageCustomers ? '124px' : '48px' }}></th></tr>
               </thead>
               <tbody>
                 {customers.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: '500' }}>{c.name}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{c.cuit || ''}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{formatCuit(c.cuit) || ''}</td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       {c.phone && <div>{c.phone}</div>}
                       {c.email && <div>{c.email}</div>}
                     </td>
-                    <td><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{IVA_CONDITIONS.find(i => i.value === c.ivaCondition)?.label || c.ivaCondition}</span></td>
+                    <td><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{CONDICION_IVA_DISPLAY[c.ivaCondition] || IVA_CONDITIONS.find(i => i.value === c.ivaCondition)?.label || c.ivaCondition}</span></td>
+                    <td className="money-cell strong">{formatPesos(c.ccBalance)}</td>
                     <td><span className={`badge ${c.isActive ? 'badge-green' : 'badge-red'}`}>{c.isActive ? 'Activo' : 'Inactivo'}</span></td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px' }}>

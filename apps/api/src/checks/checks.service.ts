@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { CashMovementType, CashSessionStatus, CcEntryType, PaymentMethod, Prisma } from '@erp/db'
 import { PrismaService } from '../common/prisma.service'
 import { pageParams, paged } from '../common/pagination'
 
@@ -103,72 +104,134 @@ export class ChecksService {
     })
   }
 
-  async clear(id: string, tenantId: string) {
-    const check = await this.findById(id, tenantId)
-    if (check.status !== CheckStatus.DEPOSITED) {
-      throw new BadRequestException('El cheque debe estar en estado Depositado para compensarse')
-    }
+  async clear(id: string, tenantId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const check = await this.findByIdTx(tx, id, tenantId)
+      if (check.status !== CheckStatus.DEPOSITED) {
+        throw new BadRequestException('El cheque debe estar en estado Depositado para compensarse')
+      }
 
-    return this.prisma.check.update({
-      where: { id },
-      data: {
-        status: CheckStatus.CLEARED,
-      },
+      const updated = await tx.check.update({
+        where: { id },
+        data: { status: CheckStatus.CLEARED },
+      })
+
+      if (!check.paymentId) {
+        await this.createCashMovementTx(tx, {
+          tenantId,
+          userId,
+          documentId: null,
+          type: CashMovementType.CASH_IN,
+          amount: Number(check.amount),
+          description: `Acreditación cheque ${check.number}`,
+          reference: check.number,
+        })
+      }
+
+      return updated
     })
   }
 
-  async bounce(id: string, tenantId: string, data: { reason: string }) {
-    const check = await this.findById(id, tenantId)
-    if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.CANCELLED) {
-      throw new BadRequestException('No se puede rechazar un cheque cobrado o cancelado')
-    }
-    if (check.status === CheckStatus.BOUNCED) {
-      throw new BadRequestException('Este cheque ya fue rechazado')
-    }
+  async bounce(id: string, tenantId: string, userId: string, data: { reason: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const check = await this.findByIdTx(tx, id, tenantId)
+      if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.CANCELLED) {
+        throw new BadRequestException('No se puede rechazar un cheque cobrado o cancelado')
+      }
+      if (check.status === CheckStatus.BOUNCED) {
+        throw new BadRequestException('Este cheque ya fue rechazado')
+      }
 
-    return this.prisma.check.update({
-      where: { id },
-      data: {
-        status: CheckStatus.BOUNCED,
-        rejectionReason: data.reason,
-        rejectionDate: new Date(),
-      },
+      const updated = await tx.check.update({
+        where: { id },
+        data: {
+          status: CheckStatus.BOUNCED,
+          rejectionReason: data.reason,
+          rejectionDate: new Date(),
+        },
+      })
+
+      if (check.paymentId) {
+        await this.createCashMovementTx(tx, {
+          tenantId,
+          userId,
+          documentId: check.payment?.documentId ?? null,
+          type: CashMovementType.CASH_OUT,
+          amount: Number(check.amount) * -1,
+          description: `Rechazo cheque ${check.number}`,
+          reference: check.number,
+        })
+        await this.restoreCustomerDebtTx(tx, tenantId, userId, check, data.reason)
+      }
+
+      return updated
     })
   }
 
-  async endorse(id: string, tenantId: string, data: { endorsedTo: string }) {
-    const check = await this.findById(id, tenantId)
-    if (check.status !== CheckStatus.RECEIVED) {
-      throw new BadRequestException('El cheque debe estar en estado Recibido para endosarse')
-    }
+  async endorse(id: string, tenantId: string, userId: string, data: { endorsedTo: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const check = await this.findByIdTx(tx, id, tenantId)
+      if (check.status !== CheckStatus.RECEIVED) {
+        throw new BadRequestException('El cheque debe estar en estado Recibido para endosarse')
+      }
 
-    return this.prisma.check.update({
-      where: { id },
-      data: {
-        status: CheckStatus.ENDORSED,
-        endorsedTo: data.endorsedTo,
-        endorsedDate: new Date(),
-      },
+      const updated = await tx.check.update({
+        where: { id },
+        data: {
+          status: CheckStatus.ENDORSED,
+          endorsedTo: data.endorsedTo,
+          endorsedDate: new Date(),
+        },
+      })
+
+      if (check.paymentId) {
+        await this.createCashMovementTx(tx, {
+          tenantId,
+          userId,
+          documentId: check.payment?.documentId ?? null,
+          type: CashMovementType.CASH_OUT,
+          amount: Number(check.amount) * -1,
+          description: `Endoso cheque ${check.number} a ${data.endorsedTo}`,
+          reference: check.number,
+        })
+      }
+
+      return updated
     })
   }
 
-  async cancel(id: string, tenantId: string) {
-    const check = await this.findById(id, tenantId)
-    if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.BOUNCED) {
-      throw new BadRequestException('No se puede cancelar un cheque cobrado o rechazado')
-    }
-    if (check.status === CheckStatus.DEPOSITED) {
-      throw new BadRequestException('Este cheque ya fue depositado y no puede cancelarse desde el sistema')
-    }
-    if (check.status === CheckStatus.ENDORSED) {
-      throw new BadRequestException('Este cheque ya fue endosado y no puede cancelarse desde el sistema')
-    }
+  async cancel(id: string, tenantId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const check = await this.findByIdTx(tx, id, tenantId)
+      if (check.status === CheckStatus.CLEARED || check.status === CheckStatus.BOUNCED) {
+        throw new BadRequestException('No se puede cancelar un cheque cobrado o rechazado')
+      }
+      if (check.status === CheckStatus.DEPOSITED) {
+        throw new BadRequestException('Este cheque ya fue depositado y no puede cancelarse desde el sistema')
+      }
+      if (check.status === CheckStatus.ENDORSED) {
+        throw new BadRequestException('Este cheque ya fue endosado y no puede cancelarse desde el sistema')
+      }
 
-    return this.prisma.check.update({
-      where: { id },
-      data: {
-        status: CheckStatus.CANCELLED,
-      },
+      const updated = await tx.check.update({
+        where: { id },
+        data: { status: CheckStatus.CANCELLED },
+      })
+
+      if (check.paymentId) {
+        await this.createCashMovementTx(tx, {
+          tenantId,
+          userId,
+          documentId: check.payment?.documentId ?? null,
+          type: CashMovementType.CASH_OUT,
+          amount: Number(check.amount) * -1,
+          description: `Cancelación cheque ${check.number}`,
+          reference: check.number,
+        })
+        await this.restoreCustomerDebtTx(tx, tenantId, userId, check, 'Cheque cancelado')
+      }
+
+      return updated
     })
   }
 
@@ -192,5 +255,79 @@ export class ChecksService {
     }
 
     return summary
+  }
+
+  private async findByIdTx(tx: Prisma.TransactionClient, id: string, tenantId: string) {
+    const check = await tx.check.findFirst({
+      where: { id, tenantId },
+      include: {
+        payment: {
+          include: { document: true },
+        },
+      },
+    })
+    if (!check) throw new NotFoundException('Cheque no encontrado')
+    return check
+  }
+
+  private async createCashMovementTx(tx: Prisma.TransactionClient, data: {
+    tenantId: string
+    userId: string
+    documentId: string | null
+    type: CashMovementType
+    amount: number
+    description: string
+    reference: string
+  }) {
+    const session = await tx.cashSession.findFirst({
+      where: { tenantId: data.tenantId, status: CashSessionStatus.OPEN },
+      orderBy: { openedAt: 'desc' },
+      select: { id: true },
+    })
+    if (!session) throw new BadRequestException('No hay caja abierta para registrar el impacto del cheque')
+
+    await tx.$executeRaw(Prisma.sql`SELECT id FROM "cash_sessions" WHERE id = ${session.id} FOR UPDATE`)
+    await tx.cashMovement.create({
+      data: {
+        tenantId: data.tenantId,
+        sessionId: session.id,
+        documentId: data.documentId,
+        createdById: data.userId,
+        type: data.type,
+        method: PaymentMethod.CHECK,
+        amount: this.roundMoney(data.amount),
+        description: data.description,
+        reference: data.reference,
+      },
+    })
+    const total = await tx.cashMovement.aggregate({
+      where: { sessionId: session.id },
+      _sum: { amount: true },
+    })
+    await tx.cashSession.update({
+      where: { id: session.id },
+      data: { expectedAmount: this.roundMoney(Number(total._sum.amount ?? 0)) },
+    })
+  }
+
+  private async restoreCustomerDebtTx(tx: Prisma.TransactionClient, tenantId: string, userId: string, check: Awaited<ReturnType<ChecksService['findByIdTx']>>, reason: string) {
+    const document = check.payment?.document
+    if (!document?.customerId) return
+    await tx.currentAccountEntry.create({
+      data: {
+        tenantId,
+        createdById: userId,
+        customerId: document.customerId,
+        documentId: document.id,
+        type: CcEntryType.DEBIT_NOTE,
+        amount: this.roundMoney(Number(check.amount)),
+        description: `Reverso cheque ${check.number}: ${reason || 'sin motivo'}`,
+        date: new Date(),
+      },
+    })
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round(value * 100) / 100
   }
 }

@@ -196,6 +196,7 @@ export const customersApi = {
   list: (params?: Record<string, unknown>) =>
     api.get('/customers', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/customers/${id}`).then((r) => r.data),
+  purchasedProducts: (id: string) => api.get(`/customers/${id}/products`).then((r) => r.data),
   create: (data: Record<string, unknown>) =>
     api.post('/customers', data).then((r) => r.data),
   importCustomers: (rows: Record<string, unknown>[]) =>
@@ -302,7 +303,7 @@ export const ccApi = {
 // ─── Cash ───────────────────────────────────────────────────
 export const cashApi = {
   current: () => api.get('/cash/current').then((r) => r.data),
-  sessions: () => api.get('/cash/sessions').then((r) => r.data),
+  sessions: (params?: Record<string, unknown>) => api.get('/cash/sessions', { params }).then((r) => r.data),
   open: (data: Record<string, unknown>) =>
     api.post('/cash/open', data).then((r) => r.data),
   move: (data: Record<string, unknown>) =>

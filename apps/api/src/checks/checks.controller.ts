@@ -48,27 +48,27 @@ export class ChecksController {
   @RequirePermission('check.manage')
   async clear(@Param('id') id: string, @Req() req: any) {
     const tenantId = req.user?.tenantId
-    return this.checksService.clear(id, tenantId)
+    return this.checksService.clear(id, tenantId, req.user?.id)
   }
 
   @Post(':id/bounce')
   @RequirePermission('check.manage')
   async bounce(@Param('id') id: string, @Req() req: any, @Body() data: any) {
     const tenantId = req.user?.tenantId
-    return this.checksService.bounce(id, tenantId, data)
+    return this.checksService.bounce(id, tenantId, req.user?.id, data)
   }
 
   @Post(':id/endorse')
   @RequirePermission('check.manage')
   async endorse(@Param('id') id: string, @Req() req: any, @Body() data: any) {
     const tenantId = req.user?.tenantId
-    return this.checksService.endorse(id, tenantId, data)
+    return this.checksService.endorse(id, tenantId, req.user?.id, data)
   }
 
   @Post(':id/cancel')
   @RequirePermission('check.manage')
   async cancel(@Param('id') id: string, @Req() req: any) {
     const tenantId = req.user?.tenantId
-    return this.checksService.cancel(id, tenantId)
+    return this.checksService.cancel(id, tenantId, req.user?.id)
   }
 }

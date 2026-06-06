@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Plus, X } from 'lucide-react'
 import { approvalsApi } from '@/lib/api'
@@ -16,6 +16,10 @@ type Request = {
   approvalFlow?: Flow
   requestedBy?: { firstName: string; lastName: string }
   decisions?: Array<{ id: string; decision: string; notes?: string; user?: { firstName: string; lastName: string } }>
+}
+type PagedRequests = {
+  data?: Request[]
+  meta?: { total?: number; page?: number; limit?: number; pages?: number }
 }
 
 const statusLabels: Record<Request['status'], string> = {
@@ -39,9 +43,19 @@ export default function AprobacionesPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [flowForm, setFlowForm] = useState({ name: '', entityType: 'PurchaseOrder', role: 'ADMIN', requiredCount: '1' })
   const [requestForm, setRequestForm] = useState({ approvalFlowId: '', entityType: 'PurchaseOrder', entityId: '' })
+  const [requestStatus, setRequestStatus] = useState<Request['status'] | ''>('PENDING')
+  const [requestPage, setRequestPage] = useState(1)
 
   const { data: flows = [], isLoading: loadingFlows } = useQuery<Flow[]>({ queryKey: ['approval-flows'], queryFn: () => approvalsApi.listFlows() })
-  const { data: requests = [], isLoading: loadingRequests } = useQuery<Request[]>({ queryKey: ['approval-requests'], queryFn: () => approvalsApi.listRequests() })
+  useEffect(() => {
+    setRequestPage(1)
+  }, [requestStatus])
+  const { data: requestsRaw, isLoading: loadingRequests } = useQuery<PagedRequests | Request[]>({
+    queryKey: ['approval-requests', requestStatus, requestPage],
+    queryFn: () => approvalsApi.listRequests({ status: requestStatus || undefined, page: requestPage, limit: 50 }),
+  })
+  const requests = Array.isArray(requestsRaw) ? requestsRaw : requestsRaw?.data || []
+  const requestsMeta = Array.isArray(requestsRaw) ? undefined : requestsRaw?.meta
 
   const createFlow = useMutation({
     mutationFn: () => approvalsApi.createFlow({
@@ -90,6 +104,16 @@ export default function AprobacionesPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) 360px', gap: 14, alignItems: 'start' }}>
         <section className="fc-card">
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>Solicitudes</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select className="fc-input" style={{ maxWidth: 220 }} value={requestStatus} onChange={(event) => setRequestStatus(event.target.value as Request['status'] | '')}>
+              <option value="">Todos los estados</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="APPROVED">Aprobadas</option>
+              <option value="REJECTED">Rechazadas</option>
+              <option value="CANCELLED">Canceladas</option>
+            </select>
+            {requestsMeta && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{Number(requestsMeta.total || 0).toLocaleString('es-AR')} solicitudes</span>}
+          </div>
           {loadingRequests ? <div className="empty-state"><span className="spinner" /></div> : requests.length === 0 ? <div className="empty-state"><p>Sin solicitudes.</p></div> : (
             <div style={{ overflowX: 'auto' }}>
               <table className="fc-table">
@@ -113,6 +137,19 @@ export default function AprobacionesPage() {
                   ))}
                 </tbody>
               </table>
+              {requestsMeta && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 12, borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
+                  <button className="fc-button fc-button-secondary" type="button" disabled={requestPage <= 1} onClick={() => setRequestPage((page) => Math.max(1, page - 1))}>
+                    Anterior
+                  </button>
+                  <span style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
+                    Pág. {requestPage}{requestsMeta.pages ? ` de ${requestsMeta.pages}` : ''}
+                  </span>
+                  <button className="fc-button fc-button-secondary" type="button" disabled={!requestsMeta.pages || requestPage >= requestsMeta.pages} onClick={() => setRequestPage((page) => page + 1)}>
+                    Siguiente
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>

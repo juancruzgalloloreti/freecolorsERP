@@ -263,6 +263,11 @@ export class PurchasesService {
         return { input: item, orderItem, quantity }
       })
 
+      const uniqueProductIds = Array.from(new Set(receptionItems.map(({ orderItem }) => orderItem.productId))).sort()
+      for (const productId of uniqueProductIds) {
+        await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${productId}))`)
+      }
+
       const reception = await tx.purchaseReception.create({
         data: {
           tenantId,

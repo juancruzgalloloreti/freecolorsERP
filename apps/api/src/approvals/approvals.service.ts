@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
-import { ApprovalDecisionType, ApprovalStatus, UserRole } from '@erp/db'
+import { ApprovalDecisionType, ApprovalStatus, Prisma, UserRole } from '@erp/db'
 import { PrismaService } from '../common/prisma.service'
+import { pageParams, paged } from '../common/pagination'
 
 @Injectable()
 export class ApprovalsService {
@@ -98,36 +99,49 @@ export class ApprovalsService {
   }
 
   // Requests
-  async findRequests(tenantId: string, params?: { status?: string; entityType?: string }) {
-    return this.prisma.approvalRequest.findMany({
-      where: {
-        tenantId,
-        ...(params?.status && { status: params.status as any }),
-        ...(params?.entityType && { entityType: params.entityType }),
-      },
-      include: {
-        approvalFlow: true,
-        requestedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
+  async findRequests(tenantId: string, params?: { status?: string; entityType?: string; page?: number | string; limit?: number | string }) {
+    const shouldPage = params?.page !== undefined
+    const { page, limit, skip } = pageParams(params ?? {}, 50, 200)
+    const status = params?.status && Object.values(ApprovalStatus).includes(params.status as ApprovalStatus) ? params.status as ApprovalStatus : undefined
+    const where: Prisma.ApprovalRequestWhereInput = {
+      tenantId,
+      ...(status && { status }),
+      ...(params?.entityType && { entityType: params.entityType }),
+    }
+    const include = {
+      approvalFlow: true,
+      requestedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
         },
-        decisions: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
+      },
+      decisions: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
             },
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    })
+    } satisfies Prisma.ApprovalRequestInclude
+
+    const [rows, total] = await Promise.all([
+      this.prisma.approvalRequest.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip: shouldPage ? skip : undefined,
+        take: shouldPage ? limit : 50,
+      }),
+      shouldPage ? this.prisma.approvalRequest.count({ where }) : Promise.resolve(0),
+    ])
+
+    return shouldPage ? paged(rows, total, page, limit) : rows
   }
 
   async findRequestById(id: string, tenantId: string) {
