@@ -13,6 +13,7 @@ import {
 } from '@/components/legacy/legacy-ui'
 import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 type ProductHit = {
   id: string
@@ -43,7 +44,7 @@ type LegacyLine = {
 
 type OptionRow = { id: string; name: string; isDefault?: boolean; cuit?: string | null; ivaCondition?: string | null; address?: string | null; city?: string | null; province?: string | null; number?: number }
 
-const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
+import { formatPesos } from '@/lib/format'
 
 function asArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[]
@@ -189,7 +190,7 @@ export default function LegacyInvoiceBudgetPage() {
           <LegacyPanel>
             <LegacyGrid columns={5}>
               <label className="legacy-label"><span>Operacion</span><select className="legacy-input" value={type} onChange={(event) => setType(event.target.value)}><option value="BUDGET">Presupuesto</option><option value="REMITO">Remito</option><option value="INVOICE_A">Factura A</option><option value="INVOICE_B">Factura B</option><option value="INVOICE_C">Factura C</option></select></label>
-              <label className="legacy-label"><span>Fecha</span><input className="legacy-input" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
+              <label className="legacy-label"><span>Fecha</span><DateInputAR value={date} onChange={setDate} className="legacy-input" /></label>
               <label className="legacy-label"><span>Letra / Tipo</span><input className="legacy-input" value={type.replace('INVOICE_', '')} readOnly /></label>
               <label className="legacy-label"><span>Punto</span><select className="legacy-input" value={puntoDeVentaId} onChange={(event) => setPuntoDeVentaId(event.target.value)}><option value="">Auto</option>{puntos.map((punto) => <option key={punto.id} value={punto.id}>{punto.number} - {punto.name}</option>)}</select></label>
               <label className="legacy-label"><span>Numero</span><input className="legacy-input" value="Automatico al confirmar" readOnly /></label>
@@ -225,7 +226,7 @@ export default function LegacyInvoiceBudgetPage() {
                         <td>{product.code}</td>
                         <td>{product.name}</td>
                         <td>{product.categoryName || ''}</td>
-                        <td className="legacy-money">{ARS.format(product.price || 0)}</td>
+                        <td className="legacy-money">{formatPesos(product.price || 0)}</td>
                         <td className="legacy-number">{Number(product.stock || product.stockTotal || 0).toLocaleString('es-AR')}</td>
                       </tr>
                     ))}
@@ -246,7 +247,7 @@ export default function LegacyInvoiceBudgetPage() {
                       <td><input className="legacy-input legacy-number" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: toNumber(event.target.value) })} /></td>
                       <td><input className="legacy-input legacy-number" value={line.discount} onChange={(event) => updateLine(index, { discount: toNumber(event.target.value) })} /></td>
                       <td><input className="legacy-input legacy-number" value={line.taxRate} onChange={(event) => updateLine(index, { taxRate: toNumber(event.target.value) })} /></td>
-                      <td className="legacy-money">{ARS.format(line.quantity * line.unitPrice * (1 - line.discount / 100) * (1 + line.taxRate / 100))}</td>
+                      <td className="legacy-money">{formatPesos(line.quantity * line.unitPrice * (1 - line.discount / 100) * (1 + line.taxRate / 100))}</td>
                       <td><select className="legacy-input" value={line.depositId} onChange={(event) => updateLine(index, { depositId: event.target.value })}>{deposits.map((deposit) => <option key={deposit.id} value={deposit.id}>{deposit.name}</option>)}</select></td>
                       <td><button className="legacy-shortcut-button" type="button" onClick={() => setLines((current) => current.filter((_, lineIndex) => lineIndex !== index))}>X</button></td>
                     </tr>
@@ -268,12 +269,12 @@ export default function LegacyInvoiceBudgetPage() {
           </LegacyPanel>
           <LegacyTotalsBox
             rows={[
-              { label: 'Subtotal', value: ARS.format(totals.subtotal) },
-              { label: 'IVA', value: ARS.format(totals.iva) },
-              { label: 'Redondeo', value: ARS.format(totals.rounded) },
-              { label: 'Percibe', value: ARS.format(totals.percibe) },
+              { label: 'Subtotal', value: formatPesos(totals.subtotal) },
+              { label: 'IVA', value: formatPesos(totals.iva) },
+              { label: 'Redondeo', value: formatPesos(totals.rounded) },
+              { label: 'Percibe', value: formatPesos(totals.percibe) },
             ]}
-            total={ARS.format(totals.total)}
+            total={formatPesos(totals.total)}
           />
           <LegacyPanel title="Datos extra">
             <div className="legacy-stack">

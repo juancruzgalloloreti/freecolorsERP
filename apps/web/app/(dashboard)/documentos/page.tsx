@@ -19,7 +19,8 @@ import { documentsApi } from '@/lib/api'
 import { printDocumentA4 } from '@/lib/print-document'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import { exportToExcel } from '@/lib/export-excel'
-import { formatDocumentNumber } from '@/lib/format'
+import { formatDocumentNumber, formatPesos } from '@/lib/format'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 type DocumentStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED'
 type DocumentType = 'INVOICE_A' | 'INVOICE_B' | 'INVOICE_C' | 'REMITO' | 'BUDGET' | 'PURCHASE_ORDER' | 'CREDIT_NOTE_A' | 'CREDIT_NOTE_B'
@@ -94,12 +95,6 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
   CONFIRMED: 'Confirmado',
   CANCELLED: 'Anulado',
 }
-
-const ARS = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 2,
-})
 
 const DATE = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -322,11 +317,11 @@ function DocumentosPage() {
           <div className="history-toolbar" style={{ marginTop: 10 }}>
             <label className="fc-label" style={{ flex: '1 1 140px' }}>
               Desde
-              <input className="fc-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+              <DateInputAR value={dateFrom} onChange={setDateFrom} className="fc-input" />
             </label>
             <label className="fc-label" style={{ flex: '1 1 140px' }}>
               Hasta
-              <input className="fc-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+              <DateInputAR value={dateTo} onChange={setDateTo} className="fc-input" />
             </label>
             <label className="fc-label" style={{ flex: '1 1 130px' }}>
               Mínimo
@@ -348,7 +343,7 @@ function DocumentosPage() {
             <div><span>Total</span><strong>{totals.documents}</strong></div>
             <div><span>Confirmados</span><strong>{totals.confirmed}</strong></div>
             <div><span>Borradores</span><strong>{totals.drafts}</strong></div>
-            <div><span>Facturado</span><strong>{ARS.format(totals.revenue)}</strong></div>
+            <div><span>Facturado</span><strong>{formatPesos(totals.revenue)}</strong></div>
           </div>
 
           {isLoading ? (
@@ -382,7 +377,7 @@ function DocumentosPage() {
                         </td>
                         <td><span className={`badge ${statusClass(row.status)}`}>{STATUS_LABEL[row.status]}</span></td>
                         <td style={{ textAlign: 'right' }}>{row.itemCount}</td>
-                        <td className="line-total">{ARS.format(Number(row.total || 0))}</td>
+                        <td className="line-total">{formatPesos(Number(row.total || 0))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -400,7 +395,7 @@ function DocumentosPage() {
                       <span className={`badge ${statusClass(row.status)}`}>{STATUS_LABEL[row.status]}</span>
                     </header>
                     <span>{row.customerName || row.supplierName || 'Consumidor final'}</span>
-                    <b>{ARS.format(Number(row.total || 0))}</b>
+                    <b>{formatPesos(Number(row.total || 0))}</b>
                   </button>
                 ))}
               </div>
@@ -448,8 +443,8 @@ function DocumentosPage() {
                 <div><span>CUIT</span><strong>{selected.customerSnapshot?.cuit || selected.customerCuit || 'Sin CUIT'}</strong></div>
                 <div><span>Fecha</span><strong>{DATE.format(new Date(selected.date))}</strong></div>
                 <div><span>Vencimiento</span><strong>{selected.dueDate ? DATE.format(new Date(selected.dueDate)) : '-'}</strong></div>
-                <div><span>Total</span><strong>{ARS.format(Number(selected.total || 0))}</strong></div>
-                <div><span>Pagado</span><strong>{ARS.format(Number(selected.paidAmount || 0))}</strong></div>
+                <div><span>Total</span><strong>{formatPesos(Number(selected.total || 0))}</strong></div>
+                <div><span>Pagado</span><strong>{formatPesos(Number(selected.paidAmount || 0))}</strong></div>
               </div>
 
               <div className="doc-modal-customer-strip">
@@ -522,9 +517,9 @@ function DocumentosPage() {
                             </td>
                             <td>{item.brandName || '-'}</td>
                             <td style={{ textAlign: 'right' }}>{Number(item.quantity || 0).toLocaleString('es-AR')}</td>
-                            <td style={{ textAlign: 'right' }}>{ARS.format(Number(item.unitPrice || 0))}</td>
+                            <td style={{ textAlign: 'right' }}>{formatPesos(Number(item.unitPrice || 0))}</td>
                             <td style={{ textAlign: 'right' }}>{Number(item.discount || 0).toLocaleString('es-AR')}%</td>
-                            <td className="line-total">{ARS.format(Number(item.total || 0))}</td>
+                            <td className="line-total">{formatPesos(Number(item.total || 0))}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -534,9 +529,9 @@ function DocumentosPage() {
               </div>
 
               <div className="document-total-box">
-                <div><span>Subtotal</span><strong>{ARS.format(Number(selected.subtotal || 0))}</strong></div>
-                <div><span>IVA</span><strong>{ARS.format(Number(selected.taxAmount || 0))}</strong></div>
-                <div className="document-grand-total"><span>Total</span><strong>{ARS.format(Number(selected.total || 0))}</strong></div>
+                <div><span>Subtotal</span><strong>{formatPesos(Number(selected.subtotal || 0))}</strong></div>
+                <div><span>IVA</span><strong>{formatPesos(Number(selected.taxAmount || 0))}</strong></div>
+                <div className="document-grand-total"><span>Total</span><strong>{formatPesos(Number(selected.total || 0))}</strong></div>
               </div>
 
               {selected.notes && (
@@ -552,7 +547,7 @@ function DocumentosPage() {
                   {selected.payments?.map((payment) => (
                     <div className="detail-line" key={payment.id}>
                       <div><strong>{payment.method}</strong><small>{payment.notes || 'Sin notas'}</small></div>
-                      <b>{ARS.format(payment.amount)}</b>
+                      <b>{formatPesos(payment.amount)}</b>
                     </div>
                   ))}
                 </div>

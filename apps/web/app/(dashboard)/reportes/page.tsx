@@ -6,7 +6,8 @@ import { reportsApi } from '@/lib/api'
 import { BarChart3, Download, Printer } from 'lucide-react'
 import { printReportA4 } from '@/lib/print-report'
 import { exportToExcel } from '@/lib/export-excel'
-import { formatFecha } from '@/lib/format'
+import { formatFecha, formatPesos } from '@/lib/format'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 type SalesGroup = 'month' | 'cuit' | 'document' | 'receipt' | 'pos' | 'locality' | 'account' | 'user' | 'userMl'
 
@@ -45,15 +46,9 @@ type ManagementSummary = {
   insights?: string[]
 }
 
-const ARS = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 2,
-})
-
 function reportMoney(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—'
-  return ARS.format(value)
+  return formatPesos(value)
 }
 
 const GROUPS: { value: SalesGroup; label: string }[] = [
@@ -184,10 +179,10 @@ export default function ReportesPage() {
           <span>{formatFecha(dateFrom)} / {formatFecha(dateTo)}</span>
         </div>
         <div className="decision-kpis">
-          <div><span>Venta periodo</span><strong>{ARS.format(kpis.salesTotal)}</strong><small>{kpis.salesVariationPct === null ? 'Sin periodo anterior' : `${kpis.salesVariationPct >= 0 ? '+' : ''}${kpis.salesVariationPct}% vs anterior`}</small></div>
-          <div><span>Ticket promedio</span><strong>{ARS.format(kpis.ticketAverage)}</strong><small>{kpis.confirmedDocuments} comprobantes</small></div>
-          <div><span>Contado cobrado</span><strong>{ARS.format(kpis.cashTotal)}</strong><small>{ARS.format(kpis.currentAccountSales)} vendido a Cta. Cte.</small></div>
-          <div><span>Saldo Cta. Cte.</span><strong>{ARS.format(kpis.currentAccountBalance)}</strong><small>Deuda neta acumulada</small></div>
+          <div><span>Venta periodo</span><strong>{formatPesos(kpis.salesTotal)}</strong><small>{kpis.salesVariationPct === null ? 'Sin periodo anterior' : `${kpis.salesVariationPct >= 0 ? '+' : ''}${kpis.salesVariationPct}% vs anterior`}</small></div>
+          <div><span>Ticket promedio</span><strong>{formatPesos(kpis.ticketAverage)}</strong><small>{kpis.confirmedDocuments} comprobantes</small></div>
+          <div><span>Contado cobrado</span><strong>{formatPesos(kpis.cashTotal)}</strong><small>{formatPesos(kpis.currentAccountSales)} vendido a Cta. Cte.</small></div>
+          <div><span>Saldo Cta. Cte.</span><strong>{formatPesos(kpis.currentAccountBalance)}</strong><small>Deuda neta acumulada</small></div>
           <div><span>Pendientes</span><strong>{kpis.draftBudgets + kpis.pendingOrders}</strong><small>{kpis.draftBudgets} presupuestos / {kpis.pendingOrders} pedidos</small></div>
         </div>
         <div className="decision-grid">
@@ -200,7 +195,7 @@ export default function ReportesPage() {
             {(management.topProducts || []).length === 0 ? <p>Sin ventas confirmadas.</p> : management.topProducts?.map((item) => (
               <div className="decision-row" key={`${item.code}-${item.name}`}>
                 <span><b>{item.code}</b> {item.name}</span>
-                <strong>{ARS.format(item.total)}</strong>
+                <strong>{formatPesos(item.total)}</strong>
               </div>
             ))}
           </div>
@@ -243,11 +238,11 @@ export default function ReportesPage() {
             <div className="report-date-grid">
               <label>
                 <span>Desde</span>
-                <input className="fc-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+                <DateInputAR value={dateFrom} onChange={setDateFrom} className="fc-input" />
               </label>
               <label>
                 <span>Hasta</span>
-                <input className="fc-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+                <DateInputAR value={dateTo} onChange={setDateTo} className="fc-input" />
               </label>
             </div>
             <label className="report-check">
@@ -263,7 +258,7 @@ export default function ReportesPage() {
 
           <div className="report-total-card">
             <span>Total</span>
-            <strong>{ARS.format(Number(totals.total || 0))}</strong>
+            <strong>{formatPesos(Number(totals.total || 0))}</strong>
             <small>{Number(totals.count || 0).toLocaleString('es-AR')} comprobantes</small>
           </div>
         </div>

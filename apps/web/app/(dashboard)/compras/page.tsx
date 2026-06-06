@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, CheckCircle2, ClipboardList, PackagePlus, Search, ShoppingCart, Trash2, Warehouse } from 'lucide-react'
 import { productsApi, purchasesApi, stockApi, suppliersApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 type Product = { id: string; code: string; name: string; brand?: { name: string }; category?: { name: string } }
 type Supplier = { id: string; name: string }
@@ -31,7 +32,7 @@ type PurchaseOrder = {
   items: PurchaseOrderItem[]
 }
 
-const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })
+import { formatPesos } from '@/lib/format'
 const statusLabels: Record<PurchaseOrder['status'], string> = {
   PENDING: 'Pendiente',
   SENT: 'Enviada',
@@ -177,7 +178,7 @@ export default function ComprasPage() {
         <div className="purchase-summary-strip" aria-label="Resumen de compras">
           <div><span>Pendientes</span><strong>{receivableOrders.length}</strong></div>
           <div><span>En edición</span><strong>{lines.length}</strong></div>
-          <div><span>Total</span><strong>{ARS.format(total)}</strong></div>
+          <div><span>Total</span><strong>{formatPesos(total)}</strong></div>
         </div>
       </div>
 
@@ -208,7 +209,7 @@ export default function ComprasPage() {
             </label>
             <label>
               <span className="fc-label">Entrega esperada</span>
-              <input className="fc-input" type="date" value={expectedDate} onChange={(event) => setExpectedDate(event.target.value)} />
+              <DateInputAR value={expectedDate} onChange={setExpectedDate} className="fc-input" />
             </label>
           </div>
 
@@ -240,7 +241,7 @@ export default function ComprasPage() {
                     <td><input className="fc-input" style={{ width: 84, textAlign: 'right' }} inputMode="decimal" value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} /></td>
                     <td><input className="fc-input" style={{ width: 106, textAlign: 'right' }} inputMode="decimal" value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} /></td>
                     <td><input className="fc-input" style={{ width: 72, textAlign: 'right' }} inputMode="decimal" value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value) })} /></td>
-                    <td className="money-cell strong">{ARS.format(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
+                    <td className="money-cell strong">{formatPesos(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
                     <td><button className="btn btn-icon btn-secondary btn-sm" aria-label={`Quitar ${line.name}`} onClick={() => setLines((current) => current.filter((_, i) => i !== index))}><Trash2 size={13} /></button></td>
                   </tr>
                 ))}
@@ -251,7 +252,7 @@ export default function ComprasPage() {
           <footer className="purchase-submit-bar">
             <div>
               <span>{lines.length} línea(s) · {itemCount.toLocaleString('es-AR')} unidad(es)</span>
-              <strong>{ARS.format(total)}</strong>
+              <strong>{formatPesos(total)}</strong>
             </div>
             <button className="btn btn-primary" disabled={!canCreate || !supplierId || lines.length === 0 || createMutation.isPending} onClick={() => createMutation.mutate()}>
               <PackagePlus size={14} /> {createMutation.isPending ? 'Creando...' : 'Crear orden de compra'}
@@ -308,7 +309,7 @@ export default function ComprasPage() {
               <button key={order.id} className={`purchase-order-row ${selectedOrder?.id === order.id ? 'active' : ''}`} type="button" onClick={() => setSelectedOrderId(order.id)}>
                 <span><b>OC #{order.number}</b><small>{order.supplier?.name || 'Sin proveedor'}</small></span>
                 <em className={`badge ${statusBadgeClass[order.status]}`}>{statusLabels[order.status]}</em>
-                <b>{ARS.format(Number(order.total || 0))}</b>
+                <b>{formatPesos(Number(order.total || 0))}</b>
               </button>
             ))}
           </section>

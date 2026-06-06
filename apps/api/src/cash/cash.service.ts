@@ -28,20 +28,13 @@ export class CashService {
   }
 
   async list(tenantId: string, includeLegacy = false) {
-    const legacyDescriptionFilter: Prisma.CashMovementWhereInput = {
-      OR: [
-        { description: { contains: 'legacy', mode: 'insensitive' } },
-        { description: { contains: 'migra', mode: 'insensitive' } },
-      ],
-    };
-    const movementWhere = includeLegacy ? undefined : { NOT: legacyDescriptionFilter };
     const sessions = await this.prisma.cashSession.findMany({
       where: {
         tenantId,
-        ...(includeLegacy ? {} : { movements: { some: movementWhere } }),
+        ...(includeLegacy ? {} : { isLegacy: false }),
       },
       include: {
-        movements: { where: movementWhere, include: { document: true }, orderBy: { createdAt: 'desc' }, take: 10 },
+        movements: { include: { document: true }, orderBy: { createdAt: 'desc' }, take: 10 },
       },
       orderBy: { openedAt: 'desc' },
       take: 60,

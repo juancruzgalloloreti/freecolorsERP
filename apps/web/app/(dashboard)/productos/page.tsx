@@ -6,6 +6,7 @@ import { priceListsApi, productsApi } from '@/lib/api'
 import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
+import { formatPesos } from '@/lib/format'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import * as XLSX from 'xlsx'
 import { ConfirmDialog } from '@/components/erp/layout'
@@ -108,11 +109,7 @@ function normalizeImportRow(headers: string[], values: string[]) {
   return row
 }
 
-const money = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 2,
-})
+const money = { format: formatPesos }
 
 function priceOf(list: PriceList, productId: string) {
   const item = list.items?.find((i) => i.productId === productId)

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
 import { exportToExcel } from '@/lib/export-excel'
 import { formatFecha, formatPesos } from '@/lib/format'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 interface AccountRow {
   id?: string
@@ -196,8 +197,8 @@ export default function CuentaCorrientePage() {
         <input className="fc-input" placeholder="Buscar cliente o movimiento..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
-        <label><span className="fc-label">Desde</span><input className="fc-input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
-        <label><span className="fc-label">Hasta</span><input className="fc-input" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
+        <label><span className="fc-label">Desde</span><DateInputAR value={dateFrom} onChange={setDateFrom} className="fc-input" /></label>
+        <label><span className="fc-label">Hasta</span><DateInputAR value={dateTo} onChange={setDateTo} className="fc-input" /></label>
       </div>
 
       <div className="fc-card" style={{ overflow: 'hidden' }}>
@@ -259,7 +260,7 @@ export default function CuentaCorrientePage() {
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <label><span className="fc-label">Tipo</span><select className="fc-input" value={form.kind} onChange={(event) => setForm((current) => ({ ...current, kind: event.target.value }))}><option value="PAYMENT">Pago recibido</option><option value="CHARGE">Cargo / ajuste</option></select></label>
-                <label><span className="fc-label">Fecha</span><input className="fc-input" type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} /></label>
+                <label><span className="fc-label">Fecha</span><DateInputAR value={form.date} onChange={(iso) => setForm((current) => ({ ...current, date: iso }))} className="fc-input" /></label>
               </div>
               <label><span className="fc-label">Importe</span><input className="fc-input" inputMode="decimal" value={form.amount} onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))} placeholder="0,00" /></label>
               <label><span className="fc-label">Detalle</span><input className="fc-input" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Recibo, ajuste, transferencia..." /></label>

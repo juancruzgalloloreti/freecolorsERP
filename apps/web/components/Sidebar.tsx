@@ -51,6 +51,13 @@ const NAV_GROUPS = [
       { href: '/reportes', label: 'Reportes', icon: BarChart3, permissions: ['report.view'] },
     ],
   },
+  {
+    label: 'Historial',
+    items: [
+      { href: '/historial/caja', label: 'Caja Diaria', icon: WalletCards, permissions: ['historial.caja'] },
+      { href: '/historial/cuenta-corriente', label: 'Cuenta Corriente', icon: CreditCard, permissions: ['historial.cuenta-corriente'] },
+    ],
+  },
 ]
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {

@@ -35,7 +35,7 @@ type ProductHit = {
 
 type OptionRow = { id: string; name: string; isDefault?: boolean }
 
-const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
+import { formatPesos } from '@/lib/format'
 
 function asArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[]
@@ -132,9 +132,9 @@ export default function LegacyProductLookupPage() {
                     <td>{product.categoryName || ''}</td>
                     <td>{product.brandName || ''}</td>
                     <td className="legacy-number">{Number(product.stock ?? product.stockTotal ?? 0).toLocaleString('es-AR')}</td>
-                    <td className="legacy-money">{ARS.format(Number(product.basePrice ?? product.price ?? 0))}</td>
+                    <td className="legacy-money">{formatPesos(Number(product.basePrice ?? product.price ?? 0))}</td>
                     <td>{product.appliedCoefficient && product.appliedCoefficient > 1 ? `${product.appliedCoefficient} ${product.appliedCoefficientName || ''}` : ''}</td>
-                    <td className="legacy-money">{ARS.format(Number(product.price || 0))}</td>
+                    <td className="legacy-money">{formatPesos(Number(product.price || 0))}</td>
                     <td className="legacy-number">{Number(product.taxRate || 0).toLocaleString('es-AR')}%</td>
                   </tr>
                 ))}
@@ -150,11 +150,11 @@ export default function LegacyProductLookupPage() {
               <span>{selected.description || 'Sin descripcion extendida'}</span>
               <div>Stock deposito: <b>{Number(selected.stock ?? 0).toLocaleString('es-AR')}</b></div>
               <div>Stock total: <b>{Number(selected.stockTotal ?? 0).toLocaleString('es-AR')}</b></div>
-              <div>Precio efectivo: <b>{ARS.format(Number(selected.price || 0))}</b></div>
+              <div>Precio efectivo: <b>{formatPesos(Number(selected.price || 0))}</b></div>
               <div>Clasificacion: <b>{selected.categoryName || 'Sin clasificacion'}</b></div>
-              <div>Costo reposicion: <b>{selected.replacementCost ? ARS.format(selected.replacementCost) : '-'}</b></div>
-              <div>Costo promedio: <b>{selected.averageCost ? ARS.format(selected.averageCost) : '-'}</b></div>
-              <div>Ultima compra: <b>{selected.lastPurchaseCost ? ARS.format(selected.lastPurchaseCost) : '-'}</b></div>
+              <div>Costo reposicion: <b>{selected.replacementCost ? formatPesos(selected.replacementCost) : '-'}</b></div>
+              <div>Costo promedio: <b>{selected.averageCost ? formatPesos(selected.averageCost) : '-'}</b></div>
+              <div>Ultima compra: <b>{selected.lastPurchaseCost ? formatPesos(selected.lastPurchaseCost) : '-'}</b></div>
             </div>
           ) : (
             <p>Seleccione un producto con doble click o Enter.</p>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { afipApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 import { Key, RefreshCw, Save, Shield, Trash2, X } from 'lucide-react'
 
 function apiMessage(error: unknown, fallback: string) {
@@ -221,7 +222,7 @@ export default function AfipConfigPage() {
               </div>
               <div>
                 <label className="fc-label">Vencimiento *</label>
-                <input className="fc-input" type="date" value={form.expiresAt} onChange={(e) => setForm((current) => ({ ...current, expiresAt: e.target.value }))} />
+                <DateInputAR value={form.expiresAt} onChange={(iso) => setForm((current) => ({ ...current, expiresAt: iso }))} className="fc-input" />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--fc-border)', paddingTop: 14 }}>
                 <button className="btn btn-secondary" disabled={createMutation.isPending || updateMutation.isPending} onClick={() => setEditing(false)}>Cancelar</button>

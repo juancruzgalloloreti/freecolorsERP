@@ -1,0 +1,12 @@
+{
+  "version": "5.22.0",
+  "steps": [
+    {
+      "tag": "CreateField",
+      "model": "CashSession",
+      "field": "isLegacy",
+      "type": "Boolean",
+      "default": false
+    }
+  ]
+}

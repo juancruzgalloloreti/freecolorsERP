@@ -1,9 +1,18 @@
+import { format, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
+
 export const CONDICION_IVA_DISPLAY: Record<string, string> = {
-  RESPONSABLE_INSCRIPTO: 'Resp. Inscripto',
+  RESPONSABLE_INSCRIPTO: 'Responsable Inscripto',
+  RI: 'Responsable Inscripto',
+  MONOTRIBUTO: 'Monotributista',
   MONOTRIBUTISTA: 'Monotributista',
+  M: 'Monotributista',
   CONSUMIDOR_FINAL: 'Consumidor Final',
+  CF: 'Consumidor Final',
   EXENTO: 'Exento',
-  NO_CATEGORIZADO: 'No categorizado',
+  EX: 'Exento',
+  NO_CATEGORIZADO: 'No Categorizado',
+  NC: 'No Categorizado',
 }
 
 export const DOCUMENT_TYPE_LABEL: Record<string, string> = {
@@ -25,6 +34,14 @@ export const DOCUMENT_TYPE_LABEL: Record<string, string> = {
 const ARS = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const USD = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
@@ -38,10 +55,35 @@ export function formatPesos(value: unknown): string {
   return ARS.format(Number(value || 0))
 }
 
+export function formatDolares(value: unknown): string {
+  return USD.format(Number(value || 0))
+}
+
+export function formatNumero(value: unknown, decimales = 2): string {
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  }).format(Number(value || 0))
+}
+
 export function formatFecha(value?: string | Date | null): string {
   if (!value) return ''
   const date = value instanceof Date ? value : new Date(value)
   return Number.isNaN(date.getTime()) ? '' : DATE.format(date)
+}
+
+export function formatFechaLarga(value?: string | null): string {
+  if (!value) return ''
+  const parsed = parseISO(value)
+  if (isNaN(parsed.getTime())) return ''
+  return format(parsed, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
+}
+
+export function formatFechaHora(value?: string | null): string {
+  if (!value) return ''
+  const parsed = parseISO(value)
+  if (isNaN(parsed.getTime())) return ''
+  return format(parsed, 'dd/MM/yyyy HH:mm', { locale: es })
 }
 
 export function formatCuit(value?: string | null): string {

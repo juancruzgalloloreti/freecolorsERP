@@ -55,11 +55,19 @@ async function bootstrap() {
   // ─── Sentry (solo production) ──────────────────────────────────
   if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
     Sentry.init({ dsn: process.env.SENTRY_DSN, environment: 'production' });
-    app.useGlobalFilters(new SentryFilter());
+    app.useGlobalFilters(new SentryFilter(app.getHttpAdapter()));
   }
 
   const port = configService.get<number>('PORT', 3001);
-  await app.listen(port);
+  try {
+    await app.listen(port);
+  } catch (err: any) {
+    if (err?.code === 'EADDRINUSE') {
+      logger.error(`Puerto ${port} en uso — la API ya está corriendo`);
+      return;
+    }
+    throw err;
+  }
   logger.log(`API corriendo en: http://localhost:${port}/api/v1`);
   if (configService.get('NODE_ENV') !== 'production') {
     logger.log(`Swagger: http://localhost:${port}/docs`);

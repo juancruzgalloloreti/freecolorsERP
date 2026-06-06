@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
 import { Save, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 import { CORE_PRICE_LIST_CODES, isAutomaticPriceList, isCorePriceList, priceListCode } from '@/lib/price-list-rules'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import { ConfirmDialog } from '@/components/erp/layout'
@@ -528,8 +529,8 @@ function ListasDePrecioPage() {
             </select>
             <input className="fc-input" value={coefficientForm.name} onChange={(e) => setCoefficientForm((current) => ({ ...current, name: e.target.value }))} placeholder="Nombre" />
             <input className="fc-input" value={coefficientForm.multiplier} onChange={(e) => setCoefficientForm((current) => ({ ...current, multiplier: e.target.value }))} placeholder="1.20" inputMode="decimal" />
-            <input className="fc-input" type="date" value={coefficientForm.validFrom} onChange={(e) => setCoefficientForm((current) => ({ ...current, validFrom: e.target.value }))} />
-            <input className="fc-input" type="date" value={coefficientForm.validTo} onChange={(e) => setCoefficientForm((current) => ({ ...current, validTo: e.target.value }))} />
+            <DateInputAR value={coefficientForm.validFrom} onChange={(iso) => setCoefficientForm((current) => ({ ...current, validFrom: iso }))} className="fc-input" />
+            <DateInputAR value={coefficientForm.validTo} onChange={(iso) => setCoefficientForm((current) => ({ ...current, validTo: iso }))} className="fc-input" />
             <button className="btn btn-primary btn-sm" disabled={coefficientMutation.isPending} onClick={saveCoefficient}>
               <Save size={13} /> Guardar
             </button>

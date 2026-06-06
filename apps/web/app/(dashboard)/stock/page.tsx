@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ErrorBoundary } from '@/components/erp/error-boundary'
 import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
 import { exportToExcel } from '@/lib/export-excel'
-import { formatFecha } from '@/lib/format'
+import { formatFecha, formatPesos } from '@/lib/format'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 const MOVEMENT_TYPES = [
   { value: 'PURCHASE',      label: 'Compra (entrada)',       in: true },
@@ -27,12 +28,6 @@ export interface StockItem {
   quantity: number; unitCost?: number; totalValue?: number
   stockMin?: number; brandName?: string; categoryName?: string
 }
-
-const ARS = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-})
 
 function stockKey(item: StockItem) {
   return `${item.productId}:${item.depositId}`
@@ -460,7 +455,7 @@ function StockPage() {
             <div style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: '10px', padding: '10px 16px' }}>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Valor total inventario</span>
               <div style={{ fontSize: '20px', fontWeight: '700', color: '#a78bfa', marginTop: '2px' }}>
-                {ARS.format(totalValue)}
+                {formatPesos(totalValue)}
               </div>
             </div>
           )}
@@ -581,7 +576,7 @@ function StockPage() {
                           )}
                           {isOwner && (
                             <td className="tabular-nums" style={{ textAlign: 'right', fontWeight: '600', color: 'var(--fc-text)' }}>
-                              {ARS.format(Number(s.totalValue ?? (Number(s.qty) * Number(s.avgCost || 0))))}
+                              {formatPesos(Number(s.totalValue ?? (Number(s.qty) * Number(s.avgCost || 0))))}
                             </td>
                           )}
                         </tr>
@@ -617,7 +612,7 @@ function StockPage() {
                       {isOwner && (
                         <div className="stock-card-costs">
                           <span>Costo prom. <b>${Number(s.avgCost || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
-                          <span>Valor <b>{ARS.format(Number(s.totalValue ?? (Number(s.qty) * Number(s.avgCost || 0))))}</b></span>
+                          <span>Valor <b>{formatPesos(Number(s.totalValue ?? (Number(s.qty) * Number(s.avgCost || 0))))}</b></span>
                         </div>
                       )}
                     </article>
@@ -647,8 +642,8 @@ function StockPage() {
           <label><span className="fc-label">Producto</span><input className="fc-input" value={movementSearch} onChange={(event) => setMovementSearch(event.target.value)} placeholder="Código o nombre" /></label>
           <label><span className="fc-label">Depósito</span><select className="fc-input" value={movementDepositId} onChange={(event) => setMovementDepositId(event.target.value)}><option value="">Todos</option>{deps.map((d: { id: string; name: string }) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
           <label><span className="fc-label">Tipo</span><select className="fc-input" value={movementType} onChange={(event) => setMovementType(event.target.value)}><option value="">Todos</option>{MOVEMENT_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
-          <label><span className="fc-label">Desde</span><input className="fc-input" type="date" value={movementDateFrom} onChange={(event) => setMovementDateFrom(event.target.value)} /></label>
-          <label><span className="fc-label">Hasta</span><input className="fc-input" type="date" value={movementDateTo} onChange={(event) => setMovementDateTo(event.target.value)} /></label>
+          <label><span className="fc-label">Desde</span><DateInputAR value={movementDateFrom} onChange={setMovementDateFrom} className="fc-input" /></label>
+          <label><span className="fc-label">Hasta</span><DateInputAR value={movementDateTo} onChange={setMovementDateTo} className="fc-input" /></label>
           <div style={{ display: 'flex', alignItems: 'end' }}>
             <button className="btn btn-secondary" type="button" onClick={exportMovements} disabled={(movements as unknown[]).length === 0}>
               <FileDown size={13} /> Exportar Excel

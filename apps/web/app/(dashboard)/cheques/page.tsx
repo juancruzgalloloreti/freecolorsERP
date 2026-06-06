@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, CheckCircle2, Landmark, Plus, Save, Send, X, XCircle } from 'lucide-react'
 import { checksApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 
 type CheckAction = 'deposit' | 'clear' | 'bounce' | 'endorse' | 'cancel'
 
@@ -25,7 +26,7 @@ type PagedChecks = {
   meta?: { total?: number; page?: number; limit?: number; pages?: number }
 }
 
-const ARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })
+import { formatPesos } from '@/lib/format'
 const statusLabels: Record<CheckRow['status'], string> = {
   RECEIVED: 'Recibido',
   DEPOSITED: 'Depositado',
@@ -182,7 +183,7 @@ export default function ChequesPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 14 }}>
         <div className="stat-card"><div className="stat-value">{summary?.total ?? 0}</div><div className="stat-label">Cheques</div></div>
-        <div className="stat-card"><div className="stat-value">{ARS.format(Number(summary?.pendingAmount || 0))}</div><div className="stat-label">Pendiente</div></div>
+        <div className="stat-card"><div className="stat-value">{formatPesos(Number(summary?.pendingAmount || 0))}</div><div className="stat-label">Pendiente</div></div>
         <div className="stat-card"><div className="stat-value">{summary?.bounced ?? 0}</div><div className="stat-label">Rechazados</div></div>
       </div>
 
@@ -198,7 +199,7 @@ export default function ChequesPage() {
                     <td>{check.bank}</td>
                     <td>{check.accountOwner}</td>
                     <td>{new Date(check.dueDate).toLocaleDateString('es-AR')}</td>
-                    <td className="tabular-nums" style={{ textAlign: 'right' }}>{ARS.format(Number(check.amount || 0))}</td>
+                    <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPesos(Number(check.amount || 0))}</td>
                     <td>
                       <div style={{ display: 'grid', gap: 3 }}>
                         <span className={`badge ${statusBadgeClass[check.status]}`}>{statusLabels[check.status]}</span>
@@ -264,11 +265,11 @@ export default function ChequesPage() {
               </div>
               <div>
                 <label className="fc-label">Vencimiento *</label>
-                <input className="fc-input" type="date" value={form.dueDate} onChange={(e) => setForm((current) => ({ ...current, dueDate: e.target.value }))} />
+                <DateInputAR value={form.dueDate} onChange={(iso) => setForm((current) => ({ ...current, dueDate: iso }))} className="fc-input" />
               </div>
               <div>
                 <label className="fc-label">Emisión</label>
-                <input className="fc-input" type="date" value={form.issueDate} onChange={(e) => setForm((current) => ({ ...current, issueDate: e.target.value }))} />
+                <DateInputAR value={form.issueDate} onChange={(iso) => setForm((current) => ({ ...current, issueDate: iso }))} className="fc-input" />
               </div>
               <label style={{ minHeight: 38, display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'end', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.isEcheq} onChange={(e) => setForm((current) => ({ ...current, isEcheq: e.target.checked }))} style={{ width: 15, height: 15, accentColor: 'var(--accent-purple)' }} />
@@ -295,7 +296,7 @@ export default function ChequesPage() {
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--fc-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 id="check-action-title" style={{ fontSize: 15, fontWeight: 600 }}>{actionTitle[pendingAction.fn]}</h3>
-                <small className="muted">{pendingAction.check.bank} · {pendingAction.check.number} · {ARS.format(Number(pendingAction.check.amount || 0))}</small>
+                <small className="muted">{pendingAction.check.bank} · {pendingAction.check.number} · {formatPesos(Number(pendingAction.check.amount || 0))}</small>
               </div>
               <button className="btn btn-icon btn-secondary" disabled={action.isPending} onClick={closeAction} aria-label="Cerrar acción de cheque"><X size={14} /></button>
             </div>

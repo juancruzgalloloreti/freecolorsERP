@@ -617,8 +617,9 @@ enum IvaCondition {
 model CurrentAccountEntry {
   id          String      @id @default(cuid())
   tenantId    String
-  customerId  String
+  customerId  String?
   documentId  String?     // documento que originó la entrada
+  reference   String?     // legacyIdComprobante para historial (vínculo con legacy_document_links)
   type        CcEntryType
   // amount: positivo = cargo (deuda), negativo = abono (pago)
   amount      Decimal     @db.Decimal(18, 2)
@@ -627,7 +628,7 @@ model CurrentAccountEntry {
   createdAt   DateTime    @default(now())
   createdById String?
 
-  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   document Document? @relation(fields: [documentId], references: [id])
   createdBy User?   @relation("CurrentAccountEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -703,6 +704,7 @@ model CashSession {
   difference      Decimal?          @db.Decimal(18, 2)
   openingNote     String?
   closingNote     String?
+  isLegacy        Boolean           @default(false)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

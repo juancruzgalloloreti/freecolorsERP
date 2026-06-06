@@ -21,6 +21,7 @@ import { PurchasesModule } from './purchases/purchases.module';
 import { AfipModule } from './afip/afip.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { ChecksModule } from './checks/checks.module';
+import { HistorialModule } from './historial/historial.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ChecksModule } from './checks/checks.module';
     AfipModule,
     ApprovalsModule,
     ChecksModule,
+    HistorialModule,
   ],
 })
 export class AppModule {}

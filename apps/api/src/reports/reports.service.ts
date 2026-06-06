@@ -20,7 +20,7 @@ export class ReportsService {
     const nextMonth = new Date(monthStart);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    const [salesTodayAgg, salesMonthAgg, debtAgg, pendingPurchases, unconfirmedDocs] = await Promise.all([
+    const [salesTodayAgg, salesMonthAgg, debtRaw, pendingPurchases, unconfirmedDocs] = await Promise.all([
       this.prisma.document.aggregate({
         where: { tenantId, status: 'CONFIRMED', date: { gte: today, lt: tomorrow } },
         _sum: { total: true },
@@ -29,10 +29,17 @@ export class ReportsService {
         where: { tenantId, status: 'CONFIRMED', date: { gte: monthStart, lt: nextMonth } },
         _sum: { total: true },
       }),
-      this.prisma.currentAccountEntry.aggregate({
-        where: { tenantId },
-        _sum: { amount: true },
-      }),
+      this.prisma.$queryRaw<{ saldo: number }[]>`
+        SELECT COALESCE(SUM(
+          CASE
+            WHEN "type" IN ('INVOICE', 'DEBIT_NOTE') THEN "amount"
+            ELSE -"amount"
+          END
+        ), 0) as saldo
+        FROM current_account_entries
+        WHERE "tenantId" = ${tenantId}
+          AND "customerId" IS NOT NULL
+      `,
       this.prisma.purchaseOrder.count({
         where: { tenantId, status: { in: ['PENDING', 'SENT'] as any[] } },
       }),
@@ -45,12 +52,12 @@ export class ReportsService {
       }),
     ]);
 
-    const rawDebt = Number(debtAgg._sum.amount ?? 0);
+    const rawDebt = Number(debtRaw[0].saldo ?? 0);
 
     return {
       salesToday: Number(salesTodayAgg._sum.total ?? 0),
       salesThisMonth: Number(salesMonthAgg._sum.total ?? 0),
-      customerDebt: rawDebt > 0 ? rawDebt : 0,
+      customerDebt: rawDebt,
       pendingPurchases,
       unconfirmedDocs,
     };
@@ -146,7 +153,7 @@ export class ReportsService {
 
     const invoiceTypes = ['INVOICE_A', 'INVOICE_B', 'INVOICE_C'];
     const dbLimit = pLimit(MANAGEMENT_REPORT_DB_CONCURRENCY);
-    const [docs, previousDocs, draftBudgets, pendingOrders, ccBalanceAgg, stockRows, products] = await Promise.all([
+    const [docs, previousDocs, draftBudgets, pendingOrders, ccBalanceRaw, stockRows, products] = await Promise.all([
       dbLimit(() => this.prisma.document.findMany({
         where: { tenantId, status: 'CONFIRMED', type: { in: invoiceTypes as any[] }, date: { gte: start, lt: end } },
         include: { items: { include: { product: { include: { brand: true, category: true } } } }, payments: true },
@@ -157,7 +164,17 @@ export class ReportsService {
       })),
       dbLimit(() => this.prisma.document.count({ where: { tenantId, status: 'DRAFT', type: 'BUDGET', date: { gte: start, lt: end } } })),
       dbLimit(() => this.prisma.salesOrder.count({ where: { tenantId, status: { in: ['PENDING', 'PREPARATION', 'BILLABLE'] as any[] } } })),
-      dbLimit(() => this.prisma.currentAccountEntry.aggregate({ where: { tenantId }, _sum: { amount: true } })),
+      dbLimit(() => this.prisma.$queryRaw<{ saldo: number }[]>`
+        SELECT COALESCE(SUM(
+          CASE
+            WHEN "type" IN ('INVOICE', 'DEBIT_NOTE') THEN "amount"
+            ELSE -"amount"
+          END
+        ), 0) as saldo
+        FROM current_account_entries
+        WHERE "tenantId" = ${tenantId}
+          AND "customerId" IS NOT NULL
+      `),
       dbLimit(() => this.prisma.stockMovement.groupBy({ by: ['productId'], where: { tenantId }, _sum: { quantity: true } })),
       dbLimit(() => this.prisma.product.findMany({
         where: { tenantId, isActive: true },
@@ -177,7 +194,7 @@ export class ReportsService {
     const accountTotal = docs.reduce((sum, doc) => sum + doc.payments
       .filter((payment: any) => payment.method === 'CURRENT_ACCOUNT')
       .reduce((inner: number, payment: any) => inner + Number(payment.amount || 0), 0), 0);
-    const currentAccountBalance = Number(ccBalanceAgg._sum.amount ?? 0);
+    const currentAccountBalance = Number(ccBalanceRaw[0].saldo ?? 0);
 
     const productSales = new Map<string, any>();
     for (const doc of docs) {

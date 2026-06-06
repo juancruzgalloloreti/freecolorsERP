@@ -345,3 +345,13 @@ export const reportsApi = {
     api.get('/reports/sales', { params }).then((r) => r.data),
   stock: () => api.get('/reports/stock').then((r) => r.data),
 }
+
+// ─── Historial (Legacy) ──────────────────────────────────────
+export const historialApi = {
+  caja: (params?: Record<string, unknown>) =>
+    api.get('/historial/caja', { params }).then((r) => r.data),
+  resumenCC: (params?: Record<string, unknown>) =>
+    api.get('/historial/cuenta-corriente', { params }).then((r) => r.data),
+  fichaCliente: (customerId: string, params?: Record<string, unknown>) =>
+    api.get(`/historial/cuenta-corriente/${customerId}`, { params }).then((r) => r.data),
+}

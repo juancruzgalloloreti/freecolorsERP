@@ -26,6 +26,7 @@ import {
 } from '@/components/erp/layout'
 import { useAuth } from '@/contexts/AuthContext'
 import { useBarcodeScan } from '@/hooks/use-barcode-scan'
+import { DateInputAR } from '@/components/ui/date-input-ar'
 import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
 import { printDocumentA4 } from '@/lib/print-document'
@@ -149,16 +150,12 @@ const DOC_TYPES: Array<{ value: DocumentType; label: string; short: string }> = 
 ]
 const STOCK_CONFIRMED_TYPES = new Set<DocumentType>(['INVOICE_A', 'INVOICE_B', 'INVOICE_C', 'REMITO'])
 
-const ARS = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 2,
-})
+import { formatPesos } from '@/lib/format'
 const COUNTER_PRICE_COLUMNS = ['LP1', 'LP2', 'LP3', 'LP4'] as const
 
 function formatCounterListPrice(product: ProductHit, code: (typeof COUNTER_PRICE_COLUMNS)[number]) {
   const value = product.pricesByList?.[code]
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? ARS.format(value) : '—'
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? formatPesos(value) : '—'
 }
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -711,7 +708,7 @@ export default function VentasPage() {
   }
 
   const buildDocumentPayload = (type: DocumentType) => {
-    const discountNote = totals.discount > 0 ? `Descuento global mostrador: ${totals.requestedDiscount.toLocaleString('es-AR')}% (${ARS.format(totals.discount)})` : ''
+    const discountNote = totals.discount > 0 ? `Descuento global mostrador: ${totals.requestedDiscount.toLocaleString('es-AR')}% (${formatPesos(totals.discount)})` : ''
     const deliveryNote = quickCustomer.deliveryAddress.trim() ? `Entrega: ${quickCustomer.deliveryAddress.trim()}` : ''
     const baseNotes = [notes, deliveryNote].filter(Boolean).join('\n')
     return {
@@ -905,7 +902,7 @@ export default function VentasPage() {
         </div>
         <div>
           <span>Saldo esperado</span>
-          <strong>{cashLoading ? '...' : ARS.format(Number((currentCash as { expectedAmount?: number } | null)?.expectedAmount || 0))}</strong>
+          <strong>{cashLoading ? '...' : formatPesos(Number((currentCash as { expectedAmount?: number } | null)?.expectedAmount || 0))}</strong>
         </div>
       </div>
 
@@ -921,7 +918,7 @@ export default function VentasPage() {
               </label>
               <label className="operation-field operation-field-date">
                 <span>Fecha</span>
-                <input className="fc-input" type="date" value={date} onChange={(event) => setDate(event.target.value)} disabled={sensitiveLocked} />
+                <DateInputAR value={date} onChange={setDate} className="fc-input" />
               </label>
               {needsPv && (
                 <label className="operation-field operation-field-pv">
@@ -1047,8 +1044,8 @@ export default function VentasPage() {
                 <Printer size={15} /> {printing ? 'Preparando...' : 'Imprimir último'}
               </button>
               <span className="payment-status">
-                {payments.length > 0 ? `${payments.length} pago(s) · ${ARS.format(paymentSummary.paid)}` : paymentLabel}
-                {paymentSummary.change > 0 ? ` · Vuelto ${ARS.format(paymentSummary.change)}` : ''}
+                {payments.length > 0 ? `${payments.length} pago(s) · ${formatPesos(paymentSummary.paid)}` : paymentLabel}
+                {paymentSummary.change > 0 ? ` · Vuelto ${formatPesos(paymentSummary.change)}` : ''}
               </span>
             </div>
           </div>
@@ -1148,7 +1145,7 @@ export default function VentasPage() {
                             <small>{[product.originCode || product.barcodeAlt ? `Origen ${product.originCode || product.barcodeAlt}` : '', product.brandName, product.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}</small>
                           </span>
                           <span className="result-numbers">
-                            <b>{ARS.format(product.price || 0)}</b>
+                            <b>{formatPesos(product.price || 0)}</b>
                             {product.appliedCoefficientName && product.appliedCoefficientName !== 'LP1' && (
                               <small>
                                 {product.appliedCoefficient ? `x${Number(product.appliedCoefficient).toLocaleString('es-AR')} ` : ''}
@@ -1222,10 +1219,10 @@ export default function VentasPage() {
                             </small>
                           </td>
                           <td><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></td>
-                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{ARS.format(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
+                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{formatPesos(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
                           <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>
                           {includeVat && <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value), productTaxRate: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>}
-                          <td className="line-total">{ARS.format(lineSubtotal(line) + lineTax(line))}</td>
+                          <td className="line-total">{formatPesos(lineSubtotal(line) + lineTax(line))}</td>
                           <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter || isRetakingDraft} title="Quitar item" aria-label={`Quitar ${line.description}`}><X size={13} /></button></td>
                         </tr>
                       ))}
@@ -1249,9 +1246,9 @@ export default function VentasPage() {
                       </small>
                       <div className="mobile-line-grid">
                         <label><span>Cant.</span><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></label>
-                        <label><span>Precio</span>{budgetMode ? <b>{ARS.format(line.unitPrice)}</b> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</label>
+                        <label><span>Precio</span>{budgetMode ? <b>{formatPesos(line.unitPrice)}</b> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</label>
                         <label><span>Desc.</span>{budgetMode ? <b>{line.discount.toLocaleString('es-AR')}%</b> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</label>
-                        <strong>{ARS.format(lineSubtotal(line) + lineTax(line))}</strong>
+                        <strong>{formatPesos(lineSubtotal(line) + lineTax(line))}</strong>
                       </div>
                     </article>
                   ))}
@@ -1271,18 +1268,18 @@ export default function VentasPage() {
               </div>
               <div>
                 <span>Subtotal</span>
-                <strong>{ARS.format(totals.subtotal)}</strong>
+                <strong>{formatPesos(totals.subtotal)}</strong>
               </div>
               {includeVat && (
                 <div>
                   <span>IVA</span>
-                  <strong>{ARS.format(totals.tax)}</strong>
+                  <strong>{formatPesos(totals.tax)}</strong>
                 </div>
               )}
               {totals.discount > 0 && (
                 <div>
                   <span>Desc.</span>
-                  <strong>-{ARS.format(totals.discount)}</strong>
+                  <strong>-{formatPesos(totals.discount)}</strong>
                 </div>
               )}
             </div>
@@ -1292,12 +1289,12 @@ export default function VentasPage() {
             </label>
             <div className="checkout-total">
               <span>Total</span>
-              <strong>{ARS.format(totals.total)}</strong>
+              <strong>{formatPesos(totals.total)}</strong>
             </div>
             {payments.length > 0 && (
               <div className="checkout-payment">
                 <span>{paymentSummary.remaining > 0 ? 'Resta' : paymentSummary.change > 0 ? 'Vuelto' : 'Pagado'}</span>
-                <strong>{ARS.format(paymentSummary.remaining > 0 ? paymentSummary.remaining : paymentSummary.change > 0 ? paymentSummary.change : paymentSummary.paid)}</strong>
+                <strong>{formatPesos(paymentSummary.remaining > 0 ? paymentSummary.remaining : paymentSummary.change > 0 ? paymentSummary.change : paymentSummary.paid)}</strong>
               </div>
             )}
             <div className="counter-primary-actions">
@@ -1315,7 +1312,7 @@ export default function VentasPage() {
             {recentDocs.length === 0 ? <p>Sin historial todavía.</p> : recentDocs.map((doc) => (
               <Link key={doc.id} href={`/documentos?selected=${doc.id}`} className="recent-row">
                 <span>{doc.customerName || 'Consumidor final'}</span>
-                <b>{ARS.format(Number(doc.total || 0))}</b>
+                <b>{formatPesos(Number(doc.total || 0))}</b>
                 <small>{DATE.format(new Date(doc.date))} · {documentNumber(doc)}</small>
               </Link>
             ))}
@@ -1362,7 +1359,7 @@ export default function VentasPage() {
               <div><span>Barras</span><strong>{productDetail.barcode || '-'}</strong></div>
               <div><span>Unidad</span><strong>{productDetail.unit || 'un'}</strong></div>
               <div><span>Stock total</span><strong>{Number(productDetail.stockTotal || 0).toLocaleString('es-AR')}</strong></div>
-              <div><span>Precio activo</span><strong>{ARS.format(productDetail.price || 0)}</strong></div>
+              <div><span>Precio activo</span><strong>{formatPesos(productDetail.price || 0)}</strong></div>
             </div>
             <div className="counter-product-price-grid" aria-label="Precios por lista">
               {COUNTER_PRICE_COLUMNS.map((code) => (
@@ -1450,13 +1447,13 @@ export default function VentasPage() {
           <label><span>Porcentaje de descuento</span><QuantityInput value={globalDiscount} onChange={(event) => setGlobalDiscount(event.target.value)} placeholder="0" min={0} max={100} autoFocus /></label>
           <div className="discount-help">
             <span>Total antes</span>
-            <strong>{ARS.format(totals.raw)}</strong>
+            <strong>{formatPesos(totals.raw)}</strong>
             <span>Porcentaje</span>
             <strong>{totals.requestedDiscount.toLocaleString('es-AR')}%</strong>
             <span>Descuento</span>
-            <strong>-{ARS.format(totals.discount)}</strong>
+            <strong>-{formatPesos(totals.discount)}</strong>
             <span>Total final</span>
-            <strong>{ARS.format(totals.total)}</strong>
+            <strong>{formatPesos(totals.total)}</strong>
           </div>
         </div>
       </EntitySheet>
@@ -1469,17 +1466,17 @@ export default function VentasPage() {
         footer={<button className="btn btn-primary" type="button" onClick={closePaymentSheet}>Aceptar</button>}
       >
         <div className="payment-summary-panel">
-          <div><span>Total</span><strong>{ARS.format(totals.total)}</strong></div>
-          <div><span>Pagado</span><strong>{ARS.format(paymentSummary.paid)}</strong></div>
-          <div><span>Resta</span><strong>{ARS.format(paymentSummary.remaining)}</strong></div>
-          {paymentSummary.change > 0 && <div className="change"><span>Vuelto</span><strong>{ARS.format(paymentSummary.change)}</strong></div>}
+          <div><span>Total</span><strong>{formatPesos(totals.total)}</strong></div>
+          <div><span>Pagado</span><strong>{formatPesos(paymentSummary.paid)}</strong></div>
+          <div><span>Resta</span><strong>{formatPesos(paymentSummary.remaining)}</strong></div>
+          {paymentSummary.change > 0 && <div className="change"><span>Vuelto</span><strong>{formatPesos(paymentSummary.change)}</strong></div>}
         </div>
         {payments.length > 0 && (
           <div className="payment-list">
             {payments.map((payment) => (
               <div className="payment-row" key={payment.id}>
                 <span>{PAYMENT_METHOD_LABELS[payment.method]}</span>
-                <strong>{ARS.format(payment.amount)}</strong>
+                <strong>{formatPesos(payment.amount)}</strong>
                 <button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removePayment(payment.id)} title="Quitar pago" aria-label={`Quitar pago ${PAYMENT_METHOD_LABELS[payment.method]}`}>
                   <X size={13} />
                 </button>

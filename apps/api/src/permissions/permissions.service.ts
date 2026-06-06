@@ -25,6 +25,7 @@ export class PermissionsService {
       'check.view', 'check.manage',
       'approval.view', 'approval.manage', 'approval.decide',
       'report.view', 'report.export',
+      'historial.caja', 'historial.cuenta-corriente',
       'user.create', 'user.edit', 'user.manage', 'user.delete', 'user.manage_permissions',
     ],
     EMPLOYEE: [
@@ -355,6 +356,8 @@ export class PermissionsService {
       { code: 'user.manage', description: 'Gestionar usuarios', category: 'users' },
       { code: 'user.delete', description: 'Eliminar usuarios', category: 'users' },
       { code: 'user.manage_permissions', description: 'Gestionar permisos de usuarios', category: 'users' },
+      { code: 'historial.caja', description: 'Ver historial de caja diaria', category: 'historial' },
+      { code: 'historial.cuenta-corriente', description: 'Ver historial de cuenta corriente', category: 'historial' },
     ]
 
     for (const permission of defaultPermissions) {

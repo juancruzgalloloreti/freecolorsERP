@@ -29,10 +29,10 @@ export default function LegacySupplierInvoicePage() {
         <LegacyFieldset legend="Datos factura">
           <LegacyGrid columns={5}>
             <label className="legacy-label"><span>Tipo</span><select className="legacy-input"><option>Factura A</option><option>Factura B</option><option>Remito</option></select></label>
-            <label className="legacy-label"><span>Fecha</span><input className="legacy-input" type="date" /></label>
+            <label className="legacy-label"><span>Fecha</span><input className="legacy-input" type="text" placeholder="DD/MM/YYYY" /></label>
             <label className="legacy-label"><span>Punto</span><input className="legacy-input" /></label>
             <label className="legacy-label"><span>Numero</span><input className="legacy-input" /></label>
-            <label className="legacy-label"><span>Vencimiento</span><input className="legacy-input" type="date" /></label>
+            <label className="legacy-label"><span>Vencimiento</span><input className="legacy-input" type="text" placeholder="DD/MM/YYYY" /></label>
           </LegacyGrid>
         </LegacyFieldset>
 
