@@ -160,7 +160,7 @@ function DocumentosPage() {
   const searchParams = useSearchParams()
   const selectedParam = searchParams.get('selected')
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<'all' | DocumentStatus>('all')
+  const [status, setStatus] = useState<'all' | 'PENDING' | DocumentStatus>('all')
   const [type, setType] = useState<'all' | DocumentType>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -175,7 +175,7 @@ function DocumentosPage() {
 
   const filters = useMemo(() => ({
     search: search || undefined,
-    status: status === 'all' ? undefined : status,
+    status: status === 'all' ? undefined : status === 'PENDING' ? 'CONFIRMED' : status,
     type: type === 'all' ? undefined : type,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
@@ -299,8 +299,9 @@ function DocumentosPage() {
               <Search size={14} />
               <input className="fc-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente, número, tipo..." />
             </div>
-            <select className="fc-input" value={status} onChange={(event) => setStatus(event.target.value as typeof status)} style={{ width: 150 }}>
+            <select className="fc-input" value={status} onChange={(event) => setStatus(event.target.value as typeof status)} style={{ width: 160 }}>
               <option value="all">Todos</option>
+              <option value="PENDING">Pendientes de entrega</option>
               <option value="DRAFT">Borradores</option>
               <option value="CONFIRMED">Confirmados</option>
               <option value="CANCELLED">Anulados</option>

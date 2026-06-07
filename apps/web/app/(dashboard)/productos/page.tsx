@@ -713,8 +713,10 @@ function ProductosPage() {
       )}
 
       <div className="search-wrap" style={{ gap: '8px', flexWrap: 'wrap' }}>
-        <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-        <input className="fc-input" placeholder="Buscar por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '32px', flex: '1 1 200px' }} />
+        <div style={{ position: 'relative', flex: '1 1 200px' }}>
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input className="fc-input" placeholder="Buscar por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '32px', width: '100%' }} />
+        </div>
         <select className="fc-input" value={filterBrand} onChange={e => setFilterBrand(e.target.value)} style={{ width: 'auto', minWidth: '130px' }}>
           <option value="">Todas las marcas</option>
           {brs.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}

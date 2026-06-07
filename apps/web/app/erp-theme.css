@@ -2468,16 +2468,24 @@ select.fc-input { color-scheme: dark; }
   color: var(--text-muted);
 }
 .purchase-table-wrap {
-  overflow-x: auto;
+  overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 8px;
 }
+.purchase-lines-table {
+  width: 100%;
+  table-layout: fixed;
+}
 .purchase-lines-table th,
 .purchase-lines-table td {
-  padding: 10px 11px;
+  padding: 10px 8px;
 }
 .purchase-lines-table td:nth-child(2) {
-  min-width: 220px;
+  min-width: 0;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .purchase-empty {
   min-height: 180px;

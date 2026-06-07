@@ -213,16 +213,19 @@ export default function ComprasPage() {
             </label>
           </div>
 
-          <div className="search-wrap" style={{ maxWidth: 'none' }}>
-            <Search size={14} />
-            <input className="fc-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar producto por código, nombre o marca..." />
+          <div className="search-wrap" style={{ maxWidth: 'none', position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input className="fc-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar producto por código, nombre o marca..." style={{ paddingLeft: 32 }} />
           </div>
           {search.trim() && (
-            <div className="purchase-search-results">
-              {isFetching ? <div className="empty-state"><span className="spinner" /></div> : products.slice(0, 8).map((product) => (
-                <button key={product.id} className="purchase-product-result" type="button" onClick={() => addProduct(product)}>
-                  <span><b>{product.code}</b> {product.name}</span>
-                  <small>{product.brand?.name || product.category?.name || 'Agregar'}</small>
+            <div className="purchase-search-results" style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--fc-border)', borderRadius: 8, marginTop: 4, background: 'var(--fc-bg)' }}>
+              {isFetching ? <div style={{ padding: 20, textAlign: 'center' }}><span className="spinner" /></div> : products.length === 0 ? (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Sin resultados. Podés crear el producto desde Productos.</div>
+              ) : products.map((product) => (
+                <button key={product.id} className="purchase-product-result" type="button" onClick={() => addProduct(product)} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '8px 12px', background: 'none', border: 'none', borderBottom: '1px solid var(--fc-border)', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: 'var(--fc-text)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', minWidth: 80 }}>{product.code}</span>
+                  <span style={{ flex: 1 }}>{product.name}</span>
+                  <small style={{ color: 'var(--text-muted)' }}>{product.brand?.name || product.category?.name || ''}</small>
                 </button>
               ))}
             </div>
@@ -230,17 +233,25 @@ export default function ComprasPage() {
 
           <div className="purchase-table-wrap">
             <table className="fc-table purchase-lines-table">
-              <thead><tr><th>Código</th><th>Producto</th><th style={{ textAlign: 'right' }}>Cant.</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>IVA</th><th style={{ textAlign: 'right' }}>Total</th><th></th></tr></thead>
+              <thead><tr>
+                <th style={{ width: '12%' }}>Código</th>
+                <th style={{ width: '30%' }}>Producto</th>
+                <th style={{ width: '12%', textAlign: 'right' }}>Cant.</th>
+                <th style={{ width: '15%', textAlign: 'right' }}>Costo</th>
+                <th style={{ width: '10%', textAlign: 'right' }}>IVA</th>
+                <th style={{ width: '14%', textAlign: 'right' }}>Total</th>
+                <th style={{ width: '7%' }}></th>
+              </tr></thead>
               <tbody>
                 {lines.length === 0 ? (
                   <tr><td colSpan={7}><div className="empty-state purchase-empty"><ShoppingCart size={30} /><p>Agregá productos para crear una orden.</p><small>Buscá por código o nombre. Si repetís un producto, se suma una unidad.</small></div></td></tr>
                 ) : lines.map((line, index) => (
                   <tr key={line.productId}>
-                    <td className="mono-cell">{line.code}</td>
-                    <td>{line.name}</td>
-                    <td><input className="fc-input" style={{ width: 84, textAlign: 'right' }} inputMode="decimal" value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} /></td>
-                    <td><input className="fc-input" style={{ width: 106, textAlign: 'right' }} inputMode="decimal" value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} /></td>
-                    <td><input className="fc-input" style={{ width: 72, textAlign: 'right' }} inputMode="decimal" value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value) })} /></td>
+                    <td className="mono-cell" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={line.code}>{line.code}</td>
+                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={line.name}>{line.name}</td>
+                    <td><input className="fc-input" style={{ width: '100%', textAlign: 'right', minWidth: 0 }} inputMode="decimal" value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} /></td>
+                    <td><input className="fc-input" style={{ width: '100%', textAlign: 'right', minWidth: 0 }} inputMode="decimal" value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} /></td>
+                    <td><input className="fc-input" style={{ width: '100%', textAlign: 'right', minWidth: 0 }} inputMode="decimal" value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value) })} /></td>
                     <td className="money-cell strong">{formatPesos(line.quantity * line.unitPrice * (1 + line.taxRate / 100))}</td>
                     <td><button className="btn btn-icon btn-secondary btn-sm" aria-label={`Quitar ${line.name}`} onClick={() => setLines((current) => current.filter((_, i) => i !== index))}><Trash2 size={13} /></button></td>
                   </tr>
