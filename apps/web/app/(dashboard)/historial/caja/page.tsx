@@ -20,9 +20,13 @@ const TIPO_VALOR_DISPLAY: Record<string, string> = {
 
 const TIPO_VALOR_SIGLA: Record<string, string> = {
   CASH: 'DE',
-  TRANSFER: 'DB',
+  BANK_TRANSFER: 'DB',
   CHECK: 'CD',
-  CARD: 'TC',
+  CREDIT_CARD: 'TC',
+  DEBIT_CARD: 'TD',
+  MERCADO_PAGO: 'MP',
+  CURRENT_ACCOUNT: 'CC',
+  OTHER: 'OT',
 }
 
 const CAJAS = [
