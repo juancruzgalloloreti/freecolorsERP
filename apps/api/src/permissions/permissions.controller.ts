@@ -94,4 +94,30 @@ export class PermissionsController {
   async remove(@Param('id') id: string) {
     return this.permissionsService.remove(id)
   }
+
+  // ─── Employee Permission Management ─────────────────────────────
+
+  @Get('employees/:userId')
+  @RequirePermission('user.manage_permissions')
+  async getEmployeePermissions(
+    @Req() req: any,
+    @Param('userId') userId: string,
+  ) {
+    return this.permissionsService.getEmployeePermissions(req.user.tenantId, userId)
+  }
+
+  @Put('employees/:userId')
+  @RequirePermission('user.manage_permissions')
+  async setEmployeePermissions(
+    @Req() req: any,
+    @Param('userId') userId: string,
+    @Body() body: { permissions: Record<string, boolean> },
+  ) {
+    return this.permissionsService.setEmployeePermissions(
+      req.user.tenantId,
+      userId,
+      req.user.id,
+      body.permissions,
+    )
+  }
 }

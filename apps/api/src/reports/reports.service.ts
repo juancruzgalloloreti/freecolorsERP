@@ -414,4 +414,56 @@ export class ReportsService {
     };
     return labels[type] || type;
   }
+
+  async ventasMensuales(tenantId: string, query: { month?: string }) {
+    const month = query.month || new Date().toISOString().slice(0, 7)
+
+    const rows = await this.prisma.$queryRawUnsafe<any[]>(`
+      SELECT
+        c.id,
+        c.name,
+        c.cuit,
+        COALESCE(SUM(CASE WHEN cae."type" = 'INVOICE' THEN cae."amount" ELSE 0 END), 0)::float as facturas,
+        COALESCE(SUM(CASE WHEN cae."type" = 'CREDIT_NOTE' THEN cae."amount" ELSE 0 END), 0)::float as notas_credito,
+        COALESCE(SUM(CASE WHEN cae."type" = 'INVOICE' THEN cae."amount" WHEN cae."type" = 'CREDIT_NOTE' THEN -cae."amount" ELSE 0 END), 0)::float as neto
+      FROM current_account_entries cae
+      JOIN customers c ON c.id = cae."customerId"
+      WHERE cae."tenantId" = $1
+        AND cae."customerId" IS NOT NULL
+        AND cae."type" IN ('INVOICE', 'CREDIT_NOTE')
+        AND DATE_TRUNC('month', cae."createdAt") = DATE_TRUNC('month', $2::date)
+      GROUP BY c.id, c.name, c.cuit
+      HAVING SUM(CASE WHEN cae."type" = 'INVOICE' THEN cae."amount" WHEN cae."type" = 'CREDIT_NOTE' THEN -cae."amount" ELSE 0 END) != 0
+      ORDER BY neto DESC
+    `, tenantId, month + '-01')
+
+    return { month, rows }
+  }
+
+  async ventasMensualesTotales(tenantId: string, query: { fromMonth?: string }) {
+    const from = query.fromMonth || (new Date().getFullYear() - 1) + '-01'
+
+    const meses = await this.prisma.$queryRawUnsafe<any[]>(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', cae."createdAt"), 'YYYY-MM') as mes,
+        COALESCE(SUM(CASE WHEN cae."type" = 'INVOICE' THEN cae."amount" ELSE 0 END), 0)::float as facturas,
+        COALESCE(SUM(CASE WHEN cae."type" = 'CREDIT_NOTE' THEN cae."amount" ELSE 0 END), 0)::float as notas_credito,
+        COALESCE(SUM(CASE WHEN cae."type" = 'INVOICE' THEN cae."amount" WHEN cae."type" = 'CREDIT_NOTE' THEN -cae."amount" ELSE 0 END), 0)::float as neto
+      FROM current_account_entries cae
+      WHERE cae."tenantId" = $1
+        AND cae."customerId" IS NOT NULL
+        AND cae."type" IN ('INVOICE', 'CREDIT_NOTE')
+        AND cae."createdAt" >= $2::date
+      GROUP BY DATE_TRUNC('month', cae."createdAt")
+      ORDER BY mes ASC
+    `, tenantId, from + '-01')
+
+    const totalGeneral = meses.reduce((acc: any, m: any) => ({
+      facturas: acc.facturas + Number(m.facturas),
+      notas_credito: acc.notas_credito + Number(m.notas_credito),
+      neto: acc.neto + Number(m.neto),
+    }), { facturas: 0, notas_credito: 0, neto: 0 })
+
+    return { meses, totalGeneral }
+  }
 }

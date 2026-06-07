@@ -49,6 +49,7 @@ const NAV_GROUPS = [
       { href: '/aprobaciones', label: 'Aprobaciones', icon: CheckSquare, permissions: ['approval.view', 'approval.decide'] },
       { href: '/empleados', label: 'Empleados', icon: UserCog, permissions: ['user.create', 'user.edit', 'user.manage_permissions'] },
       { href: '/reportes', label: 'Reportes', icon: BarChart3, permissions: ['report.view'] },
+      { href: '/reportes/ventas-mensuales', label: 'Ventas Mensuales', icon: BarChart3, permissions: ['report.view'] },
     ],
   },
   {
@@ -66,7 +67,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Usuario'
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href)
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/') || pathname.startsWith(href + '?')
 
   return (
     <>

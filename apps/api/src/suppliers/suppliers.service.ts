@@ -64,6 +64,7 @@ export class SuppliersService {
       : [{ total: 0 }];
     const mapped = rows.map((s) => ({
       id: s.id,
+      name: s.name,
       razonSocial: s.name,
       cuit: s.cuit,
       telefono: s.phone,

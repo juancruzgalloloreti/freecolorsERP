@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Download, Upload, Search, Edit2, Trash2, Building2 } from 'lucide-react'
 import NuevoProveedorModal from '@/components/proveedores/NuevoProveedorModal'
@@ -28,6 +29,7 @@ function apiErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function ProveedoresPage() {
+  const router = useRouter()
   const qc = useQueryClient()
   const { user } = useAuth()
   const canManageSuppliers = user?.role === 'OWNER'
@@ -35,6 +37,7 @@ export default function ProveedoresPage() {
   const [ivaCondition, setIvaCondition] = useState('')
   const [pendingOrdersOnly, setPendingOrdersOnly] = useState(false)
   const [supplierPage, setSupplierPage] = useState(1)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [modal, setModal] = useState<Proveedor | null | 'new'>(null)
   const [showImport, setShowImport] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -165,39 +168,42 @@ export default function ProveedoresPage() {
             <p>No hay proveedores registrados</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table className="fc-table" style={{ minWidth: 700 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="fc-table">
               <thead>
                 <tr>
                   <th>Razón Social</th>
-                  <th style={{ minWidth: 120 }}>CUIT</th>
+                  <th>CUIT</th>
                   <th>Teléfono</th>
-                  <th>Cond. IVA</th>
                   <th style={{ textAlign: 'right' }}>Saldo CC</th>
-                  <th>Última OC</th>
-                  <th style={{ textAlign: 'right' }}>OC pendientes</th>
                   {canManageSuppliers && <th style={{ width: '90px' }}></th>}
                 </tr>
               </thead>
               <tbody>
                 {suppliers.map((p) => (
-                  <tr key={p.id}>
-                    <td style={{ fontWeight: '500' }}>{p.razonSocial}</td>
+                  <React.Fragment key={p.id}>
+                   <tr onClick={() => setExpandedRow(expandedRow === p.id ? null : p.id)} style={{ cursor: 'pointer' }}>
+                    <td style={{ fontWeight: '500', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.razonSocial}>{p.razonSocial}</td>
                     <td className="tabular-nums" style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>{p.cuit || '—'}</td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.telefono || '—'}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{p.condicionIva ? CONDICION_IVA_DISPLAY[p.condicionIva] || p.condicionIva : '—'}</td>
                     <td className="money-cell strong">{formatPesos(p.ccBalance)}</td>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{formatFecha(p.lastOrderDate) || '—'}</td>
-                    <td className="money-cell">{p.pendingOrders || 0}</td>
                     {canManageSuppliers && (
                       <td>
                         <div style={{ display: 'flex', gap: '4px' }}>
-                          <button className="btn btn-icon btn-secondary btn-sm" onClick={() => { setModalError(null); setMessage(null); setModal(p) }} title="Editar"><Edit2 size={12} /></button>
-                          <button className="btn btn-icon btn-secondary btn-sm" onClick={() => { setDeletingId(p.id) }} title="Eliminar"><Trash2 size={12} /></button>
+                          <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setModalError(null); setMessage(null); setModal(p) }} title="Editar"><Edit2 size={12} /></button>
+                          <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setDeletingId(p.id) }} title="Eliminar"><Trash2 size={12} /></button>
                         </div>
                       </td>
                     )}
                   </tr>
+                  {expandedRow === p.id && (
+                    <tr>
+                      <td colSpan={canManageSuppliers ? 5 : 4} style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)' }}>
+                        IVA: {p.condicionIva ? CONDICION_IVA_DISPLAY[p.condicionIva] || p.condicionIva : '—'} · Última OC: {formatFecha(p.lastOrderDate) || '—'} · OC pendientes: {p.pendingOrders || 0}
+                      </td>
+                    </tr>
+                   )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

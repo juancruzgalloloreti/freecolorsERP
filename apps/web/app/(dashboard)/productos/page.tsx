@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { priceListsApi, productsApi } from '@/lib/api'
+import React from 'react'
 import { Plus, Edit2, Trash2, Search, X, Package, Upload, Download, CheckSquare2, Square, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { corePriceLists, priceListCode } from '@/lib/price-list-rules'
@@ -173,7 +174,7 @@ function calculateFormulaPrice(basePrice: number, operation: string, coefficient
     else if (roundingMode === 'down') calculated = Math.floor(calculated / rounding) * rounding
     else calculated = Math.round(calculated / rounding) * rounding
   }
-  return Number(calculated.toFixed(4))
+  return Math.round(calculated * 10000) / 10000
 }
 
 function defaultFormulaForCode(code: string | null) {
@@ -416,6 +417,7 @@ function ProductosPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [showAllPrices, setShowAllPrices] = useState(false)
   const [filterBrand, setFilterBrand] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -787,7 +789,8 @@ function ProductosPage() {
                       </button>
                     </th>
                   )}
-                  <th>Código</th><th>Nombre</th><th>Marca</th>
+                  <th>Código</th><th>Nombre</th>
+                  {showAllPrices && <th>Marca</th>}
                   {showAllPrices && <th>Categoría</th>}
                   <th style={{ textAlign: 'right' }}>Stock</th>
                   <th style={{ textAlign: 'right' }}>Precio</th>
@@ -802,22 +805,24 @@ function ProductosPage() {
                 {products.map((p: Product) => {
                   const selected = selectedProductIds.has(p.id)
                   const mainPrice = showAllPrices || !priceLists.length ? null : computedPrice(p, priceLists, priceLists[0])
+                  const colCount = 6 + (isOwner && selectionMode ? 1 : 0) + (canManageCatalog ? 1 : 0) + (showAllPrices ? 2 + priceLists.length : 0)
                   return (
-                    <tr key={p.id} style={selected ? { background: 'rgba(124,58,237,0.12)' } : undefined}>
+                    <React.Fragment key={p.id}>
+                    <tr style={{ ...(selected ? { background: 'rgba(124,58,237,0.12)' } : {}), cursor: 'pointer' }} onClick={() => !showAllPrices && setExpandedRow(expandedRow === p.id ? null : p.id)}>
                       {isOwner && selectionMode && (
                         <td>
-                          <button className="btn btn-icon btn-secondary btn-sm" onClick={() => toggleProductSelection(p.id)} title={selected ? 'Quitar producto' : 'Seleccionar producto'}>
+                          <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); toggleProductSelection(p.id) }} title={selected ? 'Quitar producto' : 'Seleccionar producto'}>
                             {selected ? <CheckSquare2 size={13} /> : <Square size={13} />}
                           </button>
                         </td>
                       )}
                       <td>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 7px', borderRadius: '5px' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 7px', borderRadius: '5px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }} title={p.code}>
                           {p.code}
                         </span>
                       </td>
-                      <td style={{ fontWeight: '500' }}>{p.name}</td>
-                      <td style={{ color: 'var(--text-muted)' }}>{p.brand?.name || '—'}</td>
+                      <td style={{ fontWeight: '500', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</td>
+                      {showAllPrices && <td style={{ color: 'var(--text-muted)' }}>{p.brand?.name || '—'}</td>}
                       {showAllPrices && <td style={{ color: 'var(--text-muted)' }}>{p.category?.name || '—'}</td>}
                       <td style={{ textAlign: 'right' }}>
                         <span className={`badge ${Number(p.stockQuantity ?? 0) < 0 ? 'badge-red' : Number(p.stockQuantity ?? 0) === 0 ? 'badge-yellow' : 'badge-green'}`}>
@@ -857,14 +862,25 @@ function ProductosPage() {
                       {canManageCatalog && (
                         <td>
                           <div style={{ display: 'flex', gap: '4px' }}>
-                            <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setModal(p)} title="Editar"><Edit2 size={12} /></button>
+                            <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setModal(p) }} title="Editar"><Edit2 size={12} /></button>
                             {canDeleteProducts && (
-                              <button className="btn btn-icon btn-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '7px', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center' }} onClick={() => { setDeleteError(null); setDeletingId(p.id) }} title="Eliminar"><Trash2 size={12} color="#f87171" /></button>
+                              <button className="btn btn-icon btn-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '7px', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center' }} onClick={(e) => { e.stopPropagation(); setDeleteError(null); setDeletingId(p.id) }} title="Eliminar"><Trash2 size={12} color="#f87171" /></button>
                             )}
                           </div>
                         </td>
                       )}
                     </tr>
+                    {!showAllPrices && expandedRow === p.id && (
+                      <tr>
+                        <td colSpan={colCount} style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)' }}>
+                          {p.brand?.name ? <>Marca: {p.brand?.name}</> : ''}
+                          {p.brand?.name && p.category?.name ? ' · ' : ''}
+                          {p.category?.name ? <>Categoría: {p.category?.name}</> : ''}
+                          {!p.brand?.name && !p.category?.name && p.description ? <>Desc: {p.description}</> : ''}
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   )
                 })}
               </tbody>

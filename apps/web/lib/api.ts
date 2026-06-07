@@ -214,6 +214,7 @@ export const customersApi = {
 export const suppliersApi = {
   list: (params?: Record<string, unknown>) =>
     api.get('/suppliers', { params }).then((r) => r.data),
+  get: (id: string) => api.get(`/suppliers/${id}`).then((r) => r.data),
   create: (data: Record<string, unknown>) =>
     api.post('/suppliers', data).then((r) => r.data),
   update: (id: string, data: Record<string, unknown>) =>
@@ -344,6 +345,10 @@ export const reportsApi = {
   sales: (params?: Record<string, unknown>) =>
     api.get('/reports/sales', { params }).then((r) => r.data),
   stock: () => api.get('/reports/stock').then((r) => r.data),
+  ventasMensuales: (params?: Record<string, unknown>) =>
+    api.get('/reports/ventas-mensuales', { params }).then((r) => r.data),
+  ventasMensualesTotales: (params?: Record<string, unknown>) =>
+    api.get('/reports/ventas-mensuales/totales', { params }).then((r) => r.data),
 }
 
 // ─── Historial (Legacy) ──────────────────────────────────────
@@ -354,4 +359,11 @@ export const historialApi = {
     api.get('/historial/cuenta-corriente', { params }).then((r) => r.data),
   fichaCliente: (customerId: string, params?: Record<string, unknown>) =>
     api.get(`/historial/cuenta-corriente/${customerId}`, { params }).then((r) => r.data),
+}
+
+export const preciosEspecialesApi = {
+  list: (customerId: string) => api.get(`/precios-especiales/cliente/${customerId}`).then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/precios-especiales', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/precios-especiales/${id}`, data).then((r) => r.data),
+  remove: (id: string) => api.delete(`/precios-especiales/${id}`).then((r) => r.data),
 }

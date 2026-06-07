@@ -60,12 +60,14 @@ export class HistorialService {
           CASE
             WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN cm.amount
             WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN 0
+            WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN cm.amount
             WHEN cm.description ILIKE '%Recibos%' THEN cm.amount
             ELSE 0
           END                                                  as entradas,
           CASE
             WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN 0
             WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN cm.amount
+            WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN 0
             WHEN cm.description ILIKE '%Pagos%' THEN cm.amount
             ELSE 0
           END                                                  as salidas,
@@ -73,6 +75,7 @@ export class HistorialService {
             CASE
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN cm.amount
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN -cm.amount
+              WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN cm.amount
               WHEN cm.description ILIKE '%Recibos%' THEN cm.amount
               WHEN cm.description ILIKE '%Pagos%' THEN -cm.amount
               ELSE 0
@@ -87,6 +90,10 @@ export class HistorialService {
         WHERE cm."tenantId" = ${tenantId}
           AND cm."createdAt" >= ${new Date(desde)}::timestamp
           AND cm."createdAt" <= ${new Date(hasta + 'T23:59:59')}::timestamp
+          AND (cm."reference" IS NULL OR cm."reference" NOT IN (
+            SELECT "reference" FROM current_account_entries
+            WHERE "tenantId" = ${tenantId} AND "customerId" IS NULL AND "type" = 'PAYMENT' AND "reference" IS NOT NULL
+          ))
           ${tipoValor ? Prisma.sql`AND cm.method = ${tipoValor}::"PaymentMethod"` : Prisma.empty}
         ORDER BY cm."createdAt" ASC, cm.id ASC
         LIMIT ${limit} OFFSET ${offset}
@@ -99,6 +106,7 @@ export class HistorialService {
             CASE
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN cm.amount
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN 0
+              WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN cm.amount
               WHEN cm.description ILIKE '%Recibos%' THEN cm.amount
               ELSE 0
             END
@@ -107,6 +115,7 @@ export class HistorialService {
             CASE
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN 0
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN cm.amount
+              WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN 0
               WHEN cm.description ILIKE '%Pagos%' THEN cm.amount
               ELSE 0
             END
@@ -115,6 +124,7 @@ export class HistorialService {
             CASE
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL > 0 THEN cm.amount
               WHEN (ldl."rawJson"->>'wCaja')::DECIMAL < 0 THEN -cm.amount
+              WHEN ldl.id IS NULL AND cm.method IN ('BANK_TRANSFER', 'CHECK', 'CREDIT_CARD', 'DEBIT_CARD', 'MERCADO_PAGO') THEN cm.amount
               WHEN cm.description ILIKE '%Recibos%' THEN cm.amount
               WHEN cm.description ILIKE '%Pagos%' THEN -cm.amount
               ELSE 0
@@ -127,6 +137,10 @@ export class HistorialService {
         WHERE cm."tenantId" = ${tenantId}
           AND cm."createdAt" >= ${new Date(desde)}::timestamp
           AND cm."createdAt" <= ${new Date(hasta + 'T23:59:59')}::timestamp
+          AND (cm."reference" IS NULL OR cm."reference" NOT IN (
+            SELECT "reference" FROM current_account_entries
+            WHERE "tenantId" = ${tenantId} AND "customerId" IS NULL AND "type" = 'PAYMENT' AND "reference" IS NOT NULL
+          ))
           ${tipoValor ? Prisma.sql`AND cm.method = ${tipoValor}::"PaymentMethod"` : Prisma.empty}
         GROUP BY cm.method
         ORDER BY cm.method

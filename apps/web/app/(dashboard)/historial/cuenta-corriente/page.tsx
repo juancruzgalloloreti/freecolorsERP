@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, ArrowLeft, Download } from 'lucide-react'
 import { formatPesos, formatCuit, formatFecha } from '@/lib/format'
@@ -34,11 +34,15 @@ type MovimientoCC = {
   saldoAcumulado: number
 }
 
+type Tab = 'clientes' | 'proveedores'
+
 export default function HistorialCCPage() {
+  const [tab, setTab] = useState<Tab>('clientes')
   const [soloConSaldo, setSoloConSaldo] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState<string | null>(null)
   const [documentId, setDocumentId] = useState<string | null>(null)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   const { data: resumen, isLoading: loadingResumen } = useQuery({
     queryKey: ['historial-cc', soloConSaldo, busqueda],
@@ -110,13 +114,12 @@ export default function HistorialCCPage() {
               Movimientos ({ficha.movimientos.length} registros)
             </span>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="fc-table" style={{ minWidth: 900 }}>
+          <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 500 }}>
+            <table className="fc-table" style={{ minWidth: 700 }}>
               <thead>
                 <tr>
                   <th>F. Contable</th>
                   <th>Tipo</th>
-                  <th>F. Vto</th>
                   <th>Comprobante</th>
                   <th>Concepto</th>
                   <th style={{ textAlign: 'right' }}>Débitos</th>
@@ -125,36 +128,63 @@ export default function HistorialCCPage() {
                 </tr>
               </thead>
               <tbody>
+                <tr style={{ backgroundColor: 'var(--fc-bg-secondary, #f5f5f5)' }}>
+                  <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>—</td>
+                  <td style={{ fontSize: 13 }}>Saldo Inicial</td>
+                  <td style={{ fontSize: 13 }}>—</td>
+                  <td style={{ fontSize: 13, color: 'var(--text-muted)' }}></td>
+                  <td className="money-cell"></td>
+                  <td className="money-cell"></td>
+                  <td className="money-cell strong">
+                    {formatPesos(
+                      ficha.movimientos.length > 0
+                        ? ficha.movimientos[0].saldoAcumulado - ficha.movimientos[0].debitos + ficha.movimientos[0].creditos
+                        : 0
+                    )}
+                  </td>
+                </tr>
                 {ficha.movimientos.map((m) => (
-                  <tr key={m.id}>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{formatFecha(m.fechaContable)}</td>
-                    <td style={{ fontSize: 13 }}>{m.tipo}</td>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{formatFecha(m.fechaVencimiento)}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {m.documentId ? (
-                        <button
-                          type="button"
-                          onClick={() => setDocumentId(m.documentId)}
-                          style={{ background: 'none', border: 0, color: '#93c5fd', padding: 0, cursor: 'pointer', font: 'inherit', fontWeight: 600 }}
-                        >
-                          {`${m.comprobanteTipo ?? ''} ${m.letra ?? ''}${String(m.puntoVenta ?? '').padStart(4, '0')}-${String(m.numero ?? '').padStart(8, '0')}`}
-                        </button>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{m.concepto}</td>
-                    <td className="money-cell" style={{ color: Number(m.debitos) > 0 ? '#f87171' : '' }}>
-                      {Number(m.debitos) > 0 ? formatPesos(m.debitos) : ''}
-                    </td>
-                    <td className="money-cell" style={{ color: Number(m.creditos) > 0 ? '#4ade80' : '' }}>
-                      {Number(m.creditos) > 0 ? formatPesos(m.creditos) : ''}
-                    </td>
-                    <td className="money-cell strong">{formatPesos(m.saldoAcumulado)}</td>
-                  </tr>
+                  <React.Fragment key={m.id}>
+                    <tr onClick={() => setExpandedRow(expandedRow === m.id ? null : m.id)} style={{ cursor: 'pointer' }}>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{formatFecha(m.fechaContable)}</td>
+                      <td style={{ fontSize: 13 }}>{m.tipo}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {m.documentId ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDocumentId(m.documentId) }}
+                            style={{ background: 'none', border: 0, color: '#93c5fd', padding: 0, cursor: 'pointer', font: 'inherit', fontWeight: 600 }}
+                          >
+                            {`${m.comprobanteTipo ?? ''} ${m.letra ?? ''}${String(m.puntoVenta ?? '').padStart(4, '0')}-${String(m.numero ?? '').padStart(8, '0')}`}
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={m.concepto}>{m.concepto}</td>
+                      <td className="money-cell" style={{ color: Number(m.debitos) > 0 ? '#f87171' : '' }}>
+                        {Number(m.debitos) > 0 ? formatPesos(m.debitos) : ''}
+                      </td>
+                      <td className="money-cell" style={{ color: Number(m.creditos) > 0 ? '#4ade80' : '' }}>
+                        {Number(m.creditos) > 0 ? formatPesos(m.creditos) : ''}
+                      </td>
+                      <td className="money-cell strong">{formatPesos(m.saldoAcumulado)}</td>
+                    </tr>
+                    {expandedRow === m.id && (
+                      <tr>
+                        <td colSpan={7} className="bg-muted/20 px-6 py-3 text-sm text-muted-foreground">
+                          F.Vto: {formatFecha(m.fechaVencimiento)} · Letra: {m.letra} · P.Vta: {m.puntoVenta} · Número: {m.numero}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--fc-border)', fontWeight: 700, fontSize: 14 }}>
+            <span>Sdo. Vencido: $0</span>
+            <span>Saldo Final: {formatPesos(ficha.saldoFinal)}</span>
           </div>
         </div>
       <DocumentDetailModal documentId={documentId} onClose={() => setDocumentId(null)} />
@@ -166,9 +196,16 @@ export default function HistorialCCPage() {
     <div className="p-6">
       <h1 className="page-title">Historial Cuenta Corriente</h1>
       <p className="page-subtitle" style={{ marginBottom: 24 }}>
-        Resumen de saldos históricos de clientes
+        Resumen de saldos históricos de {tab === 'clientes' ? 'clientes' : 'proveedores'}
       </p>
 
+      <div className="fc-tabs" style={{ marginBottom: 16 }}>
+        <button className={`fc-tab ${tab === 'clientes' ? 'active' : ''}`} onClick={() => setTab('clientes')}>Clientes</button>
+        <button className={`fc-tab ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => setTab('proveedores')}>Proveedores</button>
+      </div>
+
+      {tab === 'clientes' ? (
+        <>
       <div className="fc-card" style={{ padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'end' }}>
           <div className="search-wrap" style={{ flex: 1, minWidth: 200 }}>
@@ -199,45 +236,53 @@ export default function HistorialCCPage() {
             <p>No se encontraron clientes</p>
           </div>
         ) : (
-          <>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="fc-table" style={{ minWidth: 700 }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>CUIT</th>
-                    <th>Teléfono</th>
-                    <th style={{ textAlign: 'right' }}>Saldo ARS</th>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="fc-table" style={{ minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>CUIT</th>
+                  <th>Teléfono</th>
+                  <th style={{ textAlign: 'right' }}>Saldo ARS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientes.map(c => (
+                  <tr
+                    key={c.id}
+                    onClick={() => setClienteSeleccionado(c.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.id.slice(-8)}</td>
+                    <td style={{ fontWeight: 500 }}>{c.name}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>
+                      {formatCuit(c.cuit) || '—'}
+                    </td>
+                    <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.phone || '—'}</td>
+                    <td className="money-cell strong" style={{ color: c.saldoArs > 0 ? '#f87171' : '#4ade80' }}>
+                      {formatPesos(c.saldoArs)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {clientes.map(c => (
-                    <tr
-                      key={c.id}
-                      onClick={() => setClienteSeleccionado(c.id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.id.slice(-8)}</td>
-                      <td style={{ fontWeight: 500 }}>{c.name}</td>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)' }}>
-                        {formatCuit(c.cuit) || '—'}
-                      </td>
-                      <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{c.phone || '—'}</td>
-                      <td className="money-cell strong" style={{ color: c.saldoArs > 0 ? '#f87171' : '#4ade80' }}>
-                        {formatPesos(c.saldoArs)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--fc-border)', textAlign: 'right', fontWeight: 700 }}>
-              Total: {formatPesos(clientes.reduce((s, c) => s + c.saldoArs, 0))}
-            </div>
-          </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!loadingResumen && (
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--fc-border)', textAlign: 'right', fontWeight: 700 }}>
+            Total clientes: {formatPesos(clientes.reduce((s, c) => s + c.saldoArs, 0))}
+          </div>
         )}
       </div>
+        </>
+      ) : (
+        <div className="fc-card" style={{ padding: 40, textAlign: 'center' }}>
+          <div className="empty-state">
+            <p>Módulo en desarrollo — la cuenta corriente de proveedores se implementará en una fase posterior</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

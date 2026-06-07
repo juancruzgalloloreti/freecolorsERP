@@ -1337,3 +1337,39 @@ model LegacyImportError {
   @@index([batchId])
   @@map("legacy_import_errors")
 }
+
+model EmployeePermission {
+  id         String   @id @default(cuid())
+  userId     String
+  tenantId   String
+  feature    String
+  enabled    Boolean  @default(false)
+  updatedBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, tenantId, feature])
+  @@index([tenantId, feature])
+  @@map("employee_permissions")
+}
+
+model PrecioEspecial {
+  id           String   @id @default(cuid())
+  tenantId     String
+  customerId   String
+  productId    String
+  precio       Decimal  @db.Decimal(18, 2)
+  descuento    Decimal? @db.Decimal(18, 2)
+  listaBase    String   @default("LP1")
+  validoDesde  DateTime @default(now())
+  validoHasta  DateTime?
+  createdById  String
+  observaciones String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, customerId, productId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, productId])
+  @@map("precios_especiales")
+}

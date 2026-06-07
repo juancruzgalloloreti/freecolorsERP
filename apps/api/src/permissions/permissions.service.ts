@@ -373,4 +373,44 @@ export class PermissionsService {
 
     return { count: defaultPermissions.length }
   }
+
+  static readonly FEATURES_ON_BY_DEFAULT = [
+    'ventas', 'compras', 'caja', 'clientes', 'productos',
+    'stock_movimientos', 'comprobantes', 'proveedores',
+  ]
+
+  static readonly FEATURES_OFF_BY_DEFAULT = [
+    'precios_especiales', 'utilidad_sobre_costo', 'transferencias_deposito',
+    'despachos', 'ventas_mensuales', 'historial_legacy', 'reportes_completos',
+    'lista_precios', 'empleados', 'aprobaciones',
+  ]
+
+  async getEmployeePermissions(tenantId: string, userId: string) {
+    const allFeatures = [
+      ...PermissionsService.FEATURES_ON_BY_DEFAULT,
+      ...PermissionsService.FEATURES_OFF_BY_DEFAULT,
+    ]
+    const perms = await this.prisma.employeePermission.findMany({
+      where: { tenantId, userId },
+      select: { feature: true, enabled: true },
+    })
+    const permMap = new Map(perms.map(p => [p.feature, p.enabled]))
+    return allFeatures.map(feature => ({
+      feature,
+      enabled: permMap.has(feature) ? permMap.get(feature)! : PermissionsService.FEATURES_ON_BY_DEFAULT.includes(feature),
+    }))
+  }
+
+  async setEmployeePermissions(tenantId: string, userId: string, updatedBy: string, permissions: Record<string, boolean>) {
+    const results: { feature: string; enabled: boolean }[] = []
+    for (const [feature, enabled] of Object.entries(permissions)) {
+      await this.prisma.employeePermission.upsert({
+        where: { userId_tenantId_feature: { userId, tenantId, feature } },
+        create: { userId, tenantId, feature, enabled, updatedBy },
+        update: { enabled, updatedBy },
+      })
+      results.push({ feature, enabled })
+    }
+    return results
+  }
 }

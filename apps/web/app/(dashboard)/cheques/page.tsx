@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import React from 'react'
 import { Ban, CheckCircle2, Landmark, Plus, Save, Send, X, XCircle } from 'lucide-react'
 import { checksApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -57,6 +58,7 @@ export default function ChequesPage() {
   const [status, setStatus] = useState('')
   const [checkPage, setCheckPage] = useState(1)
   const [message, setMessage] = useState<string | null>(null)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [pendingAction, setPendingAction] = useState<{ check: CheckRow; fn: CheckAction } | null>(null)
   const [actionForm, setActionForm] = useState({ endorsedTo: '', reason: '' })
@@ -194,34 +196,41 @@ export default function ChequesPage() {
               <thead><tr><th>Número</th><th>Banco</th><th>Titular</th><th>Vencimiento</th><th>Importe</th><th>Estado</th><th></th></tr></thead>
               <tbody>
                 {checks.map((check) => (
-                  <tr key={check.id}>
+                  <React.Fragment key={check.id}>
+                  <tr onClick={() => setExpandedRow(expandedRow === check.id ? null : check.id)} style={{ cursor: 'pointer' }}>
                     <td className="mono-cell">{check.number}</td>
-                    <td>{check.bank}</td>
-                    <td>{check.accountOwner}</td>
-                    <td>{new Date(check.dueDate).toLocaleDateString('es-AR')}</td>
+                    <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={check.bank}>{check.bank}</td>
+                    <td style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={check.accountOwner}>{check.accountOwner}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(check.dueDate).toLocaleDateString('es-AR')}</td>
                     <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPesos(Number(check.amount || 0))}</td>
                     <td>
-                      <div style={{ display: 'grid', gap: 3 }}>
-                        <span className={`badge ${statusBadgeClass[check.status]}`}>{statusLabels[check.status]}</span>
-                        {check.endorsedTo && <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>→ {check.endorsedTo}</small>}
-                        {check.rejectionReason && <small style={{ color: '#f87171', fontSize: '11px' }}>{check.rejectionReason}</small>}
-                      </div>
+                      <span className={`badge ${statusBadgeClass[check.status]}`}>{statusLabels[check.status]}</span>
                     </td>
                     <td>
                       {canManage && (
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Depositar cheque ${check.number}`} title="Depositar" onClick={() => openAction(check, 'deposit')}><Landmark size={13} /></button>}
-                          {check.status === 'DEPOSITED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Acreditar cheque ${check.number}`} title="Acreditar" onClick={() => openAction(check, 'clear')}><CheckCircle2 size={13} /></button>}
-                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Endosar cheque ${check.number}`} title="Endosar" onClick={() => openAction(check, 'endorse')}><Send size={13} /></button>}
-                          {!['CLEARED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-danger btn-sm" aria-label={`Rechazar cheque ${check.number}`} title="Rechazar" onClick={() => openAction(check, 'bounce')}><Ban size={13} /></button>}
-                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Cancelar cheque ${check.number}`} title="Cancelar" onClick={() => openAction(check, 'cancel')}><XCircle size={13} /></button>}
+                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Depositar cheque ${check.number}`} title="Depositar" onClick={(e) => { e.stopPropagation(); openAction(check, 'deposit') }}><Landmark size={13} /></button>}
+                          {check.status === 'DEPOSITED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Acreditar cheque ${check.number}`} title="Acreditar" onClick={(e) => { e.stopPropagation(); openAction(check, 'clear') }}><CheckCircle2 size={13} /></button>}
+                          {check.status === 'RECEIVED' && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Endosar cheque ${check.number}`} title="Endosar" onClick={(e) => { e.stopPropagation(); openAction(check, 'endorse') }}><Send size={13} /></button>}
+                          {!['CLEARED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-danger btn-sm" aria-label={`Rechazar cheque ${check.number}`} title="Rechazar" onClick={(e) => { e.stopPropagation(); openAction(check, 'bounce') }}><Ban size={13} /></button>}
+                          {!['CLEARED', 'BOUNCED', 'CANCELLED'].includes(check.status) && <button className="btn btn-icon btn-secondary btn-sm" aria-label={`Cancelar cheque ${check.number}`} title="Cancelar" onClick={(e) => { e.stopPropagation(); openAction(check, 'cancel') }}><XCircle size={13} /></button>}
                         </div>
                       )}
                     </td>
                   </tr>
+                  {expandedRow === check.id && (check.endorsedTo || check.rejectionReason) && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)' }}>
+                        {check.endorsedTo && <>Endosado a: {check.endorsedTo}</>}
+                        {check.endorsedTo && check.rejectionReason && <> · </>}
+                        {check.rejectionReason && <>Motivo rechazo: {check.rejectionReason}</>}
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
-	            </table>
+              </table>
 	            {checksMeta && (
 	              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 12, borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>
 	                <button className="fc-button fc-button-secondary" type="button" disabled={checkPage <= 1} onClick={() => setCheckPage((page) => Math.max(1, page - 1))}>

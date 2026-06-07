@@ -47,7 +47,7 @@ export class StockService {
       const product = products.find((p) => p.id === m.productId);
       const deposit = depositMap.get(m.depositId);
       const quantity = Number(m._sum.quantity ?? 0);
-      const unitCost = Number(product?.averageCost ?? 0);
+      const unitCost = Number(product?.basePrice ?? 0);
       return {
         productId: m.productId,
         productCode: product?.code ?? '',
@@ -82,7 +82,7 @@ export class StockService {
       where: productFilter,
       select: {
         id: true,
-        averageCost: true,
+        basePrice: true,
       },
     });
 
@@ -100,7 +100,7 @@ export class StockService {
     let totalValue = 0;
     for (const product of products) {
       const quantity = movementMap.get(product.id) ?? 0;
-      const unitCost = Number(product.averageCost ?? 0);
+      const unitCost = Number(product.basePrice ?? 0);
       totalValue += quantity * unitCost;
     }
 

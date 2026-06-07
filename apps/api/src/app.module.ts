@@ -22,6 +22,7 @@ import { AfipModule } from './afip/afip.module';
 import { ApprovalsModule } from './approvals/approvals.module';
 import { ChecksModule } from './checks/checks.module';
 import { HistorialModule } from './historial/historial.module';
+import { PreciosEspecialesModule } from './precios-especiales/precios-especiales.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { HistorialModule } from './historial/historial.module';
     ApprovalsModule,
     ChecksModule,
     HistorialModule,
+    PreciosEspecialesModule,
   ],
 })
 export class AppModule {}

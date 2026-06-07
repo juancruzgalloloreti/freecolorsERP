@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { customersApi, priceListsApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
@@ -180,6 +181,7 @@ function CCModal({ customer, onClose }: { customer: Customer; onClose: () => voi
 }
 
 function ClientesPage() {
+  const router = useRouter()
   const qc = useQueryClient()
   const { user } = useAuth()
   const canManageCustomers = user?.role === 'OWNER'
@@ -188,6 +190,7 @@ function ClientesPage() {
   const [hasCcBalance, setHasCcBalance] = useState(false)
   const [suspiciousName, setSuspiciousName] = useState(false)
   const [customerPage, setCustomerPage] = useState(1)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [modal, setModal] = useState<Customer | null | 'new'>(null)
   const [ccModal, setCCModal] = useState<Customer | null>(null)
   const [importing, setImporting] = useState(false)
@@ -282,7 +285,11 @@ function ClientesPage() {
     },
   })
 
-  const customers: Customer[] = Array.isArray(data) ? data : (data as { data?: Customer[] })?.data || []
+  function isSuspiciousName(name: string): boolean {
+  return /^[^a-záéíóúüñA-Z]{0,2}$|^[{*|"]/.test(name)
+}
+
+const customers: Customer[] = Array.isArray(data) ? data : (data as { data?: Customer[] })?.data || []
   const pls = corePriceLists(Array.isArray(priceLists) ? priceLists : (priceLists as { data?: { id: string; name: string }[] })?.data || [])
 
   function handleImport(file: File | null) {
@@ -369,29 +376,39 @@ function ClientesPage() {
           <div style={{ overflowX: 'auto' }}>
             <table className="fc-table">
               <thead>
-                <tr><th>Nombre</th><th>CUIT</th><th>Contacto</th><th>IVA</th><th style={{ textAlign: 'right' }}>Saldo CC</th><th>Estado</th><th style={{ width: canManageCustomers ? '124px' : '48px' }}></th></tr>
+                <tr><th>Nombre</th><th>CUIT</th><th>Contacto</th><th style={{ textAlign: 'right' }}>Saldo CC</th><th>Estado</th><th style={{ width: canManageCustomers ? '124px' : '48px' }}></th></tr>
               </thead>
               <tbody>
-                {customers.map(c => (
-                  <tr key={c.id}>
-                    <td style={{ fontWeight: '500' }}>{c.name}</td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{formatCuit(c.cuit) || ''}</td>
-                    <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {c.phone && <div>{c.phone}</div>}
-                      {c.email && <div>{c.email}</div>}
-                    </td>
-                    <td><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{CONDICION_IVA_DISPLAY[c.ivaCondition] || IVA_CONDITIONS.find(i => i.value === c.ivaCondition)?.label || c.ivaCondition}</span></td>
-                    <td className="money-cell strong">{formatPesos(c.ccBalance)}</td>
-                    <td><span className={`badge ${c.isActive ? 'badge-green' : 'badge-red'}`}>{c.isActive ? 'Activo' : 'Inactivo'}</span></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setCCModal(c)} title="Cuenta corriente"><CreditCard size={12} /></button>
-                        {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={() => { setModalError(null); setImportResult(null); setModal(c) }} title="Editar"><Edit2 size={12} /></button>}
-                        {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={() => setDeletingCustomer(c)} title="Archivar"><Trash2 size={12} /></button>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                 {customers.map(c => (
+                   <React.Fragment key={c.id}>
+                    <tr onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)} style={{ cursor: 'pointer' }}>
+                      <td style={{ fontWeight: '500', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.name}>{isSuspiciousName(c.name) ? '⚠️ ' : ''}{c.name}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>{formatCuit(c.cuit) || ''}</td>
+                      <td style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${c.phone || ''} ${c.email || ''}`}>
+                        {c.phone && <span>{c.phone} </span>}
+                        {c.email && <span>{c.email}</span>}
+                      </td>
+                      <td className="money-cell strong">{formatPesos(c.ccBalance)}</td>
+                      <td><span className={`badge ${c.isActive ? 'badge-green' : 'badge-red'}`}>{c.isActive ? 'Activo' : 'Inactivo'}</span></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setCCModal(c) }} title="Cuenta corriente"><CreditCard size={12} /></button>
+                          {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setModalError(null); setImportResult(null); setModal(c) }} title="Editar"><Edit2 size={12} /></button>}
+                          {canManageCustomers && <button className="btn btn-icon btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setDeletingCustomer(c) }} title="Archivar"><Trash2 size={12} /></button>}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedRow === c.id && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)' }}>
+                          IVA: {CONDICION_IVA_DISPLAY[c.ivaCondition] || IVA_CONDITIONS.find(i => i.value === c.ivaCondition)?.label || c.ivaCondition}
+                          {c.address && <> · Dirección: {c.address}</>}
+                          {c.city && c.province ? <> · {c.city}, {c.province}</> : (c.city || c.province) ? <> · {c.city || c.province}</> : ''}
+                        </td>
+                      </tr>
+                    )}
+                   </React.Fragment>
+                 ))}
               </tbody>
             </table>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>

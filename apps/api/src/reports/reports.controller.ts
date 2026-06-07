@@ -26,6 +26,14 @@ export class ReportsController {
   @Get('stock') stock(@Req() req: any) {
     return this.service.stock(req.user.tenantId);
   }
+  @RequirePermission('report.view')
+  @Get('ventas-mensuales') ventasMensuales(@Req() req: any, @Query() query: any) {
+    return this.service.ventasMensuales(req.user.tenantId, query);
+  }
+  @RequirePermission('report.view')
+  @Get('ventas-mensuales/totales') ventasMensualesTotales(@Req() req: any, @Query() query: any) {
+    return this.service.ventasMensualesTotales(req.user.tenantId, query);
+  }
 }
 
 

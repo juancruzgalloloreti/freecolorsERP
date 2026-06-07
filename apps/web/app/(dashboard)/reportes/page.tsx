@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { reportsApi } from '@/lib/api'
 import { BarChart3, Download, Printer } from 'lucide-react'
@@ -111,6 +111,7 @@ export default function ReportesPage() {
   const [dateTo, setDateTo] = useState(() => isoDate(new Date()))
   const [receiptType, setReceiptType] = useState('')
   const [receiptFilter, setReceiptFilter] = useState(false)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   const params = useMemo(() => ({
     groupBy,
@@ -181,8 +182,9 @@ export default function ReportesPage() {
         <div className="decision-kpis">
           <div><span>Venta periodo</span><strong>{formatPesos(kpis.salesTotal)}</strong><small>{kpis.salesVariationPct === null ? 'Sin periodo anterior' : `${kpis.salesVariationPct >= 0 ? '+' : ''}${kpis.salesVariationPct}% vs anterior`}</small></div>
           <div><span>Ticket promedio</span><strong>{formatPesos(kpis.ticketAverage)}</strong><small>{kpis.confirmedDocuments} comprobantes</small></div>
-          <div><span>Contado cobrado</span><strong>{formatPesos(kpis.cashTotal)}</strong><small>{formatPesos(kpis.currentAccountSales)} vendido a Cta. Cte.</small></div>
-          <div><span>Saldo Cta. Cte.</span><strong>{formatPesos(kpis.currentAccountBalance)}</strong><small>Deuda neta acumulada</small></div>
+          <div><span>Contado cobrado</span><strong>{formatPesos(kpis.cashTotal)}</strong><small>Efectivo del período</small></div>
+          <div><span>Movimientos del período</span><strong>{formatPesos(kpis.currentAccountSales)}</strong><small>Ventas en Cta. Cte.</small></div>
+          <div><span>Saldo Cta. Cte.</span><strong>{formatPesos(kpis.currentAccountBalance)}</strong><small>Saldo total acumulado (independiente del período)</small></div>
           <div><span>Pendientes</span><strong>{kpis.draftBudgets + kpis.pendingOrders}</strong><small>{kpis.draftBudgets} presupuestos / {kpis.pendingOrders} pedidos</small></div>
         </div>
         <div className="decision-grid">
@@ -276,35 +278,32 @@ export default function ReportesPage() {
               <thead>
                 <tr>
                   <th>Concepto</th>
-                  <th style={{ textAlign: 'right' }}>Cta. Cte.</th>
-                  <th style={{ textAlign: 'right' }}>Contado</th>
                   <th style={{ textAlign: 'right' }}>Neto</th>
-                  <th style={{ textAlign: 'right' }}>IVA</th>
-                  <th style={{ textAlign: 'right' }}>Otros Imp.</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                   <th style={{ textAlign: 'right' }}>Comp.</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.concept}>
-                    <td><strong>{row.concept}</strong></td>
-                    <td className="money-cell">{reportMoney(row.currentAccount)}</td>
-                    <td className="money-cell">{reportMoney(row.cash)}</td>
-                    <td className="money-cell">{reportMoney(row.net)}</td>
-                    <td className="money-cell">{reportMoney(row.tax)}</td>
-                    <td className="money-cell">{reportMoney(row.otherTaxes)}</td>
-                    <td className="money-cell strong">{reportMoney(row.total)}</td>
-                    <td className="money-cell">{Number(row.count || 0).toLocaleString('es-AR')}</td>
-                  </tr>
+                  <React.Fragment key={row.concept}>
+                    <tr onClick={() => setExpandedRow(expandedRow === row.concept ? null : row.concept)} style={{ cursor: 'pointer' }}>
+                      <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.concept}><strong>{row.concept}</strong></td>
+                      <td className="money-cell">{reportMoney(row.net)}</td>
+                      <td className="money-cell strong">{reportMoney(row.total)}</td>
+                      <td className="money-cell">{Number(row.count || 0).toLocaleString('es-AR')}</td>
+                    </tr>
+                    {expandedRow === row.concept && (
+                      <tr>
+                        <td colSpan={4} className="bg-muted/20 px-6 py-3 text-sm text-muted-foreground">
+                          Cta. Cte.: {reportMoney(row.currentAccount)} · Contado: {reportMoney(row.cash)} · IVA: {reportMoney(row.tax)} · Otros Imp.: {reportMoney(row.otherTaxes)}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
                 <tr className="report-total-row">
                   <td><strong>Totales</strong></td>
-                  <td className="money-cell">{reportMoney(totals.currentAccount)}</td>
-                  <td className="money-cell">{reportMoney(totals.cash)}</td>
                   <td className="money-cell">{reportMoney(totals.net)}</td>
-                  <td className="money-cell">{reportMoney(totals.tax)}</td>
-                  <td className="money-cell">{reportMoney(totals.otherTaxes)}</td>
                   <td className="money-cell strong">{reportMoney(totals.total)}</td>
                   <td className="money-cell">{Number(totals.count || 0).toLocaleString('es-AR')}</td>
                 </tr>
@@ -338,7 +337,7 @@ export default function ReportesPage() {
         }
         .decision-kpis {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 10px;
         }
         .decision-kpis div,

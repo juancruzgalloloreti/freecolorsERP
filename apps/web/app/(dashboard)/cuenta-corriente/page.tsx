@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ccApi, customersApi } from '@/lib/api'
 import { CreditCard, Download, Plus, Search, X } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { DocumentDetailModal, DocumentLink } from '@/components/erp/document-detail-modal'
 import { exportToExcel } from '@/lib/export-excel'
@@ -124,6 +124,7 @@ export default function CuentaCorrientePage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [ccPage, setCcPage] = useState(1)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ customerId: '', customerName: '', kind: 'PAYMENT', amount: '', description: '', date: new Date().toISOString().slice(0, 10) })
   const [message, setMessage] = useState<string | null>(null)
@@ -213,24 +214,29 @@ export default function CuentaCorrientePage() {
           <>
             <div style={{ overflowX: 'auto' }}>
               <table className="fc-table">
-                <thead><tr><th>Fecha</th><th>Cliente</th><th>Descripción</th><th>Comprobante</th><th style={{ textAlign: 'right' }}>Importe</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
-                <tbody>{rows.map((row, index) => (
-                  <tr key={row.id ?? index}>
-                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatFecha(row.date || row.createdAt)}</td>
-                    <td style={{ fontWeight: 600 }}>{row.customerName || row.customer?.name || ''}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{descriptionLabel(row.description)}</td>
-                    <td>
-                      {row.documentId ? (
-                        <DocumentLink
-                          document={{ id: row.documentId, type: row.documentType, number: row.documentNumber, puntoDeVenta: { number: row.puntoDeVentaNumber } }}
-                          onOpen={setDocumentId}
-                        />
-                      ) : '-'}
-                    </td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: Number(row.amount ?? 0) >= 0 ? '#fca5a5' : '#86efac' }}>{formatPesos(row.amount)}</td>
+                <thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Débitos</th><th style={{ textAlign: 'right' }}>Créditos</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
+                <tbody>{rows.map((row, index) => {
+                  const rowKey = row.id ?? String(index)
+                  const amount = Number(row.amount ?? 0)
+                  return (
+                  <React.Fragment key={rowKey}>
+                  <tr onClick={() => setExpandedRow(expandedRow === rowKey ? null : rowKey)} style={{ cursor: 'pointer' }}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{formatFecha(row.date || row.createdAt)}</td>
+                    <td style={{ fontWeight: 600, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.customerName || row.customer?.name || ''}>{row.customerName || row.customer?.name || ''}</td>
+                    <td style={{ color: 'var(--text-muted)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={descriptionLabel(row.description)}>{descriptionLabel(row.description)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: amount > 0 ? '#fca5a5' : 'transparent' }}>{amount > 0 ? formatPesos(amount) : ''}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', color: amount < 0 ? '#86efac' : 'transparent' }}>{amount < 0 ? formatPesos(Math.abs(amount)) : ''}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{formatPesos(row.runningBalance ?? row.balance)}</td>
                   </tr>
-                ))}</tbody>
+                  {expandedRow === rowKey && row.documentId && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)' }}>
+                        Comprobante: <DocumentLink document={{ id: row.documentId, type: row.documentType, number: row.documentNumber, puntoDeVenta: { number: row.puntoDeVentaNumber } }} onOpen={setDocumentId} />
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
+                )})}</tbody>
               </table>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '12px', borderTop: '1px solid var(--fc-border)', alignItems: 'center' }}>

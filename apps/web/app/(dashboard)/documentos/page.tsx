@@ -360,9 +360,8 @@ function DocumentosPage() {
                       <th>Tipo</th>
                       <th>Número</th>
                       <th>Cliente</th>
+                      <th>Total</th>
                       <th>Estado</th>
-                      <th style={{ textAlign: 'right' }}>Items</th>
-                      <th style={{ textAlign: 'right' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -371,13 +370,12 @@ function DocumentosPage() {
                         <td>{DATE.format(new Date(row.date))}</td>
                         <td>{TYPE_LABEL[row.type] ?? row.type}</td>
                         <td className="mono-cell">{documentNumber(row)}</td>
-                        <td>
+                        <td style={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.customerName || row.supplierName || 'Consumidor final'}>
                           <strong>{row.customerName || row.supplierName || 'Consumidor final'}</strong>
                           <small className="line-meta">{row.customerCuit || 'Sin CUIT'}</small>
                         </td>
-                        <td><span className={`badge ${statusClass(row.status)}`}>{STATUS_LABEL[row.status]}</span></td>
-                        <td style={{ textAlign: 'right' }}>{row.itemCount}</td>
                         <td className="line-total">{formatPesos(Number(row.total || 0))}</td>
+                        <td><span className={`badge ${statusClass(row.status)}`}>{STATUS_LABEL[row.status]}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -404,7 +402,7 @@ function DocumentosPage() {
                   Anterior
                 </button>
                 <span style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text-muted)' }}>
-                  Pág. {documentPage}{meta?.pages ? ` de ${meta.pages}` : ''} · {totals.documents.toLocaleString('es-AR')} comprobantes
+                  Pág. {documentPage}{meta?.pages ? ` de ${meta.pages}` : ''} — {totals.documents.toLocaleString('es-AR')} registros
                 </span>
                 <button className="fc-button fc-button-secondary" type="button" disabled={!meta?.pages || documentPage >= meta.pages} onClick={() => setDocumentPage((page) => page + 1)}>
                   Siguiente

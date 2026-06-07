@@ -27,7 +27,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useBarcodeScan } from '@/hooks/use-barcode-scan'
 import { DateInputAR } from '@/components/ui/date-input-ar'
-import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi } from '@/lib/api'
+import { cashApi, customersApi, documentsApi, priceListsApi, productsApi, stockApi, preciosEspecialesApi } from '@/lib/api'
 import { corePriceLists } from '@/lib/price-list-rules'
 import { printDocumentA4 } from '@/lib/print-document'
 
@@ -77,6 +77,7 @@ type CounterLine = {
   discount: number
   taxRate: number
   productTaxRate: number
+  isSpecialPrice?: boolean
 }
 
 type Customer = {
@@ -277,6 +278,7 @@ export default function VentasPage() {
 
   const [customerSearch, setCustomerSearch] = useState('')
   const [customerSearchDebounced, setCustomerSearchDebounced] = useState('')
+  const [selectedCustomerObj, setSelectedCustomerObj] = useState<Record<string, any> | null>(null)
   useEffect(() => {
     const t = setTimeout(() => setCustomerSearchDebounced(customerSearch), 300)
     return () => clearTimeout(t)
@@ -310,6 +312,19 @@ export default function VentasPage() {
   const effectivePriceListId = priceListId || priceLists.find((list) => list.isDefault)?.id || priceLists[0]?.id || ''
   const effectiveDepositId = depositId || deposits.find((deposit) => deposit.isDefault)?.id || deposits[0]?.id || ''
   const selectedCustomer = customers.find((customer) => customer.id === customerId)
+  const [preciosEspecialesMap, setPreciosEspecialesMap] = useState<Map<string, { precio: number; descuento?: number }>>(new Map())
+
+  useEffect(() => {
+    if (!customerId) { setPreciosEspecialesMap(new Map()); return }
+    preciosEspecialesApi.list(customerId).then((data: any[]) => {
+      const map = new Map<string, { precio: number; descuento?: number }>()
+      for (const p of data) {
+        map.set(p.productId, { precio: Number(p.precio), descuento: p.descuento ? Number(p.descuento) : undefined })
+      }
+      setPreciosEspecialesMap(map)
+    }).catch(() => {})
+  }, [customerId])
+
   const needsPv = docType.startsWith('INVOICE_')
   const budgetMode = docType === 'BUDGET'
 
@@ -476,6 +491,7 @@ export default function VentasPage() {
     if (!canUseCounter) return
     setError(null)
     setMessage(null)
+    const specialPrice = preciosEspecialesMap.get(product.id)
     setLines((current) => {
       const index = current.findIndex((line) => line.productId === product.id)
       if (index >= 0) {
@@ -494,16 +510,17 @@ export default function VentasPage() {
           categoryName: product.categoryName,
           stock: Number(product.stock ?? product.stockTotal ?? 0),
           quantity: 1,
-          unitPrice: Number(product.price || 0),
-          discount: 0,
+          unitPrice: specialPrice ? specialPrice.precio : Number(product.price || 0),
+          discount: specialPrice?.descuento ?? 0,
           taxRate: includeVat ? Number(product.taxRate || 0) : 0,
           productTaxRate: Number(product.taxRate || 0),
+          isSpecialPrice: !!specialPrice,
         },
       ]
     })
     setSearch('')
     window.setTimeout(() => searchRef.current?.focus(), 0)
-  }, [canUseCounter, includeVat])
+  }, [canUseCounter, includeVat, preciosEspecialesMap])
 
   useBarcodeScan(async (code) => {
     if (!canUseCounter || productDetail || customerSheet || paymentSheet || cashSheet || discountSheet) return
@@ -579,7 +596,8 @@ export default function VentasPage() {
   }
 
   const openCustomerSheet = () => {
-    const customer = customers.find((item) => item.id === customerId)
+    const customer = customers.find((item) => item.id === customerId) || selectedCustomerObj
+    setCustomerSearch(customer?.name || '')
     setQuickCustomer({
       name: customer?.name || '',
       cuit: customer?.cuit || '',
@@ -596,6 +614,7 @@ export default function VentasPage() {
   const selectCustomerInSheet = (nextId: string) => {
     setCustomerId(nextId)
     const customer = customers.find((item) => item.id === nextId)
+    if (customer) setSelectedCustomerObj(customer as any)
     setQuickCustomer({
       name: customer?.name || '',
       cuit: customer?.cuit || '',
@@ -963,10 +982,11 @@ export default function VentasPage() {
                           {customers.map(c => (
                             <button key={c.id} type="button"
                               style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, background: 'none', border: 'none', color: 'var(--fc-text)', cursor: 'pointer' }}
-                              onMouseDown={() => {
-                                setCustomerId(c.id)
-                                setCustomerSearch('')
-                                if (c.priceListId) setPriceListId(c.priceListId)
+                               onMouseDown={() => {
+                                 setCustomerId(c.id)
+                                 setSelectedCustomerObj(c)
+                                 setCustomerSearch('')
+                                 if (c.priceListId) setPriceListId(c.priceListId)
                               }}>
                               {c.name}
                             </button>
@@ -1208,20 +1228,17 @@ export default function VentasPage() {
                         <tr key={`${line.productId}-${index}`}>
                           <td className="mono-cell">{line.code}</td>
                           <td>
-                            {budgetMode || isRetakingDraft ? (
-                              <div className="readonly-line-description">{line.description}</div>
-                            ) : (
-                              <textarea className="fc-input line-description" value={line.description} onChange={(event) => updateLine(index, { description: event.target.value })} disabled={sensitiveLocked} rows={2} />
-                            )}
+                            <div className="readonly-line-description">{line.description}</div>
+                            {line.isSpecialPrice && <span className="badge badge-green" style={{ fontSize: 11, marginTop: 4, display: 'inline-block' }}>Precio especial</span>}
                             <small className={`line-meta ${line.quantity > line.stock ? 'line-meta-danger' : ''}`}>
                               Stock {line.stock.toLocaleString('es-AR')} {line.unit} · {[line.brandName, line.categoryName].filter(Boolean).join(' · ') || 'Sin clasificación'}
                               {line.quantity > line.stock ? ` · excede por ${(line.quantity - line.stock).toLocaleString('es-AR')} ${line.unit}` : ''}
                             </small>
                           </td>
                           <td><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></td>
-                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{formatPesos(line.unitPrice)}</span> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</td>
-                          <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>
-                          {includeVat && <td>{budgetMode || isRetakingDraft ? <span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span> : <QuantityInput value={String(line.taxRate)} onChange={(event) => updateLine(index, { taxRate: numberInput(event.target.value), productTaxRate: numberInput(event.target.value) })} disabled={!canUseCounter} />}</td>}
+                          <td><span className="readonly-number">{formatPesos(line.unitPrice)}</span></td>
+                          <td><span className="readonly-number">{line.discount.toLocaleString('es-AR')}%</span></td>
+                          {includeVat && <td><span className="readonly-number">{line.taxRate.toLocaleString('es-AR')}%</span></td>}
                           <td className="line-total">{formatPesos(lineSubtotal(line) + lineTax(line))}</td>
                           <td><button className="btn btn-icon btn-secondary btn-sm" type="button" onClick={() => removeLine(index)} disabled={!canUseCounter || isRetakingDraft} title="Quitar item" aria-label={`Quitar ${line.description}`}><X size={13} /></button></td>
                         </tr>
@@ -1246,8 +1263,8 @@ export default function VentasPage() {
                       </small>
                       <div className="mobile-line-grid">
                         <label><span>Cant.</span><QuantityInput value={String(line.quantity)} onChange={(event) => updateLine(index, { quantity: numberInput(event.target.value) })} disabled={!canUseCounter} /></label>
-                        <label><span>Precio</span>{budgetMode ? <b>{formatPesos(line.unitPrice)}</b> : <MoneyInput value={String(line.unitPrice)} onChange={(event) => updateLine(index, { unitPrice: numberInput(event.target.value) })} disabled={sensitiveLocked} />}</label>
-                        <label><span>Desc.</span>{budgetMode ? <b>{line.discount.toLocaleString('es-AR')}%</b> : <QuantityInput value={String(line.discount)} onChange={(event) => updateLine(index, { discount: numberInput(event.target.value) })} disabled={!canUseCounter} />}</label>
+                        <label><span>Precio</span><b>{formatPesos(line.unitPrice)}</b></label>
+                        <label><span>Desc.</span><b>{line.discount.toLocaleString('es-AR')}%</b></label>
                         <strong>{formatPesos(lineSubtotal(line) + lineTax(line))}</strong>
                       </div>
                     </article>
@@ -1389,11 +1406,24 @@ export default function VentasPage() {
       >
         <div className="sheet-form-grid">
           <label>
-            <span>Cliente existente</span>
-            <select className="fc-input" value={customerId} onChange={(event) => selectCustomerInSheet(event.target.value)}>
-              <option value="">Consumidor final / venta ocasional</option>
-              {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
-            </select>
+            <span>Buscar cliente</span>
+            <div style={{ position: 'relative' }}>
+              <input className="fc-input" placeholder="Buscá por nombre, CUIT..." 
+                value={customerSearch || (customerId ? (customers.find(c => c.id === customerId)?.name || '') : '')} 
+                onChange={e => setCustomerSearch(e.target.value)} autoFocus />
+              {customerSearch && customers.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, background: 'var(--fc-bg)', border: '1px solid var(--fc-border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', maxHeight: 200, overflowY: 'auto', marginTop: 3 }}>
+                  {customers.map(c => (
+                    <button key={c.id} type="button"
+                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, background: 'none', border: 'none', color: 'var(--fc-text)', cursor: 'pointer' }}
+                      onMouseDown={() => { selectCustomerInSheet(c.id); setCustomerSearch('') }}>
+                      <span style={{ fontWeight: 500 }}>{c.name}</span>
+                      {c.cuit && <span style={{ color: 'var(--text-muted)', marginLeft: 8, fontSize: 12 }}>{c.cuit}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </label>
           <label><span>Razón social</span><input className="fc-input" value={quickCustomer.name} onChange={(event) => setQuickCustomer((current) => ({ ...current, name: event.target.value }))} autoFocus /></label>
           <label><span>CUIT / DNI</span><input className="fc-input" value={quickCustomer.cuit} onChange={(event) => setQuickCustomer((current) => ({ ...current, cuit: event.target.value }))} /></label>

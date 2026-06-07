@@ -67,7 +67,7 @@ export default function CajaPage() {
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [includeLegacy, setIncludeLegacy] = useState(false)
 
-  const { data: current, isLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current })
+  const { data: current, isLoading } = useQuery({ queryKey: ['cash-current'], queryFn: cashApi.current, refetchInterval: 30_000 })
   const { data: sessionsRaw } = useQuery({ queryKey: ['cash-sessions', includeLegacy], queryFn: () => cashApi.sessions({ includeLegacy }) })
   const currentSession = current as CashSession | null
   const sessions: CashSession[] = Array.isArray(sessionsRaw) ? sessionsRaw : []
