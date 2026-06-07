@@ -9,9 +9,13 @@ import { historialApi } from '@/lib/api'
 
 const TIPO_VALOR_DISPLAY: Record<string, string> = {
   CASH: 'Efectivo',
-  TRANSFER: 'Transferencia',
+  BANK_TRANSFER: 'Transferencia',
   CHECK: 'Cheque',
-  CARD: 'Tarjeta',
+  CREDIT_CARD: 'Tarjeta',
+  DEBIT_CARD: 'Tarjeta de débito',
+  MERCADO_PAGO: 'Mercado Pago',
+  CURRENT_ACCOUNT: 'Cuenta corriente',
+  OTHER: 'Otro',
 }
 
 const TIPO_VALOR_SIGLA: Record<string, string> = {
